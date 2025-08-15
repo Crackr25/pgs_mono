@@ -1,0 +1,208 @@
+/* Pinoy Global Supply - Additional Theme Styles */
+
+/* Hero Background Patterns */
+.hero-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+/* Warehouse/Industrial Background for Hero */
+.hero-warehouse {
+  background-image: 
+    linear-gradient(135deg, rgba(0, 70, 173, 0.9) 0%, rgba(0, 52, 130, 0.95) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="warehouse" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="20" height="20" fill="%23ffffff" opacity="0.02"/><rect x="0" y="0" width="10" height="10" fill="%23ffffff" opacity="0.03"/></pattern></defs><rect width="100" height="100" fill="url(%23warehouse)"/></svg>');
+}
+
+/* Company Logo Styles */
+.company-logo {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s ease;
+}
+
+.company-logo:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  transform: scale(1.05);
+}
+
+/* Partner Logo Grid */
+.partner-logos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 2rem;
+  align-items: center;
+  justify-items: center;
+}
+
+.partner-logo {
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  filter: grayscale(100%);
+}
+
+.partner-logo:hover {
+  opacity: 1;
+  filter: grayscale(0%);
+  transform: scale(1.1);
+}
+
+/* Statistics Counter Animation */
+.stat-counter {
+  font-weight: 800;
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #0046ad 0%, #003d99 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Feature Cards with Icons */
+.feature-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0046ad 0%, #003d99 100%);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover::before {
+  transform: scaleX(1);
+}
+
+/* Call-to-Action Sections */
+.cta-section {
+  background: linear-gradient(135deg, #0046ad 0%, #003d99 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+/* Form Enhancements */
+.form-floating-label {
+  position: relative;
+}
+
+.form-floating-label input:focus + label,
+.form-floating-label input:not(:placeholder-shown) + label {
+  transform: translateY(-1.5rem) scale(0.85);
+  color: #0046ad;
+}
+
+.form-floating-label label {
+  position: absolute;
+  left: 1rem;
+  top: 0.75rem;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  color: #6b7280;
+}
+
+/* Loading States */
+.loading-spinner {
+  border: 3px solid rgba(0, 70, 173, 0.1);
+  border-top: 3px solid #0046ad;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Success States */
+.success-checkmark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #16a34a;
+  position: relative;
+}
+
+.success-checkmark::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .hero-warehouse {
+    background-attachment: scroll;
+  }
+  
+  .partner-logos {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .stat-counter {
+    font-size: 2rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .hero-section,
+  .cta-section {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    border: 2px solid #0046ad !important;
+    background: white !important;
+    color: #0046ad !important;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .btn-primary {
+    border: 2px solid white;
+  }
+  
+  .card {
+    border: 2px solid #0046ad;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

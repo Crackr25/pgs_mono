@@ -1,4 +1,5 @@
 import '../styles/globals.css';
+import '../styles/pinoy-theme.css';
 import { useRouter } from 'next/router';
 import Layout from '../components/layout/Layout';
 import AuthGuard from '../components/auth/AuthGuard';

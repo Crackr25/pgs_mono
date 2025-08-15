@@ -56,8 +56,8 @@ export default function SideBar({ isOpen, onClose }) {
       `}>
         <div className="flex flex-col h-full">
           {/* Logo area */}
-          <div className="flex items-center justify-center h-16 px-4 bg-primary-600">
-            <h1 className="text-xl font-bold text-white">PSG</h1>
+          <div className="flex items-center justify-center h-16 px-4 bg-white">
+            <img src="/pgs2.png" className="h-8 w-auto" alt="Pinoy Global Supply" />
           </div>
 
           {/* Navigation */}
