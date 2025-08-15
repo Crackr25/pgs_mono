@@ -1,0 +1,25 @@
+{
+    "name": "@pgs-mono/backend",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Laravel backend for PGS Mono",
+    "scripts": {
+        "dev": "php artisan serve --host=0.0.0.0 --port=8000",
+        "start": "php artisan serve --host=0.0.0.0 --port=8000",
+        "build": "vite build",
+        "test": "php artisan test",
+        "migrate": "php artisan migrate",
+        "seed": "php artisan db:seed",
+        "fresh": "php artisan migrate:fresh --seed",
+        "composer:install": "composer install",
+        "composer:update": "composer update",
+        "clean": "rm -rf vendor node_modules public/build",
+        "vite:dev": "vite",
+        "vite:build": "vite build"
+    },
+    "devDependencies": {
+        "axios": "^1.1.2",
+        "laravel-vite-plugin": "^0.7.2",
+        "vite": "^4.0.0"
+    }
+}
