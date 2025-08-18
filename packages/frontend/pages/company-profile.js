@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Building, Edit, Save, X, Upload, Camera } from 'lucide-react';
+import { Building, Edit, Save, X, Upload, Camera, FileText, Shield, Factory } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { FormField } from '../components/common/Form';
 import FileUpload from '../components/common/FileUpload';
+import DocumentDisplay from '../components/common/DocumentDisplay';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../lib/api';
 
@@ -15,6 +16,8 @@ export default function CompanyProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({});
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadErrors, setUploadErrors] = useState({});
   const { user } = useAuth();
 
   useEffect(() => {
@@ -104,6 +107,170 @@ export default function CompanyProfile() {
         email: company.email || ''
       });
     }
+  };
+
+  // Helper functions to organize documents
+  const getDocumentsByType = (type) => {
+    if (!company) return [];
+    
+    switch (type) {
+      case 'business':
+        const businessDocs = [];
+        if (company.dti_sec_certificate) businessDocs.push(company.dti_sec_certificate);
+        if (company.peza_documents) {
+          const pezaDocs = Array.isArray(company.peza_documents) 
+            ? company.peza_documents 
+            : JSON.parse(company.peza_documents || '[]');
+          businessDocs.push(...pezaDocs);
+        }
+        if (company.business_permits) {
+          const permits = Array.isArray(company.business_permits) 
+            ? company.business_permits 
+            : JSON.parse(company.business_permits || '[]');
+          businessDocs.push(...permits);
+        }
+        return businessDocs;
+        
+      case 'certifications':
+        const certDocs = [];
+        if (company.product_certifications) {
+          const certs = Array.isArray(company.product_certifications) 
+            ? company.product_certifications 
+            : JSON.parse(company.product_certifications || '[]');
+          certDocs.push(...certs);
+        }
+        return certDocs;
+        
+      case 'kyc':
+        const kycDocs = [];
+        if (company.owner_id_front) kycDocs.push(company.owner_id_front);
+        if (company.owner_id_back) kycDocs.push(company.owner_id_back);
+        if (company.proof_of_address) kycDocs.push(company.proof_of_address);
+        if (company.business_registration_cert) kycDocs.push(company.business_registration_cert);
+        return kycDocs;
+        
+      case 'factory':
+        const factoryDocs = [];
+        if (company.factory_overview_video) factoryDocs.push(company.factory_overview_video);
+        if (company.production_line_photos) {
+          const photos = Array.isArray(company.production_line_photos) 
+            ? company.production_line_photos 
+            : JSON.parse(company.production_line_photos || '[]');
+          factoryDocs.push(...photos);
+        }
+        if (company.quality_control_photos) {
+          const photos = Array.isArray(company.quality_control_photos) 
+            ? company.quality_control_photos 
+            : JSON.parse(company.quality_control_photos || '[]');
+          factoryDocs.push(...photos);
+        }
+        if (company.warehouse_photos) {
+          const photos = Array.isArray(company.warehouse_photos) 
+            ? company.warehouse_photos 
+            : JSON.parse(company.warehouse_photos || '[]');
+          factoryDocs.push(...photos);
+        }
+        if (company.certifications_photos) {
+          const photos = Array.isArray(company.certifications_photos) 
+            ? company.certifications_photos 
+            : JSON.parse(company.certifications_photos || '[]');
+          factoryDocs.push(...photos);
+        }
+        return factoryDocs;
+        
+      default:
+        return [];
+    }
+  };
+
+  // Handle file uploads for document updates
+  const handleFileUpload = async (files, uploadType) => {
+    if (!company) return;
+
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      // Reset progress and errors for these files
+      const newProgress = {};
+      const newErrors = {};
+      files.forEach(file => {
+        newProgress[file.name] = 0;
+        newErrors[file.name] = null;
+      });
+      setUploadProgress(prev => ({ ...prev, ...newProgress }));
+      setUploadErrors(prev => ({ ...prev, ...newErrors }));
+
+      // Progress callback
+      const onProgress = (progress) => {
+        files.forEach(file => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [file.name]: Math.round(progress)
+          }));
+        });
+      };
+
+      let response;
+      switch (uploadType) {
+        case 'documents':
+          response = await apiService.uploadCompanyDocuments(company.id, files, onProgress);
+          break;
+        case 'kyc':
+          response = await apiService.uploadCompanyKyc(company.id, files, onProgress);
+          break;
+        case 'factory-tour':
+          response = await apiService.uploadFactoryTour(company.id, files, onProgress);
+          break;
+        default:
+          throw new Error('Invalid upload type');
+      }
+
+      console.log('Upload successful:', response);
+      
+      // Mark files as completed
+      files.forEach(file => {
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: 100
+        }));
+      });
+
+      // Refresh company data to show new uploads
+      await fetchCompanyProfile();
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      files.forEach(file => {
+        setUploadErrors(prev => ({
+          ...prev,
+          [file.name]: error.message || 'Upload failed'
+        }));
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: 0
+        }));
+      });
+      setError(error.message || 'Upload failed');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDocumentDelete = async (filePath, index) => {
+    // TODO: Implement document deletion API call
+    console.log('Delete document:', filePath, index);
+    // For now, just show a confirmation
+    if (confirm('Are you sure you want to delete this document?')) {
+      // Implement deletion logic here
+      alert('Document deletion will be implemented');
+    }
+  };
+
+  const handleDocumentEdit = async (filePath, index) => {
+    // TODO: Implement document replacement
+    console.log('Edit document:', filePath, index);
+    alert('Document replacement will be implemented');
   };
 
   if (isLoading) {
@@ -292,121 +459,180 @@ export default function CompanyProfile() {
           </div>
         </Card>
 
-        {/* Company Images */}
+        {/* Company Documents & Media */}
         <Card>
           <div className="p-6">
-            <h3 className="text-lg font-medium text-secondary-900 mb-6">
-              Company Images & Documents
-            </h3>
-            
-            {isEditing ? (
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-md font-medium text-secondary-900 mb-4">
-                    Company Logo & Profile Images
-                  </h4>
-                  <FileUpload
-                    label="Company Logo"
-                    accept=".jpg,.jpeg,.png"
-                    maxSize={5}
-                    description="Upload your company logo (recommended: square format, max 5MB)"
-                  />
-                </div>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-medium text-secondary-900">
+                Company Documents & Media
+              </h3>
+              <div className="text-sm text-secondary-600">
+                {company.onboarding_step === 'completed' ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Onboarding Complete
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Onboarding In Progress
+                  </span>
+                )}
+              </div>
+            </div>
 
-                <div>
-                  <h4 className="text-md font-medium text-secondary-900 mb-4">
-                    Factory & Facility Photos
-                  </h4>
-                  <FileUpload
-                    label="Factory Overview Photos"
-                    accept=".jpg,.jpeg,.png"
-                    multiple
-                    maxSize={10}
-                    description="Upload photos showing your manufacturing facilities"
-                  />
+            <div className="space-y-8">
+              {/* Business Documents Section */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <FileText className="h-5 w-5 text-blue-600 mr-2" />
+                  <h4 className="text-md font-medium text-secondary-900">Business Documents</h4>
                 </div>
+                
+                <DocumentDisplay
+                  documents={getDocumentsByType('business')}
+                  title="Registration & Permits"
+                  onEdit={handleDocumentEdit}
+                  onDelete={handleDocumentDelete}
+                  isEditing={isEditing}
+                  className="mb-4"
+                />
 
-                <div>
-                  <h4 className="text-md font-medium text-secondary-900 mb-4">
-                    Certifications & Documents
-                  </h4>
-                  <FileUpload
-                    label="Business Registration Documents"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    multiple
-                    maxSize={5}
-                    description="Upload business registration, permits, and certifications"
-                  />
+                {isEditing && (
+                  <div className="mt-4">
+                    <FileUpload
+                      key={`business-docs-${isEditing}`}
+                      label="Add Business Documents"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      maxSize={5}
+                      onUpload={(files) => handleFileUpload(files, 'documents')}
+                      uploadProgress={uploadProgress}
+                      uploadErrors={uploadErrors}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Product Certifications Section */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <Shield className="h-5 w-5 text-green-600 mr-2" />
+                  <h4 className="text-md font-medium text-secondary-900">Product Certifications</h4>
                 </div>
+                
+                <DocumentDisplay
+                  documents={getDocumentsByType('certifications')}
+                  title="Quality & Safety Certifications"
+                  onEdit={handleDocumentEdit}
+                  onDelete={handleDocumentDelete}
+                  isEditing={isEditing}
+                  className="mb-4"
+                />
 
-                <div>
-                  <h4 className="text-md font-medium text-secondary-900 mb-4">
-                    Product Certifications
-                  </h4>
-                  <FileUpload
-                    label="Quality Certifications (ISO, CE, etc.)"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    multiple
-                    maxSize={5}
-                    description="Upload product quality and safety certifications"
-                  />
+                {isEditing && (
+                  <div className="mt-4">
+                    <FileUpload
+                      key={`certifications-${isEditing}`}
+                      label="Add Product Certifications"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      maxSize={5}
+                      onUpload={(files) => handleFileUpload(files, 'documents')}
+                      uploadProgress={uploadProgress}
+                      uploadErrors={uploadErrors}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* KYC Documents Section */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <Shield className="h-5 w-5 text-purple-600 mr-2" />
+                  <h4 className="text-md font-medium text-secondary-900">KYC Verification</h4>
                 </div>
+                
+                <DocumentDisplay
+                  documents={getDocumentsByType('kyc')}
+                  title="Identity & Address Verification"
+                  onEdit={handleDocumentEdit}
+                  onDelete={handleDocumentDelete}
+                  isEditing={isEditing}
+                  className="mb-4"
+                />
 
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                {isEditing && (
+                  <div className="mt-4">
+                    <FileUpload
+                      key={`kyc-docs-${isEditing}`}
+                      label="Update KYC Documents"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      maxSize={5}
+                      onUpload={(files) => handleFileUpload(files, 'kyc')}
+                      uploadProgress={uploadProgress}
+                      uploadErrors={uploadErrors}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Factory Tour Section */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <Factory className="h-5 w-5 text-orange-600 mr-2" />
+                  <h4 className="text-md font-medium text-secondary-900">Factory Tour</h4>
+                </div>
+                
+                <DocumentDisplay
+                  documents={getDocumentsByType('factory')}
+                  title="Manufacturing Facilities & Capabilities"
+                  onEdit={handleDocumentEdit}
+                  onDelete={handleDocumentDelete}
+                  isEditing={isEditing}
+                  className="mb-4"
+                />
+
+                {isEditing && (
+                  <div className="mt-4">
+                    <FileUpload
+                      key={`factory-tour-${isEditing}`}
+                      label="Add Factory Photos/Videos"
+                      accept=".jpg,.jpeg,.png,.mp4,.mov,.avi"
+                      multiple
+                      maxSize={100}
+                      onUpload={(files) => handleFileUpload(files, 'factory-tour')}
+                      uploadProgress={uploadProgress}
+                      uploadErrors={uploadErrors}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Guidelines */}
+              {isEditing && (
+                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex">
                     <div className="flex-shrink-0">
                       <Camera className="h-5 w-5 text-blue-400" />
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-blue-800">
-                        Image Guidelines
+                        Document Upload Guidelines
                       </h3>
                       <div className="mt-2 text-sm text-blue-700">
                         <ul className="list-disc list-inside space-y-1">
                           <li>Use high-quality images with good lighting</li>
-                          <li>Show your production capabilities and equipment</li>
-                          <li>Include quality control processes</li>
-                          <li>Display certifications prominently</li>
-                          <li>Keep file sizes under the specified limits</li>
+                          <li>Documents: PDF, JPG, PNG formats (max 5MB each)</li>
+                          <li>Factory photos: JPG, PNG formats (max 10MB each)</li>
+                          <li>Videos: MP4, MOV, AVI formats (max 100MB each)</li>
+                          <li>Files are automatically uploaded when selected</li>
                         </ul>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="text-center py-8">
-                  <Upload className="mx-auto h-12 w-12 text-secondary-400" />
-                  <h3 className="mt-2 text-sm font-medium text-secondary-900">
-                    Company Images & Documents
-                  </h3>
-                  <p className="mt-1 text-sm text-secondary-500">
-                    Click "Edit Profile" to upload and manage your company images, factory photos, and certification documents.
-                  </p>
-                </div>
-                
-                {/* Display existing images if any */}
-                {company.images && company.images.length > 0 && (
-                  <div>
-                    <h4 className="text-md font-medium text-secondary-900 mb-4">
-                      Current Images
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {company.images.map((image, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={image}
-                            alt={`Company image ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg border border-secondary-200"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </Card>
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Upload, X, File } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, X, File, CheckCircle, AlertCircle, Eye } from 'lucide-react';
 
 export default function FileUpload({ 
   label, 
@@ -7,10 +7,32 @@ export default function FileUpload({
   multiple = false, 
   maxSize = 10, // MB
   onFilesChange,
+  onUpload, // New prop for handling upload
+  uploadProgress = {}, // New prop for upload progress
+  uploadErrors = {}, // New prop for upload errors
   className = ''
 }) {
   const [files, setFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  const [previews, setPreviews] = useState({});
+
+  // Generate preview URLs for image files
+  useEffect(() => {
+    const newPreviews = {};
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        newPreviews[file.name] = URL.createObjectURL(file);
+      }
+    });
+    setPreviews(newPreviews);
+
+    // Cleanup old preview URLs
+    return () => {
+      Object.values(newPreviews).forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, [files]);
 
   const handleFiles = (newFiles) => {
     const fileArray = Array.from(newFiles);
@@ -22,6 +44,11 @@ export default function FileUpload({
     const updatedFiles = multiple ? [...files, ...validFiles] : validFiles.slice(0, 1);
     setFiles(updatedFiles);
     onFilesChange?.(updatedFiles);
+    
+    // Auto-upload if onUpload function is provided
+    if (onUpload && validFiles.length > 0) {
+      onUpload(validFiles);
+    }
   };
 
   const handleDrag = (e) => {
@@ -89,24 +116,84 @@ export default function FileUpload({
 
       {files.length > 0 && (
         <div className="mt-4 space-y-2">
-          {files.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-2 bg-secondary-50 rounded">
-              <div className="flex items-center space-x-2">
-                <File className="h-4 w-4 text-secondary-500" />
-                <span className="text-sm text-secondary-700">{file.name}</span>
-                <span className="text-xs text-secondary-500">
-                  ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                </span>
+          {files.map((file, index) => {
+            const progress = uploadProgress[file.name] || 0;
+            const error = uploadErrors[file.name];
+            const isUploaded = progress === 100;
+            const isUploading = progress > 0 && progress < 100;
+            
+            return (
+              <div key={index} className="p-3 bg-secondary-50 rounded-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {isUploaded ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-1" />
+                      ) : error ? (
+                        <AlertCircle className="h-4 w-4 text-red-500 mt-1" />
+                      ) : (
+                        <File className="h-4 w-4 text-secondary-500 mt-1" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-secondary-700 truncate">{file.name}</span>
+                        <span className="text-xs text-secondary-500 flex-shrink-0">
+                          ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                        </span>
+                      </div>
+                      
+                      {/* Image Preview */}
+                      {previews[file.name] && (
+                        <div className="mt-2">
+                          <img
+                            src={previews[file.name]}
+                            alt={`Preview of ${file.name}`}
+                            className="max-w-32 max-h-32 object-cover rounded border border-secondary-200"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    {isUploading && (
+                      <span className="text-xs text-secondary-500">{progress}%</span>
+                    )}
+                    {!isUploading && (
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Progress bar */}
+                {isUploading && (
+                  <div className="mt-2">
+                    <div className="w-full bg-secondary-200 rounded-full h-2">
+                      <div 
+                        className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Error message */}
+                {error && (
+                  <div className="mt-2 text-xs text-red-600">
+                    {error}
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => removeFile(index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

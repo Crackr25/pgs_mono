@@ -129,6 +129,151 @@ class ApiService {
     return this.request(`/companies/${id}/products${queryString ? `?${queryString}` : ''}`);
   }
 
+  // File upload methods for onboarding
+  async uploadFormData(endpoint, formData, onProgress) {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Set up progress tracking
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            onProgress(percentComplete);
+          }
+        });
+      }
+      
+      xhr.addEventListener('load', () => {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(response);
+          } else {
+            reject(new Error(response.message || `HTTP error! status: ${xhr.status}`));
+          }
+        } catch (error) {
+          reject(new Error('Failed to parse response'));
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error occurred'));
+      });
+      
+      xhr.open('POST', url);
+      
+      // Set authorization header
+      if (this.token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${this.token}`);
+      }
+      
+      xhr.send(formData);
+    });
+  }
+
+  async uploadCompanyDocuments(companyId, files, onProgress, fieldName = null) {
+    const formData = new FormData();
+    
+    if (fieldName) {
+      // Use the specific field name provided
+      const isMultiple = ['peza_documents', 'product_certifications', 'business_permits'].includes(fieldName);
+      files.forEach((file) => {
+        if (isMultiple) {
+          formData.append(`${fieldName}[]`, file);
+        } else {
+          formData.append(fieldName, file);
+        }
+      });
+    } else {
+      // Fallback to filename-based logic for backward compatibility
+      files.forEach((file, index) => {
+        if (file.name.toLowerCase().includes('dti') || file.name.toLowerCase().includes('sec')) {
+          formData.append('dti_sec_certificate', file);
+        } else if (file.name.toLowerCase().includes('peza')) {
+          formData.append('peza_documents[]', file);
+        } else if (file.name.toLowerCase().includes('certification')) {
+          formData.append('product_certifications[]', file);
+        } else if (file.name.toLowerCase().includes('permit')) {
+          formData.append('business_permits[]', file);
+        } else {
+          formData.append('business_permits[]', file);
+        }
+      });
+    }
+    
+    return this.uploadFormData(`/companies/${companyId}/upload-documents`, formData, onProgress);
+  }
+
+  async uploadCompanyKyc(companyId, files, onProgress, fieldName = null) {
+    const formData = new FormData();
+    
+    if (fieldName) {
+      // Use the specific field name provided
+      files.forEach((file) => {
+        formData.append(fieldName, file);
+      });
+    } else {
+      // Fallback to filename-based logic for backward compatibility
+      files.forEach((file) => {
+        const fileName = file.name.toLowerCase();
+        if (fileName.includes('front') || fileName.includes('id_front')) {
+          formData.append('kyc_id_front', file);
+        } else if (fileName.includes('back') || fileName.includes('id_back')) {
+          formData.append('kyc_id_back', file);
+        } else if (fileName.includes('address') || fileName.includes('utility') || fileName.includes('bill')) {
+          formData.append('kyc_proof_address', file);
+        } else if (fileName.includes('registration') || fileName.includes('certificate')) {
+          formData.append('kyc_business_registration', file);
+        } else {
+          formData.append('kyc_business_registration', file);
+        }
+      });
+    }
+    
+    return this.uploadFormData(`/companies/${companyId}/upload-kyc`, formData, onProgress);
+  }
+
+  async uploadFactoryTour(companyId, files, onProgress, fieldName = null) {
+    const formData = new FormData();
+    
+    if (fieldName) {
+      // Use the specific field name provided
+      const isMultiple = ['production_line_photos', 'quality_control_photos', 'warehouse_photos', 'certifications_display_photos'].includes(fieldName);
+      files.forEach((file) => {
+        if (isMultiple) {
+          formData.append(`${fieldName}[]`, file);
+        } else {
+          formData.append(fieldName, file);
+        }
+      });
+    } else {
+      // Fallback to filename-based logic for backward compatibility
+      files.forEach((file) => {
+        const fileName = file.name.toLowerCase();
+        const fileType = file.type;
+        
+        if (fileType.startsWith('video/') || fileName.includes('overview')) {
+          formData.append('factory_overview_video', file);
+        } else if (fileName.includes('production') || fileName.includes('line')) {
+          formData.append('production_line_photos[]', file);
+        } else if (fileName.includes('quality') || fileName.includes('control')) {
+          formData.append('quality_control_photos[]', file);
+        } else if (fileName.includes('warehouse') || fileName.includes('storage')) {
+          formData.append('warehouse_photos[]', file);
+        } else if (fileName.includes('cert') || fileName.includes('display')) {
+          formData.append('certifications_display_photos[]', file);
+        } else {
+          formData.append('production_line_photos[]', file);
+        }
+      });
+    }
+    
+    return this.uploadFormData(`/companies/${companyId}/upload-factory-tour`, formData, onProgress);
+  }
+
   // Product methods
   async getProducts(params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -154,7 +299,9 @@ class ApiService {
   }
 
   async deleteProduct(id) {
-    return this.request(`/products/${id}`, { method: 'DELETE' });
+    return this.request(`/products/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   // Quote methods
@@ -181,10 +328,9 @@ class ApiService {
     });
   }
 
-  async respondToQuote(id, responseData) {
-    return this.request(`/quotes/${id}/respond`, {
-      method: 'POST',
-      body: JSON.stringify(responseData),
+  async deleteQuote(id) {
+    return this.request(`/quotes/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -212,37 +358,12 @@ class ApiService {
     });
   }
 
-  async getOrderTracking(id) {
-    return this.request(`/orders/${id}/tracking`);
-  }
-
-  // Message methods
-  async getMessages(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    return this.request(`/messages${queryString ? `?${queryString}` : ''}`);
-  }
-
-  async getMessage(id) {
-    return this.request(`/messages/${id}`);
-  }
-
-  async sendMessage(messageData) {
-    return this.request('/messages', {
-      method: 'POST',
-      body: JSON.stringify(messageData),
+  async deleteOrder(id) {
+    return this.request(`/orders/${id}`, {
+      method: 'DELETE',
     });
-  }
-
-  async markMessageAsRead(id) {
-    return this.request(`/messages/${id}/read`, { method: 'PUT' });
-  }
-
-  async getUnreadCount(companyId) {
-    return this.request(`/messages/unread-count?company_id=${companyId}`);
   }
 }
 
-// Create a singleton instance
 const apiService = new ApiService();
-
 export default apiService;

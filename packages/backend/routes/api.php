@@ -55,6 +55,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/companies/{company}', [CompanyController::class, 'update']);
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy']);
     
+    // Company onboarding file uploads
+    Route::post('/companies/{company}/upload-documents', [CompanyController::class, 'uploadDocuments']);
+    Route::post('/companies/{company}/upload-kyc', [CompanyController::class, 'uploadKyc']);
+    Route::post('/companies/{company}/upload-factory-tour', [CompanyController::class, 'uploadFactoryTour']);
+    
     // Product management
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);

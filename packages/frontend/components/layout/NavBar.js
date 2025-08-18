@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Bell, Search, User, Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../hooks/useLanguage';
+
 
 export default function NavBar({ onMenuToggle, isSidebarOpen }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
+  const { translate } = useLanguage();
   const router = useRouter();
 
   const handleLogout = async () => {

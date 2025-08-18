@@ -15,6 +15,9 @@ export default function Onboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [companyId, setCompanyId] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadErrors, setUploadErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     registration: '',
@@ -48,52 +51,115 @@ export default function Onboarding() {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleFileUpload = async (files, uploadType, fieldName = null) => {
+    if (!companyId) {
+      setError('Company must be created first');
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
     try {
-      if (currentStep === 1) {
-        // Step 1: Create company profile
-        const companyData = {
-          name: formData.name,
-          registration: formData.registration,
-          peza_id: formData.peza_id || null,
-          location: formData.location,
-          year_established: parseInt(formData.year_established),
-          factory_size: formData.factory_size || null,
-          product_lines: formData.product_lines,
-          employees: formData.employees ? parseInt(formData.employees) : null,
-          description: formData.description || null,
-          website: formData.website || null,
-          phone: formData.phone || null,
-          email: formData.email || null
-        };
+      // Reset progress and errors for these files
+      const newProgress = {};
+      const newErrors = {};
+      files.forEach(file => {
+        newProgress[file.name] = 0;
+        newErrors[file.name] = null;
+      });
+      setUploadProgress(prev => ({ ...prev, ...newProgress }));
+      setUploadErrors(prev => ({ ...prev, ...newErrors }));
 
-        const response = await apiService.createCompany(companyData);
-        console.log('Company created:', response);
-        
-        // Move to next step
-        setCurrentStep(currentStep + 1);
-      } else if (currentStep === 2) {
-        // Step 2: Document upload (placeholder for now)
-        console.log('Document upload step - to be implemented');
-        setCurrentStep(currentStep + 1);
-      } else if (currentStep === 3) {
-        // Step 3: KYC Verification (placeholder for now)
-        console.log('KYC verification step - to be implemented');
-        setCurrentStep(currentStep + 1);
-      } else if (currentStep === 4) {
-        // Step 4: Factory tour (final step)
-        console.log('Factory tour step - onboarding complete');
-        setSuccess(true);
-        
-        // Redirect to dashboard after successful onboarding
-        setTimeout(() => {
-          router.push('/');
-        }, 2000);
+      // Progress callback
+      const onProgress = (progress) => {
+        files.forEach(file => {
+          setUploadProgress(prev => ({
+            ...prev,
+            [file.name]: Math.round(progress)
+          }));
+        });
+      };
+
+      let response;
+      switch (uploadType) {
+        case 'documents':
+          response = await apiService.uploadCompanyDocuments(companyId, files, onProgress, fieldName);
+          break;
+        case 'kyc':
+          response = await apiService.uploadCompanyKyc(companyId, files, onProgress, fieldName);
+          break;
+        case 'factory-tour':
+          response = await apiService.uploadFactoryTour(companyId, files, onProgress, fieldName);
+          break;
+        default:
+          throw new Error('Invalid upload type');
       }
+
+      console.log('Upload successful:', response);
+      
+      // Mark files as completed
+      files.forEach(file => {
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: 100
+        }));
+      });
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      files.forEach(file => {
+        setUploadErrors(prev => ({
+          ...prev,
+          [file.name]: error.message || 'Upload failed'
+        }));
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: 0
+        }));
+      });
+      setError(error.message || 'Upload failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Only handle step 1 form submission
+    if (currentStep !== 1) {
+      return;
+    }
+    
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      // Step 1: Create company profile
+      const companyData = {
+        name: formData.name,
+        registration: formData.registration,
+        peza_id: formData.peza_id || null,
+        location: formData.location,
+        year_established: parseInt(formData.year_established),
+        factory_size: formData.factory_size || null,
+        product_lines: formData.product_lines,
+        employees: formData.employees ? parseInt(formData.employees) : null,
+        description: formData.description || null,
+        website: formData.website || null,
+        phone: formData.phone || null,
+        email: formData.email || null
+      };
+
+      const response = await apiService.createCompany(companyData);
+      console.log('Company created:', response);
+      
+      // Store company ID for file uploads
+      setCompanyId(response.id);
+      
+      // Move to next step
+      setCurrentStep(currentStep + 1);
     } catch (error) {
       console.error('Onboarding error:', error);
       setError(error.message || 'An error occurred during onboarding');
@@ -248,36 +314,52 @@ export default function Onboarding() {
 
             <div className="space-y-6">
               <FileUpload
+                key={`step2-dti-${currentStep}`}
                 label="DTI/SEC Registration Certificate"
                 accept=".pdf,.jpg,.jpeg,.png"
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'documents', 'dti_sec_certificate')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step2-peza-${currentStep}`}
                 label="PEZA Registration Documents"
                 accept=".pdf,.jpg,.jpeg,.png"
                 multiple
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'documents', 'peza_documents')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step2-certs-${currentStep}`}
                 label="Product Certifications (ISO, CE, etc.)"
                 accept=".pdf,.jpg,.jpeg,.png"
                 multiple
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'documents', 'product_certifications')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step2-permits-${currentStep}`}
                 label="Business Permits"
                 accept=".pdf,.jpg,.jpeg,.png"
                 multiple
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'documents', 'business_permits')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
             </div>
 
             <div className="flex justify-end mt-6">
-              <Button onClick={() => setCurrentStep(3)}>
-                Continue to KYC
+              <Button onClick={() => setCurrentStep(3)} disabled={isLoading}>
+                Skip to KYC
               </Button>
             </div>
           </Card>
@@ -297,27 +379,43 @@ export default function Onboarding() {
 
             <div className="space-y-6">
               <FileUpload
+                key={`step3-id-front-${currentStep}`}
                 label="Owner's Government ID (Front)"
                 accept=".jpg,.jpeg,.png"
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'kyc', 'kyc_id_front')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step3-id-back-${currentStep}`}
                 label="Owner's Government ID (Back)"
                 accept=".jpg,.jpeg,.png"
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'kyc', 'kyc_id_back')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step3-address-${currentStep}`}
                 label="Proof of Address (Utility Bill, Bank Statement)"
                 accept=".pdf,.jpg,.jpeg,.png"
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'kyc', 'kyc_proof_address')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step3-business-cert-${currentStep}`}
                 label="Business Registration Certificate"
                 accept=".pdf,.jpg,.jpeg,.png"
                 maxSize={5}
+                onUpload={(files) => handleFileUpload(files, 'kyc', 'kyc_business_registration')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
             </div>
 
@@ -362,37 +460,57 @@ export default function Onboarding() {
 
             <div className="space-y-6">
               <FileUpload
+                key={`step4-video-${currentStep}`}
                 label="Factory Overview Video (Max 100MB)"
                 accept=".mp4,.mov,.avi"
                 maxSize={100}
+                onUpload={(files) => handleFileUpload(files, 'factory-tour', 'factory_overview_video')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step4-production-${currentStep}`}
                 label="Production Line Photos"
                 accept=".jpg,.jpeg,.png"
                 multiple
                 maxSize={10}
+                onUpload={(files) => handleFileUpload(files, 'factory-tour', 'production_line_photos')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step4-quality-${currentStep}`}
                 label="Quality Control Area Photos"
                 accept=".jpg,.jpeg,.png"
                 multiple
                 maxSize={10}
+                onUpload={(files) => handleFileUpload(files, 'factory-tour', 'quality_control_photos')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step4-warehouse-${currentStep}`}
                 label="Warehouse/Storage Photos"
                 accept=".jpg,.jpeg,.png"
                 multiple
                 maxSize={10}
+                onUpload={(files) => handleFileUpload(files, 'factory-tour', 'warehouse_photos')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
               
               <FileUpload
+                key={`step4-certifications-${currentStep}`}
                 label="Certifications Display Photos"
                 accept=".jpg,.jpeg,.png"
                 multiple
                 maxSize={10}
+                onUpload={(files) => handleFileUpload(files, 'factory-tour', 'certifications_display_photos')}
+                uploadProgress={uploadProgress}
+                uploadErrors={uploadErrors}
               />
             </div>
 
@@ -418,7 +536,12 @@ export default function Onboarding() {
             </div>
 
             <div className="flex justify-end mt-6">
-              <Button onClick={() => alert('Onboarding completed!')}>
+              <Button onClick={() => {
+                setSuccess(true);
+                setTimeout(() => {
+                  router.push('/');
+                }, 2000);
+              }}>
                 Complete Onboarding
               </Button>
             </div>

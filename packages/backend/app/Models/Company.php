@@ -25,14 +25,37 @@ class Company extends Model
         'email',
         'logo',
         'verified',
-        'status'
+        'status',
+        // Onboarding file uploads
+        'dti_sec_certificate',
+        'peza_documents',
+        'product_certifications',
+        'business_permits',
+        'kyc_id_front',
+        'kyc_id_back',
+        'kyc_proof_address',
+        'kyc_business_registration',
+        'factory_overview_video',
+        'production_line_photos',
+        'quality_control_photos',
+        'warehouse_photos',
+        'certifications_display_photos',
+        'onboarding_step'
     ];
 
     protected $casts = [
         'product_lines' => 'array',
         'verified' => 'boolean',
         'year_established' => 'integer',
-        'employees' => 'integer'
+        'employees' => 'integer',
+        // File upload arrays
+        'peza_documents' => 'array',
+        'product_certifications' => 'array',
+        'business_permits' => 'array',
+        'production_line_photos' => 'array',
+        'quality_control_photos' => 'array',
+        'warehouse_photos' => 'array',
+        'certifications_display_photos' => 'array'
     ];
 
     // Relationships
