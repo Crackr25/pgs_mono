@@ -17,10 +17,12 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
     variants: product?.variants || [],
     stock_quantity: product?.stock_quantity || '',
     unit: product?.unit || '',
-    images: product?.images || []
+    image: product?.image || null
   });
   
   const [newVariant, setNewVariant] = useState('');
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadErrors, setUploadErrors] = useState({});
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,6 +52,18 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
       ...prev,
       variants: prev.variants.filter((_, i) => i !== index)
     }));
+  };
+
+  const handleImageUpload = (files) => {
+    // Store single file for later upload when form is submitted
+    console.log('handleImageUpload called with files:', files);
+    if (files && files.length > 0) {
+      console.log('Setting image file:', files[0]);
+      setFormData(prev => ({
+        ...prev,
+        image: files[0] // Only take the first file
+      }));
+    }
   };
 
   const categoryOptions = [
@@ -180,10 +194,13 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
             Product Images
           </h3>
           <FileUpload
-            label="Upload Product Photos"
+            label="Upload Product Photo"
             accept=".jpg,.jpeg,.png"
-            multiple
+            multiple={false}
             maxSize={5}
+            onFilesChange={handleImageUpload}
+            uploadProgress={uploadProgress}
+            uploadErrors={uploadErrors}
           />
           <p className="mt-2 text-sm text-secondary-600">
             Upload high-quality images showing your product from different angles. 

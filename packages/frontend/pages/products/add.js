@@ -41,13 +41,36 @@ export default function AddProduct() {
     setError(null);
     
     try {
-      const productData = {
-        ...formData,
+      // Separate image from other form data
+      const { image, ...productData } = formData;
+      
+      console.log('Form data received:', formData);
+      console.log('Image file:', image);
+      console.log('Product data (without image):', productData);
+      
+      const productPayload = {
+        ...productData,
         company_id: userCompany.id
       };
 
-      const response = await apiService.createProduct(productData);
+      // Create product first (without image)
+      const response = await apiService.createProduct(productPayload);
       console.log('Product created:', response);
+      
+      // Upload image if one was selected
+      if (image && image instanceof File) {
+        console.log('Uploading image for product ID:', response.id);
+        try {
+          await apiService.uploadProductImage(response.id, image);
+          console.log('Image uploaded successfully');
+        } catch (imageError) {
+          console.error('Error uploading image:', imageError);
+          // Don't fail the whole process if image upload fails
+          setError('Product created but image failed to upload. You can add it later.');
+        }
+      } else {
+        console.log('No image to upload or image is not a File object');
+      }
       
       // Redirect to products list
       router.push('/products');

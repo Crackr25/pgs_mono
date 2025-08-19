@@ -22,6 +22,11 @@ class CompanyController extends Controller
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
+
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+        
         
         // Search by name or location
         if ($request->has('search')) {

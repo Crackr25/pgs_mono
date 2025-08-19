@@ -32,6 +32,8 @@ class ApiService {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
+
+
     return headers;
   }
 
@@ -276,6 +278,7 @@ class ApiService {
 
   // Product methods
   async getProducts(params = {}) {
+    console.log('');
     const queryString = new URLSearchParams(params).toString();
     return this.request(`/products${queryString ? `?${queryString}` : ''}`);
   }
@@ -302,6 +305,13 @@ class ApiService {
     return this.request(`/products/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async uploadProductImage(productId, file, onProgress) {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    return this.uploadFormData(`/products/${productId}/upload-images`, formData, onProgress);
   }
 
   // Quote methods

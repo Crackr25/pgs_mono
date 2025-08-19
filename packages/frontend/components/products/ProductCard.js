@@ -7,9 +7,9 @@ export default function ProductCard({ product, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
       <div className="aspect-w-16 aspect-h-9 bg-secondary-100">
-        {product.images && product.images[0] ? (
+        {product.image ? (
           <img
-            src={product.images[0]}
+            src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.image}`}
             alt={product.name}
             className="w-full h-48 object-cover"
           />

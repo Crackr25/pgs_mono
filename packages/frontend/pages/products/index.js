@@ -252,11 +252,19 @@ export default function Products() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-lg bg-secondary-100 flex items-center justify-center">
-                              <span className="text-xs font-medium text-secondary-600">
-                                {product.name.charAt(0)}
-                              </span>
-                            </div>
+                            {product.image ? (
+                              <img
+                                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.image}`}
+                                alt={product.name}
+                                className="h-10 w-10 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-lg bg-secondary-100 flex items-center justify-center">
+                                <span className="text-xs font-medium text-secondary-600">
+                                  {product.name.charAt(0)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-secondary-900">

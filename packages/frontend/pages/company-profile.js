@@ -236,8 +236,13 @@ export default function CompanyProfile() {
         }));
       });
 
-      // Refresh company data to show new uploads
-      await fetchCompanyProfile();
+      // Update company data with uploaded files instead of full refresh
+      if (response && response.data) {
+        setCompany(prev => ({
+          ...prev,
+          ...response.data
+        }));
+      }
 
     } catch (error) {
       console.error('Upload error:', error);

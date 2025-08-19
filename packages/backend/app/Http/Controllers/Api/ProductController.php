@@ -12,7 +12,18 @@ class ProductController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with(['company']);
+        
+       $company = Company::where('user_id', auth()->id())->first();
+        
+        if (!$company) {
+            // Either return empty list or 404 — choose your UX
+            return response()->json(['data' => []]); 
+            // or: return response()->json(['message' => 'No company found'], 404);
+        }
+    
+        $query = Product::with(['company'])->where('company_id', $company->id);
+        
+  
         
         // Filter by category
         if ($request->has('category')) {
@@ -58,8 +69,7 @@ class ProductController extends Controller
             'company_id' => 'required|exists:companies,id',
             'name' => 'required|string|max:255',
             'specs' => 'required|string',
-            'images' => 'nullable|array',
-            'images.*' => 'string',
+            'image' => 'nullable|string',
             'moq' => 'required|integer|min:1',
             'lead_time' => 'required|string',
             'hs_code' => 'nullable|string',
@@ -126,5 +136,31 @@ class ProductController extends Controller
         $product->delete();
         
         return response()->json(['message' => 'Product deleted successfully']);
+    }
+
+    public function uploadImages(Request $request, Product $product): JsonResponse
+    {
+        // Check if user owns the company that owns this product
+        if ($product->company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,jpg,png|max:5120' // 5MB max, single image
+        ]);
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $path = $image->storeAs('products', $filename, 'public');
+            
+            // Update product with single image path
+            $product->update(['image' => $path]);
+        }
+
+        return response()->json([
+            'message' => 'Image uploaded successfully',
+            'data' => $product->fresh()
+        ]);
     }
 }

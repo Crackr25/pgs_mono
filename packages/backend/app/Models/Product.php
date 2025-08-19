@@ -13,7 +13,7 @@ class Product extends Model
         'company_id',
         'name',
         'specs',
-        'images',
+        'image',
         'moq',
         'lead_time',
         'hs_code',
@@ -27,7 +27,6 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'images' => 'array',
         'variants' => 'array',
         'price' => 'decimal:2',
         'active' => 'boolean',
