@@ -36,8 +36,6 @@ Route::get('/companies', [CompanyController::class, 'index']);
 Route::get('/companies/{company}', [CompanyController::class, 'show']);
 Route::get('/companies/{company}/products', [CompanyController::class, 'products']);
 
-Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{product}', [ProductController::class, 'show']);
 
 // Quote creation (public - buyers don't need accounts)
 Route::post('/quotes', [QuoteController::class, 'store']);
@@ -49,6 +47,10 @@ Route::post('/messages', [MessageController::class, 'store']);
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{product}', [ProductController::class, 'show']);
+
     
     // Company management
     Route::post('/companies', [CompanyController::class, 'store']);
@@ -64,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    Route::post('/products/{product}/upload-images', [ProductController::class, 'uploadImages']);
     
     // Quote management
     Route::put('/quotes/{quote}', [QuoteController::class, 'update']);

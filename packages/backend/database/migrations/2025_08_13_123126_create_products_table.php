@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('company_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->text('specs');
-            $table->json('images')->nullable();
+            $table->string('image')->nullable();
             $table->integer('moq'); // Minimum Order Quantity
             $table->string('lead_time');
             $table->string('hs_code')->nullable();
