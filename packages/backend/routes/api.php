@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\ChatMessageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +46,7 @@ Route::get('/quotes/{quote}', [QuoteController::class, 'show']);
 
 // Message creation (public - buyers don't need accounts)
 Route::post('/messages', [MessageController::class, 'store']);
+
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -87,5 +90,15 @@ Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::put('/messages/{message}/read', [MessageController::class, 'markAsRead']);
     Route::delete('/messages/{message}', [MessageController::class, 'destroy']);
     Route::get('/messages/unread-count', [MessageController::class, 'getUnreadCount']);
+    
+    // Real-time chat routes
+    Route::get('/conversations', [ConversationController::class, 'index']);
+    Route::get('/conversations/{id}', [ConversationController::class, 'show']);
+    Route::post('/conversations', [ConversationController::class, 'store']);
+    Route::post('/messages/chat', [ChatMessageController::class, 'store']);
+    Route::post('/messages/mark-read', [ChatMessageController::class, 'markAsRead']);
+    
+Route::get('/chat/unread-count', [ChatMessageController::class, 'getUnreadCount']);
+
     
 });

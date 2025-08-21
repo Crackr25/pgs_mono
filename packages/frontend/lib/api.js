@@ -373,6 +373,60 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+
+  async getConversations() {
+    return this.request('/conversations');
+  }
+
+  // Get messages for a specific conversation
+  async getConversation(conversationId) {
+    return this.request(`/conversations/${conversationId}`);
+  }
+
+  // Create a new conversation
+  async createConversation(buyerId, orderId = null, initialMessage) {
+    return this.request('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({
+        buyer_id: buyerId,
+        order_id: orderId,
+        initial_message: initialMessage,
+      }),
+    });
+  }
+
+  // Send a message in a conversation
+  async sendMessage(conversationId, message, messageType = 'text') {
+    return this.request('/messages/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        message,
+        message_type: messageType,
+      }),
+    });
+  }
+
+  // Mark messages as read
+  async markMessagesAsRead(conversationId, messageIds = null) {
+    const body = { conversation_id: conversationId };
+    if (messageIds) {
+      body.message_ids = messageIds;
+    }
+
+    return this.request('/messages/mark-read', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  // Get unread message count
+  async getUnreadCount() {
+    return this.request('/chat/unread-count');
+  }
+  
+
 }
 
 const apiService = new ApiService();
