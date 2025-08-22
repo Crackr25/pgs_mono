@@ -314,6 +314,28 @@ class ApiService {
     return this.uploadFormData(`/products/${productId}/upload-images`, formData, onProgress);
   }
 
+  async uploadProductImages(productId, files, onProgress) {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append('images[]', file);
+    });
+    
+    return this.uploadFormData(`/products/${productId}/upload-images`, formData, onProgress);
+  }
+
+  async updateImageOrder(productId, imageOrders) {
+    return this.request(`/products/${productId}/images/order`, {
+      method: 'PUT',
+      body: JSON.stringify({ image_orders: imageOrders }),
+    });
+  }
+
+  async deleteProductImage(productId, imageId) {
+    return this.request(`/products/${productId}/images/${imageId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Quote methods
   async getQuotes(params = {}) {
     const queryString = new URLSearchParams(params).toString();

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, LogIn, UserPlus, ShoppingCart, Store } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -17,7 +17,7 @@ export default function Login() {
     email: '',
     password: '',
     password_confirmation: '',
-    user_type: 'seller'
+    usertype: 'buyer'
   });
   const [isLoading, setIsLoading] = useState(false);
   
@@ -71,7 +71,7 @@ export default function Login() {
       email: '',
       password: '',
       password_confirmation: '',
-      user_type: 'seller'
+      usertype: 'buyer'
     });
   };
 
@@ -112,29 +112,6 @@ export default function Login() {
               <h2 className="text-xl font-semibold text-white/90 mb-4">
                 {mode === 'login' ? 'Welcome Back' : 'Join Our Community'}
               </h2>
-              <p className="text-white/80 text-sm">
-                {mode === 'login' ? (
-                  <>
-                    New to PGS?{' '}
-                    <button
-                      onClick={switchMode}
-                      className="font-semibold text-yellow-300 hover:text-yellow-200 underline transition-colors"
-                    >
-                      Create Account
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      onClick={switchMode}
-                      className="font-semibold text-yellow-300 hover:text-yellow-200 underline transition-colors"
-                    >
-                      Sign In
-                    </button>
-                  </>
-                )}
-              </p>
             </div>
 
             {/* Login Form Card */}
@@ -147,21 +124,91 @@ export default function Login() {
                 )}
 
                 {mode === 'register' && (
-                  <div className="space-y-1">
-                    <label htmlFor="name" className="block text-sm font-semibold text-gray-700">
-                      Full Name
-                    </label>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
+                  <>
+                    {/* User Type Selection */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">
+                        I am a...
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, usertype: 'buyer' }))}
+                          className={`p-6 rounded-xl border-2 transition-all duration-200 ${
+                            formData.usertype === 'buyer'
+                              ? 'border-[#0046ad] bg-[#0046ad]/5 shadow-lg'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex flex-col items-center space-y-3">
+                            <div className={`p-3 rounded-full ${
+                              formData.usertype === 'buyer'
+                                ? 'bg-[#0046ad] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              <ShoppingCart className="h-6 w-6" />
+                            </div>
+                            <div className="text-center">
+                              <h4 className={`font-semibold ${
+                                formData.usertype === 'buyer' ? 'text-[#0046ad]' : 'text-gray-700'
+                              }`}>
+                                Buyer
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                I want to purchase products
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, usertype: 'seller' }))}
+                          className={`p-6 rounded-xl border-2 transition-all duration-200 ${
+                            formData.usertype === 'seller'
+                              ? 'border-[#0046ad] bg-[#0046ad]/5 shadow-lg'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex flex-col items-center space-y-3">
+                            <div className={`p-3 rounded-full ${
+                              formData.usertype === 'seller'
+                                ? 'bg-[#0046ad] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              <Store className="h-6 w-6" />
+                            </div>
+                            <div className="text-center">
+                              <h4 className={`font-semibold ${
+                                formData.usertype === 'seller' ? 'text-[#0046ad]' : 'text-gray-700'
+                              }`}>
+                                Seller
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                I want to sell products
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="name" className="block text-sm font-semibold text-gray-700">
+                        Full Name
+                      </label>
+                      <input
+                        id="name"
+                        name="name"
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-1">
@@ -243,21 +290,6 @@ export default function Login() {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label htmlFor="user_type" className="block text-sm font-semibold text-gray-700">
-                        Account Type
-                      </label>
-                      <select
-                        id="user_type"
-                        name="user_type"
-                        value={formData.user_type}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                      >
-                        <option value="seller">Seller</option>
-                        <option value="buyer">Buyer</option>
-                      </select>
-                    </div>
                   </>
                 )}
 
@@ -307,6 +339,33 @@ export default function Login() {
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* Sign up / Login switch section - moved below form */}
+            <div className="text-center mt-6">
+              <p className="text-white/80 text-sm">
+                {mode === 'login' ? (
+                  <>
+                    New to PGS?{' '}
+                    <button
+                      onClick={switchMode}
+                      className="font-semibold text-yellow-300 hover:text-yellow-200 underline transition-colors"
+                    >
+                      Create Account
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <button
+                      onClick={switchMode}
+                      className="font-semibold text-yellow-300 hover:text-yellow-200 underline transition-colors"
+                    >
+                      Sign In
+                    </button>
+                  </>
+                )}
+              </p>
             </div>
           </div>
         </div>

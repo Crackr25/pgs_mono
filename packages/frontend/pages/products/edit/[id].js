@@ -41,8 +41,34 @@ export default function EditProduct() {
     setError(null);
     
     try {
-      const response = await apiService.updateProduct(id, formData);
+      // Separate images from other form data
+      const { images, ...productData } = formData;
+      
+      console.log('Form data received:', formData);
+      console.log('Images:', images);
+      console.log('Product data (without images):', productData);
+      
+      // Update product data first
+      const response = await apiService.updateProduct(id, productData);
       console.log('Product updated:', response);
+      
+      // Handle new images if any were added
+      if (images && images.length > 0) {
+        const newImageFiles = images
+          .filter(img => img.file instanceof File)
+          .map(img => img.file);
+        
+        if (newImageFiles.length > 0) {
+          console.log('Uploading new images for product ID:', id);
+          try {
+            await apiService.uploadProductImages(id, newImageFiles);
+            console.log('New images uploaded successfully');
+          } catch (imageError) {
+            console.error('Error uploading new images:', imageError);
+            setError('Product updated but some new images failed to upload. You can add them later.');
+          }
+        }
+      }
       
       // Redirect to products list
       router.push('/products');

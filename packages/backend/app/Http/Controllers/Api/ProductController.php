@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ class ProductController extends Controller
             // or: return response()->json(['message' => 'No company found'], 404);
         }
     
-        $query = Product::with(['company'])->where('company_id', $company->id);
+        $query = Product::with(['company', 'images', 'mainImage'])->where('company_id', $company->id);
         
   
         
@@ -65,7 +66,16 @@ class ProductController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        // First, get all input data
+        $input = $request->all();
+        
+        // Convert variants from JSON string to array if it exists and is a string
+        if (isset($input['variants']) && is_string($input['variants'])) {
+            $input['variants'] = json_decode($input['variants'], true);
+        }
+        
+        // Now validate the processed data
+        $validated = validator($input, [
             'company_id' => 'required|exists:companies,id',
             'name' => 'required|string|max:255',
             'specs' => 'required|string',
@@ -73,28 +83,43 @@ class ProductController extends Controller
             'moq' => 'required|integer|min:1',
             'lead_time' => 'required|string',
             'hs_code' => 'nullable|string',
-            'variants' => 'nullable|array',
+            'variants' => 'nullable|array', // This now expects an array
             'price' => 'required|numeric|min:0',
             'category' => 'required|string',
             'description' => 'nullable|string',
             'stock_quantity' => 'nullable|integer|min:0',
             'unit' => 'nullable|string'
-        ]);
+        ])->validate();
 
         // Check if user owns the company
         $company = Company::findOrFail($validated['company_id']);
         if ($company->user_id !== auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        
+
         $product = Product::create($validated);
         
-        return response()->json($product->load('company'), 201);
+        // Handle image uploads if provided
+        if (isset($validated['images']) && is_array($validated['images'])) {
+            foreach ($validated['images'] as $index => $imageData) {
+                if (isset($imageData['file']) || isset($imageData['image_path'])) {
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $imageData['image_path'] ?? $imageData['file'],
+                        'is_main' => $imageData['isMain'] ?? ($index === 0),
+                        'sort_order' => $index,
+                        'alt_text' => $product->name . ' - Image ' . ($index + 1)
+                    ]);
+                }
+            }
+        }
+        
+        return response()->json($product->load(['company', 'images', 'mainImage', 'additionalImages']), 201);
     }
 
     public function show(Product $product): JsonResponse
     {
-        return response()->json($product->load(['company', 'quotes']));
+        return response()->json($product->load(['company', 'quotes', 'images', 'mainImage', 'additionalImages']));
     }
 
     public function update(Request $request, Product $product): JsonResponse
@@ -108,7 +133,6 @@ class ProductController extends Controller
             'name' => 'sometimes|string|max:255',
             'specs' => 'sometimes|string',
             'images' => 'nullable|array',
-            'images.*' => 'string',
             'moq' => 'sometimes|integer|min:1',
             'lead_time' => 'sometimes|string',
             'hs_code' => 'nullable|string',
@@ -123,7 +147,42 @@ class ProductController extends Controller
 
         $product->update($validated);
         
-        return response()->json($product->load('company'));
+        // Handle image updates if provided
+        if (isset($validated['images']) && is_array($validated['images'])) {
+            // Delete existing images that are not in the new set
+            $existingImageIds = $product->images->pluck('id')->toArray();
+            $newImageIds = collect($validated['images'])->pluck('id')->filter()->toArray();
+            $imagesToDelete = array_diff($existingImageIds, $newImageIds);
+            
+            if (!empty($imagesToDelete)) {
+                ProductImage::whereIn('id', $imagesToDelete)->delete();
+            }
+            
+            // Update or create images
+            foreach ($validated['images'] as $index => $imageData) {
+                if (isset($imageData['id'])) {
+                    // Update existing image
+                    ProductImage::where('id', $imageData['id'])
+                        ->where('product_id', $product->id)
+                        ->update([
+                            'is_main' => $imageData['isMain'] ?? false,
+                            'sort_order' => $index,
+                            'alt_text' => $product->name . ' - Image ' . ($index + 1)
+                        ]);
+                } elseif (isset($imageData['file']) || isset($imageData['image_path'])) {
+                    // Create new image
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $imageData['image_path'] ?? $imageData['file'],
+                        'is_main' => $imageData['isMain'] ?? false,
+                        'sort_order' => $index,
+                        'alt_text' => $product->name . ' - Image ' . ($index + 1)
+                    ]);
+                }
+            }
+        }
+        
+        return response()->json($product->load(['company', 'images', 'mainImage', 'additionalImages']));
     }
 
     public function destroy(Product $product): JsonResponse
@@ -145,22 +204,136 @@ class ProductController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,jpg,png|max:5120' // 5MB max, single image
+        // Debug logging
+        \Log::info('Upload request received', [
+            'has_files' => $request->hasFile('images'),
+            'all_files' => $request->allFiles(),
+            'all_input' => $request->all()
         ]);
 
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $path = $image->storeAs('products', $filename, 'public');
-            
-            // Update product with single image path
-            $product->update(['image' => $path]);
+        try {
+            $request->validate([
+                'images' => 'required|array|max:10', // Max 10 images
+                'images.*' => 'image|mimes:jpeg,jpg,png|max:5120', // 5MB max per image
+                'main_image_index' => 'nullable|integer|min:0'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            throw $e;
+        }
+
+        $uploadedImages = [];
+        $mainImageIndex = $request->input('main_image_index', 0);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $image) {
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('products', $filename, 'public');
+                
+                \Log::info('Image stored', [
+                    'filename' => $filename,
+                    'path' => $path,
+                    'full_path' => storage_path('app/public/' . $path)
+                ]);
+                
+                $productImage = ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_path' => $path,
+                    'is_main' => $index === $mainImageIndex,
+                    'sort_order' => $index,
+                    'alt_text' => $product->name . ' - Image ' . ($index + 1)
+                ]);
+
+                $uploadedImages[] = $productImage;
+            }
+        } else {
+            \Log::warning('No images found in request');
         }
 
         return response()->json([
-            'message' => 'Image uploaded successfully',
-            'data' => $product->fresh()
+            'message' => 'Images uploaded successfully',
+            'data' => [
+                'product' => $product->fresh()->load(['images', 'mainImage', 'additionalImages']),
+                'uploaded_images' => $uploadedImages
+            ]
+        ]);
+    }
+
+    public function updateImageOrder(Request $request, Product $product): JsonResponse
+    {
+        // Check if user owns the company that owns this product
+        if ($product->company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'image_orders' => 'required|array',
+            'image_orders.*.id' => 'required|exists:product_images,id',
+            'image_orders.*.sort_order' => 'required|integer|min:0',
+            'main_image_id' => 'nullable|exists:product_images,id'
+        ]);
+
+        // Update sort orders
+        foreach ($request->image_orders as $imageOrder) {
+            ProductImage::where('id', $imageOrder['id'])
+                ->where('product_id', $product->id)
+                ->update(['sort_order' => $imageOrder['sort_order']]);
+        }
+
+        // Update main image
+        if ($request->has('main_image_id')) {
+            // Reset all images to not main
+            ProductImage::where('product_id', $product->id)->update(['is_main' => false]);
+            
+            // Set new main image
+            ProductImage::where('id', $request->main_image_id)
+                ->where('product_id', $product->id)
+                ->update(['is_main' => true]);
+        }
+
+        return response()->json([
+            'message' => 'Image order updated successfully',
+            'data' => $product->fresh()->load(['images', 'mainImage', 'additionalImages'])
+        ]);
+    }
+
+    public function deleteImage(Request $request, Product $product, ProductImage $image): JsonResponse
+    {
+        // Check if user owns the company that owns this product
+        if ($product->company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Check if image belongs to this product
+        if ($image->product_id !== $product->id) {
+            return response()->json(['message' => 'Image not found'], 404);
+        }
+
+        // Delete file from storage
+        if (\Storage::disk('public')->exists($image->image_path)) {
+            \Storage::disk('public')->delete($image->image_path);
+        }
+
+        // If this was the main image, set another image as main
+        $wasMain = $image->is_main;
+        $image->delete();
+
+        if ($wasMain) {
+            $nextImage = ProductImage::where('product_id', $product->id)
+                ->orderBy('sort_order')
+                ->first();
+            
+            if ($nextImage) {
+                $nextImage->update(['is_main' => true]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Image deleted successfully',
+            'data' => $product->fresh()->load(['images', 'mainImage', 'additionalImages'])
         ]);
     }
 }

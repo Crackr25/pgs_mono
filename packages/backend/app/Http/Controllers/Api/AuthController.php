@@ -17,14 +17,14 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'user_type' => 'sometimes|in:buyer,seller,admin'
+            'usertype' => 'sometimes|in:buyer,seller,admin'
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'user_type' => $validated['user_type'] ?? 'buyer'
+            'usertype' => $validated['usertype'] ?? 'buyer'
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;

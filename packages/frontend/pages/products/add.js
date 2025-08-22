@@ -41,35 +41,38 @@ export default function AddProduct() {
     setError(null);
     
     try {
-      // Separate image from other form data
-      const { image, ...productData } = formData;
+      // Separate images from other form data
+      const { images, ...productData } = formData;
       
       console.log('Form data received:', formData);
-      console.log('Image file:', image);
-      console.log('Product data (without image):', productData);
+      console.log('Images:', images);
+      console.log('Product data (without images):', productData);
       
       const productPayload = {
         ...productData,
         company_id: userCompany.id
       };
 
-      // Create product first (without image)
+      // Create product first (without images)
       const response = await apiService.createProduct(productPayload);
       console.log('Product created:', response);
       
-      // Upload image if one was selected
-      if (image && image instanceof File) {
-        console.log('Uploading image for product ID:', response.id);
-        try {
-          await apiService.uploadProductImage(response.id, image);
-          console.log('Image uploaded successfully');
-        } catch (imageError) {
-          console.error('Error uploading image:', imageError);
-          // Don't fail the whole process if image upload fails
-          setError('Product created but image failed to upload. You can add it later.');
+      // Upload images if any were selected
+      if (images && images.length > 0) {
+        const imageFiles = images.filter(img => img.file instanceof File).map(img => img.file);
+        if (imageFiles.length > 0) {
+          console.log('Uploading images for product ID:', response.id);
+          try {
+            await apiService.uploadProductImages(response.id, imageFiles);
+            console.log('Images uploaded successfully');
+          } catch (imageError) {
+            console.error('Error uploading images:', imageError);
+            // Don't fail the whole process if image upload fails
+            setError('Product created but some images failed to upload. You can add them later.');
+          }
         }
       } else {
-        console.log('No image to upload or image is not a File object');
+        console.log('No images to upload');
       }
       
       // Redirect to products list

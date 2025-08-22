@@ -2,12 +2,19 @@ import { Edit, Trash2, Eye, Package } from 'lucide-react';
 import Link from 'next/link';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
+import ImageSwiper from '../common/ImageSwiper';
 
 export default function ProductCard({ product, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
       <div className="aspect-w-16 aspect-h-9 bg-secondary-100">
-        {product.image ? (
+        {product.images && product.images.length > 0 ? (
+          <ImageSwiper 
+            images={product.images} 
+            alt={product.name}
+            className="w-full h-48"
+          />
+        ) : product.image ? (
           <img
             src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.image}`}
             alt={product.name}

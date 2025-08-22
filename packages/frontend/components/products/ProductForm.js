@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import Form, { FormField } from '../common/Form';
 import FileUpload from '../common/FileUpload';
 import Button from '../common/Button';
+import MultiImageUpload from './MultiImageUpload';
 
 export default function ProductForm({ product = null, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -17,7 +18,7 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
     variants: product?.variants || [],
     stock_quantity: product?.stock_quantity || '',
     unit: product?.unit || '',
-    image: product?.image || null
+    images: product?.images || []
   });
   
   const [newVariant, setNewVariant] = useState('');
@@ -54,16 +55,11 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
     }));
   };
 
-  const handleImageUpload = (files) => {
-    // Store single file for later upload when form is submitted
-    console.log('handleImageUpload called with files:', files);
-    if (files && files.length > 0) {
-      console.log('Setting image file:', files[0]);
-      setFormData(prev => ({
-        ...prev,
-        image: files[0] // Only take the first file
-      }));
-    }
+  const handleImagesChange = (images) => {
+    setFormData(prev => ({
+      ...prev,
+      images: images
+    }));
   };
 
   const categoryOptions = [
@@ -193,18 +189,14 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
           <h3 className="text-lg font-medium text-secondary-900 mb-4">
             Product Images
           </h3>
-          <FileUpload
-            label="Upload Product Photo"
-            accept=".jpg,.jpeg,.png"
-            multiple={false}
-            maxSize={5}
-            onFilesChange={handleImageUpload}
-            uploadProgress={uploadProgress}
-            uploadErrors={uploadErrors}
+          <MultiImageUpload
+            images={formData.images}
+            onImagesChange={handleImagesChange}
+            maxImages={10}
           />
           <p className="mt-2 text-sm text-secondary-600">
             Upload high-quality images showing your product from different angles. 
-            First image will be used as the main product image.
+            Set one image as main - it will be displayed first in product listings.
           </p>
         </div>
 

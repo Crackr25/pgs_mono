@@ -49,4 +49,19 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    public function mainImage()
+    {
+        return $this->hasOne(ProductImage::class)->where('is_main', true);
+    }
+
+    public function additionalImages()
+    {
+        return $this->hasMany(ProductImage::class)->where('is_main', false)->orderBy('sort_order');
+    }
 }

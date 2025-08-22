@@ -52,7 +52,7 @@ Route::post('/messages', [MessageController::class, 'store']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{product}', [ProductController::class, 'show']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
 
     
     // Company management
@@ -70,6 +70,8 @@ Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::post('/products/{product}/upload-images', [ProductController::class, 'uploadImages']);
+    Route::put('/products/{product}/image-order', [ProductController::class, 'updateImageOrder']);
+    Route::delete('/products/{product}/images/{image}', [ProductController::class, 'deleteImage']);
     
     // Quote management
     Route::put('/quotes/{quote}', [QuoteController::class, 'update']);
