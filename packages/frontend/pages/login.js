@@ -82,54 +82,75 @@ export default function Login() {
         <meta name="description" content="Access your PSG account" />
       </Head>
 
-      <div className="min-h-screen bg-secondary-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center">
-            <h1 className="text-3xl font-bold text-primary-600">PSG</h1>
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Clean Background with Color Palette */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0046ad] via-[#0046ad] to-[#003d99]">
+          {/* Subtle Pattern Overlay */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), 
+                               radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)`
+            }}></div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-secondary-900">
-            {mode === 'login' ? 'Sign in to your account' : 'Create your account'}
-          </h2>
-          <p className="mt-2 text-center text-sm text-secondary-600">
-            {mode === 'login' ? (
-              <>
-                Don't have an account?{' '}
-                <button
-                  onClick={switchMode}
-                  className="font-medium text-primary-600 hover:text-primary-500"
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button
-                  onClick={switchMode}
-                  className="font-medium text-primary-600 hover:text-primary-500"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
         </div>
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="text-sm text-red-700">{error}</div>
-                </div>
-              )}
+        {/* Content Container */}
+        <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md w-full space-y-8">
+            {/* Logo and Header */}
+            <div className="text-center">
+              <div className="mx-auto h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-2xl mb-6 p-2">
+                <img 
+                  src="/pgs2.png" 
+                  alt="Pinoy Global Supply Logo" 
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Pinoy Global Supply
+              </h1>
+              <h2 className="text-xl font-semibold text-white/90 mb-4">
+                {mode === 'login' ? 'Welcome Back' : 'Join Our Community'}
+              </h2>
+              <p className="text-white/80 text-sm">
+                {mode === 'login' ? (
+                  <>
+                    New to PGS?{' '}
+                    <button
+                      onClick={switchMode}
+                      className="font-semibold text-yellow-300 hover:text-yellow-200 underline transition-colors"
+                    >
+                      Create Account
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <button
+                      onClick={switchMode}
+                      className="font-semibold text-yellow-300 hover:text-yellow-200 underline transition-colors"
+                    >
+                      Sign In
+                    </button>
+                  </>
+                )}
+              </p>
+            </div>
 
-              {mode === 'register' && (
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-secondary-700">
-                    Full Name
-                  </label>
-                  <div className="mt-1">
+            {/* Login Form Card */}
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                    <div className="text-sm text-red-700 font-medium">{error}</div>
+                  </div>
+                )}
+
+                {mode === 'register' && (
+                  <div className="space-y-1">
+                    <label htmlFor="name" className="block text-sm font-semibold text-gray-700">
+                      Full Name
+                    </label>
                     <input
                       id="name"
                       name="name"
@@ -137,18 +158,16 @@ export default function Login() {
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="appearance-none block w-full px-3 py-2 border border-secondary-300 rounded-md placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                       placeholder="Enter your full name"
                     />
                   </div>
-                </div>
-              )}
+                )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-secondary-700">
-                  Email address
-                </label>
-                <div className="mt-1">
+                <div className="space-y-1">
+                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+                    Email Address
+                  </label>
                   <input
                     id="email"
                     name="email"
@@ -157,142 +176,139 @@ export default function Login() {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="appearance-none block w-full px-3 py-2 border border-secondary-300 rounded-md placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    placeholder="Enter your email address"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-secondary-700">
-                  Password
-                </label>
-                <div className="mt-1 relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="appearance-none block w-full px-3 py-2 pr-10 border border-secondary-300 rounded-md placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-secondary-400" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-secondary-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {mode === 'register' && (
-                <>
-                  <div>
-                    <label htmlFor="password_confirmation" className="block text-sm font-medium text-secondary-700">
-                      Confirm Password
-                    </label>
-                    <div className="mt-1 relative">
-                      <input
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        autoComplete="new-password"
-                        required
-                        value={formData.password_confirmation}
-                        onChange={handleInputChange}
-                        className="appearance-none block w-full px-3 py-2 pr-10 border border-secondary-300 rounded-md placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        placeholder="Confirm your password"
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5 text-secondary-400" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-secondary-400" />
-                        )}
-                      </button>
-                    </div>
+                <div className="space-y-1">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      required
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[#0046ad] transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
+                </div>
 
-                  <div>
-                    <label htmlFor="user_type" className="block text-sm font-medium text-secondary-700">
-                      Account Type
-                    </label>
-                    <div className="mt-1">
+                {mode === 'register' && (
+                  <>
+                    <div className="space-y-1">
+                      <label htmlFor="password_confirmation" className="block text-sm font-semibold text-gray-700">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="password_confirmation"
+                          name="password_confirmation"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          required
+                          value={formData.password_confirmation}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                          placeholder="Confirm your password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[#0046ad] transition-colors"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="user_type" className="block text-sm font-semibold text-gray-700">
+                        Account Type
+                      </label>
                       <select
                         id="user_type"
                         name="user_type"
                         value={formData.user_type}
                         onChange={handleInputChange}
-                        className="block w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                       >
                         <option value="seller">Seller</option>
                         <option value="buyer">Buyer</option>
                       </select>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
 
-              {mode === 'login' && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      name="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
-                    />
-                    <label htmlFor="remember-me" className="ml-2 block text-sm text-secondary-900">
-                      Remember me
-                    </label>
-                  </div>
+                {mode === 'login' && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <input
+                        id="remember-me"
+                        name="remember-me"
+                        type="checkbox"
+                        className="h-4 w-4 text-[#0046ad] focus:ring-[#0046ad] border-gray-300 rounded"
+                      />
+                      <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                        Remember me
+                      </label>
+                    </div>
 
-                  <div className="text-sm">
-                    <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                      Forgot your password?
-                    </a>
+                    <div className="text-sm">
+                      <a href="#" className="font-medium text-[#0046ad] hover:text-[#003d99] transition-colors">
+                        Forgot password?
+                      </a>
+                    </div>
                   </div>
+                )}
+
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#0046ad] hover:bg-[#003d99] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#0046ad] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        {mode === 'login' ? 'Signing in...' : 'Creating account...'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        {mode === 'login' ? (
+                          <LogIn className="h-5 w-5 mr-2" />
+                        ) : (
+                          <UserPlus className="h-5 w-5 mr-2" />
+                        )}
+                        {mode === 'login' ? 'Sign In' : 'Create Account'}
+                      </div>
+                    )}
+                  </button>
                 </div>
-              )}
-
-              <div>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex justify-center"
-                  size="lg"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {mode === 'login' ? 'Signing in...' : 'Creating account...'}
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      {mode === 'login' ? (
-                        <LogIn className="h-4 w-4 mr-2" />
-                      ) : (
-                        <UserPlus className="h-4 w-4 mr-2" />
-                      )}
-                      {mode === 'login' ? 'Sign in' : 'Create account'}
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Card>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </>

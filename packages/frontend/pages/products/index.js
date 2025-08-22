@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { Plus, Search, Filter, Upload, Grid, List } from 'lucide-react';
+import { Plus, Search, Filter, Upload, Grid, List, Trash2, AlertTriangle } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -14,6 +14,9 @@ export default function Products() {
   const [viewMode, setViewMode] = useState('grid');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showRFQMatching, setShowRFQMatching] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [productList, setProductList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,16 +40,32 @@ export default function Products() {
     }
   };
 
-  const handleDeleteProduct = async (productId) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      try {
-        await apiService.deleteProduct(productId);
-        setProductList(prev => prev.filter(p => p.id !== productId));
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Failed to delete product. Please try again.');
-      }
+  const handleDeleteProduct = (productId) => {
+    const product = productList.find(p => p.id === productId);
+    setProductToDelete(product);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await apiService.deleteProduct(productToDelete.id);
+      setProductList(prev => prev.filter(p => p.id !== productToDelete.id));
+      setShowDeleteModal(false);
+      setProductToDelete(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      setError('Failed to delete product. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setProductToDelete(null);
   };
 
   const filteredProducts = productList.filter(product =>
@@ -271,7 +290,7 @@ export default function Products() {
                               {product.name}
                             </div>
                             <div className="text-sm text-secondary-500">
-                              {product.hsCode}
+                              {product.hs_code}
                             </div>
                           </div>
                         </div>
@@ -380,6 +399,83 @@ export default function Products() {
               </div>
             </div>
           ))}
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        title="Delete Product"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-red-800">
+                Are you sure you want to delete this product?
+              </h3>
+              <p className="text-sm text-red-700 mt-1">
+                This action cannot be undone. The product will be permanently removed from your catalog.
+              </p>
+            </div>
+          </div>
+
+          {productToDelete && (
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                {productToDelete.image ? (
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${productToDelete.image}`}
+                    alt={productToDelete.name}
+                    className="h-12 w-12 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {productToDelete.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h4 className="font-medium text-gray-900">{productToDelete.name}</h4>
+                  <p className="text-sm text-gray-600">{productToDelete.category}</p>
+                  <p className="text-sm text-gray-500">Price: {productToDelete.price}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={cancelDelete}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={confirmDeleteProduct}
+              disabled={isDeleting}
+              className="flex items-center"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Product
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </Modal>
     </>

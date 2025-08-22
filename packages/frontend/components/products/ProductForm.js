@@ -10,7 +10,7 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
     specs: product?.specs || '',
     moq: product?.moq || '',
     lead_time: product?.lead_time || product?.leadTime || '',
-    hs_code: product?.hs_code || product?.hsCode || '',
+    hs_code: product?.hs_code || product?.hs_code || '',
     price: product?.price || '',
     category: product?.category || '',
     description: product?.description || '',
@@ -121,8 +121,8 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
             
             <FormField
               label="HS Code"
-              name="hsCode"
-              value={formData.hsCode}
+              name="hs_code"
+              value={formData.hs_code}
               onChange={handleInputChange}
               required
               placeholder="9405.40.90"
