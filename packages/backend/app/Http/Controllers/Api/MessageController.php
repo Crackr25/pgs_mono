@@ -7,6 +7,9 @@ use App\Models\Message;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use App\Models\Message;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class MessageController extends Controller
 {
@@ -63,8 +66,31 @@ class MessageController extends Controller
             'message' => 'required|string',
             'message_type' => 'sometimes|in:inquiry,quote_response,order_update,general',
             'related_quote_id' => 'nullable|exists:quotes,id',
-            'related_order_id' => 'nullable|exists:orders,id'
+            'related_order_id' => 'nullable|exists:orders,id',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|mimes:jpeg,png,jpg,gif,pdf,doc,docx|max:10240' // 10MB max
         ]);
+
+        // Handle file attachments
+        $attachmentData = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('message-attachments', $filename, 'public');
+                
+                $attachmentData[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'url' => url('storage/' . $path),
+                    'size' => $file->getSize(),
+                    'type' => $file->getMimeType(),
+                    'extension' => $file->getClientOriginalExtension()
+                ];
+            }
+        }
+
+        // Add attachments to validated data
+        $validated['attachments'] = !empty($attachmentData) ? $attachmentData : null;
 
         $message = Message::create($validated);
         

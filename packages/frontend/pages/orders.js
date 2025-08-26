@@ -39,7 +39,9 @@ export default function Orders() {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getOrders();
+      const companies = await apiService.getCompanies();
+      const userCompany = companies.data?.find(comp => comp.user_id === user.id);
+      const response = await apiService.getOrders(userCompany.id);
       setOrders(response.data || response);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -96,7 +98,7 @@ export default function Orders() {
   const columns = [
     {
       header: 'Order',
-      key: 'orderNumber',
+      key: 'order_number',
       render: (value, row) => (
         <div>
           <div className="font-medium text-secondary-900">{value}</div>
@@ -113,7 +115,7 @@ export default function Orders() {
     },
     {
       header: 'Amount',
-      key: 'totalAmount',
+      key: 'total_amount',
       render: (value) => (
         <span className="font-medium text-secondary-900">{value}</span>
       )
@@ -144,16 +146,16 @@ export default function Orders() {
     },
     {
       header: 'Payment',
-      key: 'paymentStatus',
+      key: 'payment_status',
       render: (value) => (
         <Badge variant={getPaymentStatusColor(value)}>
-          {value.charAt(0).toUpperCase() + value.slice(1)}
+          {value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown'}
         </Badge>
       )
     },
     {
       header: 'Delivery',
-      key: 'estimatedDelivery',
+      key: 'estimated_delivery',
       render: (value) => (
         <span className="text-secondary-900">{formatDate(value)}</span>
       )
@@ -366,7 +368,7 @@ export default function Orders() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-secondary-500">Product:</span>
-                  <span className="ml-2 font-medium">{selectedOrder.productName}</span>
+                  <span className="ml-2 font-medium">{selectedOrder.product_name}</span>
                 </div>
                 <div>
                   <span className="text-secondary-500">Quantity:</span>
@@ -374,11 +376,11 @@ export default function Orders() {
                 </div>
                 <div>
                   <span className="text-secondary-500">Total Amount:</span>
-                  <span className="ml-2 font-medium">{selectedOrder.totalAmount}</span>
+                  <span className="ml-2 font-medium">{selectedOrder.total_amount}</span>
                 </div>
                 <div>
                   <span className="text-secondary-500">Estimated Delivery:</span>
-                  <span className="ml-2 font-medium">{formatDate(selectedOrder.estimatedDelivery)}</span>
+                  <span className="ml-2 font-medium">{formatDate(selectedOrder.estimated_delivery)}</span>
                 </div>
               </div>
             </div>
@@ -423,7 +425,7 @@ export default function Orders() {
                   <p className="text-sm text-secondary-600">Amount: {selectedOrder.totalAmount}</p>
                 </div>
                 <Badge variant={getPaymentStatusColor(selectedOrder.paymentStatus)}>
-                  {selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}
+                  {selectedOrder.payment_status.charAt(0).toUpperCase() + selectedOrder.payment_status.slice(1)}
                 </Badge>
               </div>
             </div>
@@ -442,7 +444,7 @@ export default function Orders() {
                 </div>
                 <div>
                   <span className="text-secondary-500">Estimated Delivery:</span>
-                  <span className="ml-2 font-medium">{formatDate(selectedOrder.estimatedDelivery)}</span>
+                  <span className="ml-2 font-medium">{formatDate(selectedOrder.estimated_delivery)}</span>
                 </div>
               </div>
             </div>

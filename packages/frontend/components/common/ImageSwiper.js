@@ -77,27 +77,7 @@ export default function ImageSwiper({ images = [], alt = '', className = '' }) {
         </div>
 
         {/* Thumbnail Navigation - only show if multiple images */}
-        {images.length > 1 && (
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-            {images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => goToImage(index)}
-                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                  index === currentIndex 
-                    ? 'border-blue-500 ring-2 ring-blue-200' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <img
-                  src={getImageUrl(image)}
-                  alt={`Thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
-        )}
+     
       </div>
 
       {/* Fullscreen Modal */}

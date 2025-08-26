@@ -57,16 +57,17 @@ export default function Chat() {
       
       // Get current user info
       const userData = user;
+      setCurrentUser(userData);
 
       // Connect WebSocket
       websocketService.connect(token);
-
-      
       
       // Subscribe to user channel for notifications
-      websocketService.subscribeToUserChannel(userData.id, {
-        onMessageNotification: handleNewMessageNotification
-      });
+      if (userData?.id) {
+        websocketService.subscribeToUserChannel(userData.id, {
+          onMessageNotification: handleNewMessageNotification
+        });
+      }
 
       // Fetch conversations
       await fetchConversations();
@@ -180,11 +181,11 @@ export default function Chat() {
     fetchMessages(conversation.id);
   };
 
-  const handleSendMessage = async (message) => {
+  const handleSendMessage = async (message, attachment = null) => {
     if (!selectedConversation) return;
 
     try {
-      const response = await chatAPI.sendMessage(selectedConversation.id, message);
+      const response = await chatAPI.sendMessage(selectedConversation.id, message, attachment);
       if (response.success) {
         // Message will be added via WebSocket event
         console.log('Message sent successfully');

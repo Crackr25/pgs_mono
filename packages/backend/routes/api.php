@@ -97,10 +97,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations', [ConversationController::class, 'index']);
     Route::get('/conversations/{id}', [ConversationController::class, 'show']);
     Route::post('/conversations', [ConversationController::class, 'store']);
-    Route::post('/messages/chat', [ChatMessageController::class, 'store']);
-    Route::post('/messages/mark-read', [ChatMessageController::class, 'markAsRead']);
-    
-Route::get('/chat/unread-count', [ChatMessageController::class, 'getUnreadCount']);
+    Route::post('/chat/send', [ChatMessageController::class, 'store']);
+    Route::post('/chat/mark-read', [ChatMessageController::class, 'markAsRead']);
+    Route::get('/chat/unread-count', [ChatMessageController::class, 'getUnreadCount']);
 
     
 });

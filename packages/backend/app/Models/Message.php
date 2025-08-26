@@ -19,11 +19,13 @@ class Message extends Model
         'unread',
         'message_type',
         'related_quote_id',
-        'related_order_id'
+        'related_order_id',
+        'attachments'
     ];
 
     protected $casts = [
-        'unread' => 'boolean'
+        'unread' => 'boolean',
+        'attachments' => 'array'
     ];
 
     // Relationships

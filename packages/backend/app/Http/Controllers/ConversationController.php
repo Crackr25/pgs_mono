@@ -84,6 +84,8 @@ class ConversationController extends Controller
                 'sender_id' => $message->sender_id,
                 'receiver_id' => $message->receiver_id,
                 'message' => $message->message,
+                'message_type' => $message->message_type,
+                'attachments' => $message->attachments,
                 'created_at' => $message->created_at->toISOString(),
                 'read' => $message->read,
                 'sender' => [

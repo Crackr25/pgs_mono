@@ -367,7 +367,10 @@ class ApiService {
   }
 
   // Order methods
-  async getOrders(params = {}) {
+  async getOrders(companyId, params = {}) {
+    if (companyId) {
+      params.company_id = companyId;
+    }
     const queryString = new URLSearchParams(params).toString();
     return this.request(`/orders${queryString ? `?${queryString}` : ''}`);
   }
@@ -401,9 +404,45 @@ class ApiService {
     return this.request('/conversations');
   }
 
-  // Get messages for a specific conversation
-  async getConversation(conversationId) {
-    return this.request(`/conversations/${conversationId}`);
+  async getConversation(id) {
+    return this.request(`/conversations/${id}`);
+  }
+
+  async sendMessage(conversationId, message, attachment = null) {
+    const formData = new FormData();
+    formData.append('message', message || '');
+    formData.append('conversation_id', conversationId);
+    
+    if (attachment) {
+      formData.append('attachment', attachment);
+    }
+
+    // Use fetch directly for FormData to avoid header conflicts
+    const response = await fetch(`${this.baseURL}/chat/send`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Accept': 'application/json'
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async markMessagesAsRead(conversationId, messageIds = []) {
+    return this.request('/chat/mark-read', {
+      method: 'POST',
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        message_ids: messageIds
+      })
+    });
   }
 
   // Create a new conversation
@@ -418,17 +457,6 @@ class ApiService {
     });
   }
 
-  // Send a message in a conversation
-  async sendMessage(conversationId, message, messageType = 'text') {
-    return this.request('/messages/chat', {
-      method: 'POST',
-      body: JSON.stringify({
-        conversation_id: conversationId,
-        message,
-        message_type: messageType,
-      }),
-    });
-  }
 
   // Mark messages as read
   async markMessagesAsRead(conversationId, messageIds = null) {

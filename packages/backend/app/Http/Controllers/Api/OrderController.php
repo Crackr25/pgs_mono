@@ -12,6 +12,7 @@ class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+
         $query = Order::with(['quote', 'company', 'payments']);
         
         // Filter by status

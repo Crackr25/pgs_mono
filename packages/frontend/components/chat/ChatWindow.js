@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, MoreVertical, Phone, Video, Info, MessageSquare, Clock, Check, AlertCircle, RotateCcw } from 'lucide-react';
+import { Send, Paperclip, MoreVertical, Phone, Video, Info, MessageSquare, Clock, Check, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, X, FileText, Image, Download } from 'lucide-react';
 import Button from '../common/Button';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 export default function ChatWindow({ 
   conversation, 
@@ -12,8 +13,13 @@ export default function ChatWindow({
 }) {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', data: null });
+  const [selectedFile, setSelectedFile] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -23,6 +29,107 @@ export default function ChatWindow({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleDropdownAction = (action) => {
+    setShowDropdown(false);
+    
+    switch (action) {
+      case 'info':
+        // Show conversation info/details
+        console.log('Show conversation info for:', conversation);
+        break;
+      case 'archive':
+        // Archive conversation
+        console.log('Archive conversation:', conversation.id);
+        break;
+      case 'delete':
+        // Show delete confirmation modal
+        setConfirmModal({
+          isOpen: true,
+          type: 'delete',
+          data: conversation
+        });
+        break;
+      case 'report':
+        // Report conversation/user
+        console.log('Report conversation:', conversation.id);
+        break;
+      case 'block':
+        // Show block confirmation modal
+        setConfirmModal({
+          isOpen: true,
+          type: 'block',
+          data: conversation
+        });
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleConfirmAction = () => {
+    const { type, data } = confirmModal;
+    
+    switch (type) {
+      case 'delete':
+        console.log('Delete conversation:', data.id);
+        // Add your delete conversation API call here
+        break;
+      case 'block':
+        console.log('Block user:', data.buyer.id);
+        // Add your block user API call here
+        break;
+      default:
+        break;
+    }
+    
+    setConfirmModal({ isOpen: false, type: '', data: null });
+  };
+
+  const handleCloseModal = () => {
+    setConfirmModal({ isOpen: false, type: '', data: null });
+  };
+
+  const getModalConfig = () => {
+    const { type, data } = confirmModal;
+    
+    switch (type) {
+      case 'delete':
+        return {
+          title: 'Delete Conversation',
+          message: 'Are you sure you want to delete this conversation? This action cannot be undone and all messages will be permanently removed.',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          type: 'danger',
+          icon: <Trash2 className="w-5 h-5" />
+        };
+      case 'block':
+        return {
+          title: 'Block User',
+          message: `Are you sure you want to block ${data?.buyer?.name}? You won't receive messages from them anymore and they won't be able to contact you.`,
+          confirmText: 'Block User',
+          cancelText: 'Cancel',
+          type: 'danger',
+          icon: <UserX className="w-5 h-5" />
+        };
+      default:
+        return {};
+    }
+  };
 
   const handleRetry = async (failedMessage) => {
     const updatedMessages = messages.map(msg => 
@@ -50,10 +157,33 @@ export default function ChatWindow({
     }
   };
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || sending) return;
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Check file size (limit to 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
 
-    const messageText = newMessage.trim();
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSend = async () => {
+    if ((!newMessage.trim() && !selectedFile) || sending) return;
+
+    const messageText = newMessage.trim() || '';
     const tempId = `temp-${Date.now()}`;
     
     // Optimistic update - add message immediately
@@ -63,6 +193,12 @@ export default function ChatWindow({
       sender_id: currentUser?.id,
       receiver_id: conversation.buyer.id === currentUser?.id ? conversation.seller.id : conversation.buyer.id,
       message: messageText,
+      attachment: selectedFile ? {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+        uploading: true
+      } : null,
       created_at: new Date().toISOString(),
       read: false,
       status: 'sending',
@@ -78,14 +214,19 @@ export default function ChatWindow({
     onMessagesUpdate?.(updatedMessages);
 
     setNewMessage('');
+    const fileToSend = selectedFile;
+    setSelectedFile(null);
     setSending(true);
 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
 
     try {
-      const response = await onSendMessage(messageText);
+      const response = await onSendMessage(messageText, fileToSend);
       
       // Replace optimistic message with real message
       if (response?.success) {
@@ -224,18 +365,65 @@ export default function ChatWindow({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              <Phone className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Video className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Info className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
+            <div className="relative" ref={dropdownRef}>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+              
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-secondary-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => handleDropdownAction('info')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 hover:text-secondary-900"
+                    >
+                      <Info className="w-4 h-4 mr-3" />
+                      Conversation Info
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDropdownAction('archive')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 hover:text-secondary-900"
+                    >
+                      <Archive className="w-4 h-4 mr-3" />
+                      Archive Chat
+                    </button>
+                    
+                    <div className="border-t border-secondary-100 my-1"></div>
+                    
+                    <button
+                      onClick={() => handleDropdownAction('report')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 hover:text-secondary-900"
+                    >
+                      <Flag className="w-4 h-4 mr-3" />
+                      Report User
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDropdownAction('block')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <UserX className="w-4 h-4 mr-3" />
+                      Block User
+                    </button>
+                    
+                    <div className="border-t border-secondary-100 my-1"></div>
+                    
+                    <button
+                      onClick={() => handleDropdownAction('delete')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4 mr-3" />
+                      Delete Chat
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -284,7 +472,84 @@ export default function ChatWindow({
                         : 'bg-primary-600 text-white'
                       : 'bg-white text-secondary-900 border border-secondary-200'
                   }`}>
-                    <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                    {message.message && (
+                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                    )}
+                    
+                    {/* Attachment Display */}
+                    {(message.attachment || message.attachments) && (
+                      <div className="mt-2">
+                        {(() => {
+                          const attachment = message.attachment || message.attachments?.[0];
+                          const isImage = attachment?.type?.startsWith('image/');
+                          
+                          if (isImage && attachment?.url) {
+                            return (
+                              <div className="max-w-xs">
+                                <img 
+                                  src={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                  alt={attachment.name}
+                                  className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`, '_blank')}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'block';
+                                  }}
+                                />
+                                <div className="hidden p-2 bg-secondary-50 rounded border">
+                                  <div className="flex items-center space-x-2">
+                                    <Image className="w-4 h-4 text-secondary-600" />
+                                    <span className="text-sm font-medium text-secondary-900">
+                                      {attachment.name}
+                                    </span>
+                                    <a 
+                                      href={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-secondary-500 mt-1">
+                                  {attachment.name} • {attachment.size ? `${(attachment.size / 1024).toFixed(1)} KB` : ''}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="p-2 bg-secondary-50 rounded border">
+                                <div className="flex items-center space-x-2">
+                                  <FileText className="w-4 h-4 text-secondary-600" />
+                                  <span className="text-sm font-medium text-secondary-900">
+                                    {attachment?.name}
+                                  </span>
+                                  {attachment?.uploading ? (
+                                    <div className="text-xs text-secondary-500">Uploading...</div>
+                                  ) : attachment?.url ? (
+                                    <a 
+                                      href={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                    </a>
+                                  ) : null}
+                                </div>
+                                {attachment?.size && (
+                                  <div className="text-xs text-secondary-500 mt-1">
+                                    {(attachment.size / 1024).toFixed(1)} KB
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                        })()}
+                      </div>
+                    )}
+                    
                     <div className={`flex items-center justify-end mt-1 space-x-1 ${
                       isCurrentUser 
                         ? message.status === 'failed' 
@@ -331,10 +596,50 @@ export default function ChatWindow({
 
       {/* Message Input */}
       <div className="flex-shrink-0 p-4 bg-white border-t border-secondary-200">
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="mb-3 p-3 bg-secondary-50 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {selectedFile.type.startsWith('image/') ? (
+                  <Image className="w-5 h-5 text-secondary-600" />
+                ) : (
+                  <FileText className="w-5 h-5 text-secondary-600" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-secondary-900">{selectedFile.name}</p>
+                  <p className="text-xs text-secondary-500">
+                    {(selectedFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleRemoveFile}
+                className="text-secondary-400 hover:text-secondary-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end space-x-3">
-          <Button variant="ghost" size="sm" className="mb-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mb-2"
+            onClick={handleAttachmentClick}
+          >
             <Paperclip className="w-4 h-4" />
           </Button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+          />
           
           <div className="flex-1 relative">
             <textarea
@@ -352,13 +657,21 @@ export default function ChatWindow({
           
           <Button 
             onClick={handleSend} 
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !selectedFile) || sending}
             className="mb-2"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirmAction}
+        {...getModalConfig()}
+      />
     </div>
   );
 }

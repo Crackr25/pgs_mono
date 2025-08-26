@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Paperclip, Smile, MoreVertical } from 'lucide-react';
+import { Send, Paperclip, Smile, MoreVertical, Image, FileText, Download } from 'lucide-react';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 
@@ -52,7 +52,31 @@ export default function ChatWindow({ conversation, onSendMessage }) {
       senderName: 'You',
       message: 'I\'ll send you the spec sheet right away. Our MOQ is 100 units and lead time is 15-20 days. For quantities over 500 units, we can offer better pricing.',
       timestamp: '10:42 AM',
-      translated: false
+      translated: false,
+      attachments: [
+        {
+          name: 'LED_Fixture_Spec_Sheet.pdf',
+          url: '/api/files/led-spec-sheet.pdf',
+          type: 'application/pdf',
+          size: 245760
+        }
+      ]
+    },
+    {
+      id: 5,
+      sender: 'buyer',
+      senderName: 'John Smith',
+      message: 'Here\'s a photo of our installation site for reference.',
+      timestamp: '10:45 AM',
+      translated: false,
+      attachments: [
+        {
+          name: 'installation_site.jpg',
+          url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400',
+          type: 'image/jpeg',
+          size: 156432
+        }
+      ]
     }
   ];
 
@@ -100,6 +124,88 @@ export default function ChatWindow({ conversation, onSendMessage }) {
                 : 'bg-secondary-100 text-secondary-900'
             }`}>
               <p className="text-sm">{msg.message}</p>
+              
+              {/* Attachment Display */}
+              {msg.attachments && (
+                <div className="mt-2">
+                  {msg.attachments.map((attachment, index) => {
+                    const isImage = attachment.type?.startsWith('image/');
+                    
+                    if (isImage && attachment.url) {
+                      return (
+                        <div key={index} className="max-w-xs">
+                          <img 
+                            src={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                            alt={attachment.name}
+                            className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`, '_blank')}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'block';
+                            }}
+                          />
+                          <div className="hidden p-2 bg-secondary-50 rounded border mt-1">
+                            <div className="flex items-center space-x-2">
+                              <Image className="w-4 h-4 text-secondary-600" />
+                              <span className="text-sm font-medium text-secondary-900">
+                                {attachment.name}
+                              </span>
+                              <a 
+                                href={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:text-blue-800"
+                              >
+                                <Download className="w-3 h-3" />
+                              </a>
+                            </div>
+                          </div>
+                          <div className={`text-xs mt-1 ${
+                            msg.sender === 'supplier' ? 'text-primary-100' : 'text-secondary-500'
+                          }`}>
+                            {attachment.name} • {attachment.size ? `${(attachment.size / 1024).toFixed(1)} KB` : ''}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={index} className={`p-2 rounded border mt-1 ${
+                          msg.sender === 'supplier' ? 'bg-primary-500 border-primary-400' : 'bg-secondary-50 border-secondary-200'
+                        }`}>
+                          <div className="flex items-center space-x-2">
+                            <FileText className={`w-4 h-4 ${
+                              msg.sender === 'supplier' ? 'text-primary-100' : 'text-secondary-600'
+                            }`} />
+                            <span className={`text-sm font-medium ${
+                              msg.sender === 'supplier' ? 'text-white' : 'text-secondary-900'
+                            }`}>
+                              {attachment.name}
+                            </span>
+                            <a 
+                              href={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className={`text-xs hover:underline ${
+                                msg.sender === 'supplier' ? 'text-primary-100' : 'text-blue-600'
+                              }`}
+                            >
+                              <Download className="w-3 h-3" />
+                            </a>
+                          </div>
+                          {attachment.size && (
+                            <div className={`text-xs mt-1 ${
+                              msg.sender === 'supplier' ? 'text-primary-100' : 'text-secondary-500'
+                            }`}>
+                              {(attachment.size / 1024).toFixed(1)} KB
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              )}
+              
               {showTranslate && (
                 <div className="mt-2 pt-2 border-t border-opacity-20 border-white">
                   <p className="text-xs opacity-75">

@@ -7,6 +7,8 @@ use App\Models\Conversation;
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ChatMessageController extends Controller
 {
@@ -17,9 +19,18 @@ class ChatMessageController extends Controller
     {
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
-            'message' => 'required|string|max:1000',
+            'message' => 'nullable|string|max:1000',
+            'attachment' => 'nullable|file|max:10240', // 10MB max
             'message_type' => 'sometimes|string|in:text,image,file'
         ]);
+
+        // Ensure either message or attachment is provided
+        if (!$request->message && !$request->hasFile('attachment')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Either message or attachment is required'
+            ], 422);
+        }
 
         $user = Auth::user();
         
@@ -43,13 +54,37 @@ class ChatMessageController extends Controller
             ? $conversation->buyer_id 
             : $conversation->seller_id;
 
+        // Handle file attachment if present
+        $attachmentData = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('chat-attachments', $filename, 'public');
+            
+            $attachmentData = [
+                'name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'url' => url('storage/' . $path),
+                'size' => $file->getSize(),
+                'type' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension()
+            ];
+        }
+
+        // Determine message type
+        $messageType = 'text';
+        if ($attachmentData) {
+            $messageType = str_starts_with($attachmentData['type'], 'image/') ? 'image' : 'file';
+        }
+
         // Create message
         $message = ChatMessage::create([
             'conversation_id' => $request->conversation_id,
             'sender_id' => $user->id,
             'receiver_id' => $receiverId,
             'message' => $request->message,
-            'message_type' => $request->message_type ?? 'text'
+            'message_type' => $messageType,
+            'attachments' => $attachmentData ? [$attachmentData] : null
         ]);
 
         // Update conversation's last message timestamp
@@ -69,6 +104,8 @@ class ChatMessageController extends Controller
                 'sender_id' => $message->sender_id,
                 'receiver_id' => $message->receiver_id,
                 'message' => $message->message,
+                'message_type' => $message->message_type,
+                'attachments' => $message->attachments,
                 'created_at' => $message->created_at->toISOString(),
                 'read' => $message->read,
                 'sender' => [
