@@ -5,6 +5,7 @@ import { Plus, Search, Filter, Upload, Grid, List, Trash2, AlertTriangle, Downlo
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 import ProductCard from '../../components/products/ProductCard';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
@@ -22,6 +23,17 @@ export default function Products() {
   const [error, setError] = useState(null);
   const { user, isAuthenticated } = useAuth();
   const [userCompany, setUserCompany] = useState(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [paginationInfo, setPaginationInfo] = useState({
+    from: 0,
+    to: 0,
+    total: 0
+  });
 
   useEffect(() => {
     fetchUserCompany();
@@ -50,14 +62,47 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [currentPage, searchTerm]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getProducts();
-      setProductList(response.data || response);
+      
+      // Build query parameters for pagination and search
+      const params = {
+        page: page,
+        per_page: itemsPerPage
+      };
+      
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      
+      const response = await apiService.getProducts(params);
+      
+      // Handle Laravel pagination response structure
+      if (response.data) {
+        setProductList(response.data);
+        setCurrentPage(response.current_page);
+        setTotalPages(response.last_page);
+        setTotalItems(response.total);
+        setPaginationInfo({
+          from: response.from || 0,
+          to: response.to || 0,
+          total: response.total || 0
+        });
+      } else {
+        // Fallback for non-paginated response
+        setProductList(response);
+        setTotalPages(1);
+        setTotalItems(response.length);
+        setPaginationInfo({
+          from: response.length > 0 ? 1 : 0,
+          to: response.length,
+          total: response.length
+        });
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       setError('Failed to load products. Please try again.');
@@ -78,15 +123,27 @@ export default function Products() {
     setIsDeleting(true);
     try {
       await apiService.deleteProduct(productToDelete.id);
-      setProductList(prev => prev.filter(p => p.id !== productToDelete.id));
       setShowDeleteModal(false);
       setProductToDelete(null);
+      // Refresh the current page after deletion
+      await fetchProducts(currentPage);
     } catch (error) {
       console.error('Error deleting product:', error);
       setError('Failed to delete product. Please try again.');
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    fetchProducts(page);
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const cancelDelete = () => {
@@ -240,10 +297,8 @@ export default function Products() {
     }
   };
 
-  const filteredProducts = productList.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Remove client-side filtering since we're using server-side search
+  const filteredProducts = productList;
 
   const mockRFQs = [
     {
@@ -306,7 +361,7 @@ export default function Products() {
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearch}
                   className="pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -380,107 +435,121 @@ export default function Products() {
 
         {/* Products Grid/List */}
         {!loading && !error && filteredProducts.length > 0 && (
-          viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onDelete={handleDeleteProduct}
-                />
-              ))}
-            </div>
-        ) : (
-          <Card>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-secondary-200">
-                <thead className="bg-secondary-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                      Product
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                      MOQ
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-secondary-200">
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-secondary-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            {product.image ? (
-                              <img
-                                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.image}`}
-                                alt={product.name}
-                                className="h-10 w-10 rounded-lg object-cover"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-lg bg-secondary-100 flex items-center justify-center">
-                                <span className="text-xs font-medium text-secondary-600">
-                                  {product.name.charAt(0)}
-                                </span>
+          <>
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onDelete={handleDeleteProduct}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-secondary-200">
+                    <thead className="bg-secondary-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Product
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Price
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          MOQ
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-secondary-200">
+                      {filteredProducts.map((product) => (
+                        <tr key={product.id} className="hover:bg-secondary-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                {product.image ? (
+                                  <img
+                                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.image}`}
+                                    alt={product.name}
+                                    className="h-10 w-10 rounded-lg object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-secondary-100 flex items-center justify-center">
+                                    <span className="text-xs font-medium text-secondary-600">
+                                      {product.name.charAt(0)}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-secondary-900">
-                              {product.name}
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-secondary-900">
+                                  {product.name}
+                                </div>
+                                <div className="text-sm text-secondary-500">
+                                  {product.hs_code}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-sm text-secondary-500">
-                              {product.hs_code}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
-                        {product.category}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
-                        {product.price}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
-                        {product.moq}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          Active
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <Link href={`/products/edit/${product.id}`}>
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-          )
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                            {product.category}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                            {product.price}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                            {product.moq}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              Active
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <Link href={`/products/edit/${product.id}`}>
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product.id)}
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+            
+            {/* Pagination */}
+            <Card>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                from={paginationInfo.from}
+                to={paginationInfo.to}
+                total={paginationInfo.total}
+              />
+            </Card>
+          </>
         )}
       </div>
 

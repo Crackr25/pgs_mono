@@ -22,15 +22,16 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   
   const router = useRouter();
-  const { login, register, error, clearError, isAuthenticated } = useAuth();
+  const { login, register, error, clearError, isAuthenticated, user } = useAuth();
   const { translate } = useLanguage();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/');
+    if (isAuthenticated && user) {
+      const redirectPath = user.usertype === 'buyer' ? '/buyer' : '/';
+      router.push(redirectPath);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -46,16 +47,26 @@ export default function Login() {
     clearError();
 
     try {
+      let response;
       if (mode === 'login') {
-        await login({
+        response = await login({
           email: formData.email,
           password: formData.password
         });
-        router.push('/');
       } else {
-        await register(formData);
-        router.push('/');
+        response = await register(formData);
       }
+      
+      // Debug logging
+      console.log('Login/Register Response:', response);
+      console.log('User data:', response.user);
+      console.log('User type:', response.user?.usertype);
+      
+      // Redirect based on user type
+      const userType = response.user?.usertype || 'seller';
+      const redirectPath = userType === 'buyer' ? '/buyer' : '/';
+      console.log('Redirecting to:', redirectPath);
+      router.push(redirectPath);
     } catch (error) {
       console.error('Auth error:', error);
     } finally {

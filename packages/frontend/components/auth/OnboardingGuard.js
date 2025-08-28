@@ -21,7 +21,27 @@ const OnboardingGuard = ({ children }) => {
     try {
       setLoading(true);
       
-      // Check if user has a company profile
+      // Debug logging
+      console.log('OnboardingGuard Debug:', {
+        user,
+        usertype: user?.usertype,
+        pathname: router.pathname
+      });
+      
+      // Skip onboarding for buyers - they don't need company setup
+      if (user.usertype === 'buyer') {
+        console.log('Buyer detected, setting hasCompany to true');
+        setHasCompany(true);
+        // Redirect buyers to buyer dashboard if they're on onboarding page
+        if (router.pathname === '/onboarding') {
+          console.log('Redirecting buyer from onboarding to /buyer');
+          router.push('/buyer');
+          return;
+        }
+        return;
+      }
+      
+      // Check if seller user has a company profile
       const companies = await apiService.getCompanies();
       const userCompany = companies.data?.find(company => company.user_id === user.id);
       
@@ -29,7 +49,7 @@ const OnboardingGuard = ({ children }) => {
         setHasCompany(true);
       } else {
         setHasCompany(false);
-        // If user doesn't have company data and not already on onboarding page, redirect
+        // If seller doesn't have company data and not already on onboarding page, redirect
         if (router.pathname !== '/onboarding') {
           router.push('/onboarding');
           return;
@@ -37,11 +57,16 @@ const OnboardingGuard = ({ children }) => {
       }
     } catch (error) {
       console.error('Error checking user company:', error);
-      // If there's an error, assume no company and redirect to onboarding
-      setHasCompany(false);
-      if (router.pathname !== '/onboarding') {
-        router.push('/onboarding');
-        return;
+      // If there's an error with sellers, assume no company and redirect to onboarding
+      if (user.usertype !== 'buyer') {
+        setHasCompany(false);
+        if (router.pathname !== '/onboarding') {
+          router.push('/onboarding');
+          return;
+        }
+      } else {
+        // For buyers, just set hasCompany to true
+        setHasCompany(true);
       }
     } finally {
       setLoading(false);
@@ -70,9 +95,10 @@ const OnboardingGuard = ({ children }) => {
     return null;
   }
 
-  // If user has company but is on onboarding page, redirect to dashboard
+  // If user has company but is on onboarding page, redirect to appropriate dashboard
   if (hasCompany === true && router.pathname === '/onboarding') {
-    router.push('/');
+    const redirectPath = user?.usertype === 'buyer' ? '/buyer' : '/';
+    router.push(redirectPath);
     return null;
   }
 
