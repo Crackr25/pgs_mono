@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import NavBar from './NavBar';
 import BuyerNavBar from './BuyerNavBar';
+import BuyerGlobalTopNav from './BuyerGlobalTopNav';
 import SideBar from './SideBar';
 import BuyerSideBar from './BuyerSideBar';
 import Footer from './Footer';
@@ -50,24 +51,53 @@ export default function Layout({ children }) {
     );
   }
 
-  // Determine if this is a buyer page
-  const isBuyerPage = router.pathname.startsWith('/buyer');
+  // Determine if this is a buyer page or buyer accessing chat
+  const isBuyerUser = user?.usertype === 'buyer';
+  const isBuyerPage = router.pathname.startsWith('/buyer') || (isBuyerUser && router.pathname === '/chat');
+  const isBuyerDashboard = router.pathname === '/buyer';
 
-  // Layout for authenticated users with company data (with sidebar)
+  // Layout for buyer dashboard (home) - only global topnav, no sidenav
+  if (isBuyerDashboard) {
+    return (
+      <div className="min-h-screen bg-secondary-50">
+        <BuyerGlobalTopNav />
+        <main className="p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Layout for other buyer pages - both global topnav and sidenav
+  if (isBuyerPage) {
+    return (
+      <div className="min-h-screen bg-secondary-50">
+        <BuyerGlobalTopNav />
+        <div className="flex">
+          <BuyerSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <div className="flex-1 flex flex-col lg:ml-0">
+            <main className="flex-1 p-4 sm:p-6 lg:p-8">
+              <div className="max-w-7xl mx-auto">
+                {children}
+              </div>
+            </main>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Layout for seller pages (existing functionality)
   return (
     <div className="min-h-screen bg-secondary-50 flex">
-      {isBuyerPage ? (
-        <BuyerSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
-      ) : (
-        <SideBar isOpen={sidebarOpen} onClose={closeSidebar} />
-      )}
+      <SideBar isOpen={sidebarOpen} onClose={closeSidebar} />
       
       <div className="flex-1 flex flex-col lg:ml-0">
-        {isBuyerPage ? (
-          <BuyerNavBar onMenuToggle={toggleSidebar} isSidebarOpen={sidebarOpen} />
-        ) : (
-          <NavBar onMenuToggle={toggleSidebar} isSidebarOpen={sidebarOpen} />
-        )}
+        <NavBar onMenuToggle={toggleSidebar} isSidebarOpen={sidebarOpen} />
         
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">

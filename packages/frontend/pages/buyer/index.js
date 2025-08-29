@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import ProductGrid from '../../components/buyer/ProductGrid';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
 
@@ -104,231 +105,83 @@ export default function BuyerDashboard() {
   return (
     <>
       <Head>
-        <title>Buyer Dashboard - Pinoy Global Supply</title>
+        <title>Marketplace - Pinoy Global Supply</title>
       </Head>
 
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div>
-            <h1 className="text-2xl font-bold text-secondary-900">Buyer Dashboard</h1>
-            <p className="mt-1 text-sm text-secondary-600">
-              Welcome back, {user?.name}! Manage your sourcing activities.
-            </p>
-          </div>
-          <div className="flex space-x-3 mt-4 sm:mt-0">
-            <Link href="/buyer/rfq/create">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create RFQ
-              </Button>
-            </Link>
-            <Link href="/buyer/suppliers">
-              <Button variant="outline">
-                <Search className="w-4 h-4 mr-2" />
-                Find Suppliers
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Package className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Active RFQs</p>
-                <p className="text-2xl font-bold text-secondary-900">{dashboardData.activeRFQs}</p>
-              </div>
+              <h1 className="text-3xl font-bold text-white mb-2">Welcome to the Marketplace</h1>
+              <p className="text-lg text-blue-100 font-medium">
+                Discover quality products from verified Philippine suppliers
+              </p>
             </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Pending Quotes</p>
-                <p className="text-2xl font-bold text-secondary-900">{dashboardData.pendingQuotes}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ShoppingCart className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Active Orders</p>
-                <p className="text-2xl font-bold text-secondary-900">{dashboardData.activeOrders}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <DollarSign className="h-8 w-8 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Total Spent</p>
-                <p className="text-2xl font-bold text-secondary-900">{formatCurrency(dashboardData.totalSpent)}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent RFQs */}
-          <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-secondary-900">Recent RFQs</h3>
-                <Link href="/buyer/rfqs">
-                  <Button variant="outline" size="sm">View All</Button>
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {dashboardData.recentRFQs.map((rfq) => (
-                  <div key={rfq.id} className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-secondary-900">{rfq.title}</h4>
-                      <p className="text-sm text-secondary-600">
-                        {rfq.responses} responses • {new Date(rfq.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rfq.status)}`}>
-                      {rfq.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          {/* Recent Quotes */}
-          <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-secondary-900">Recent Quotes</h3>
-                <Link href="/buyer/quotes">
-                  <Button variant="outline" size="sm">View All</Button>
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {dashboardData.recentQuotes.map((quote) => (
-                  <div key={quote.id} className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-secondary-900">{quote.product}</h4>
-                      <p className="text-sm text-secondary-600">{quote.supplier}</p>
-                      <p className="text-sm font-medium text-primary-600">{quote.price}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(quote.status)}`}>
-                      {quote.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          {/* Recent Orders */}
-          <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-secondary-900">Recent Orders</h3>
-                <Link href="/buyer/orders">
-                  <Button variant="outline" size="sm">View All</Button>
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {dashboardData.recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-secondary-900">{order.supplier}</h4>
-                      <p className="text-sm text-secondary-600">{new Date(order.date).toLocaleDateString()}</p>
-                      <p className="text-sm font-medium text-green-600">{order.total}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                      {order.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          {/* Top Suppliers */}
-          <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-secondary-900">Top Suppliers</h3>
-                <Link href="/buyer/suppliers">
-                  <Button variant="outline" size="sm">Find More</Button>
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {dashboardData.topSuppliers.map((supplier, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-primary-600">
-                          {supplier.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-secondary-900">{supplier.name}</h4>
-                        <p className="text-sm text-secondary-600">{supplier.orders} orders</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <TrendingUp className="w-4 h-4 text-yellow-500" />
-                      <span className="text-sm font-medium text-secondary-900">{supplier.rating}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-secondary-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/buyer/rfq/create">
-                <div className="p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors cursor-pointer">
-                  <Plus className="w-8 h-8 text-primary-600 mb-2" />
-                  <h4 className="font-medium text-secondary-900">Create New RFQ</h4>
-                  <p className="text-sm text-secondary-600">Request quotes from suppliers</p>
-                </div>
-              </Link>
-              
-              <Link href="/buyer/suppliers">
-                <div className="p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors cursor-pointer">
-                  <Users className="w-8 h-8 text-green-600 mb-2" />
-                  <h4 className="font-medium text-secondary-900">Browse Suppliers</h4>
-                  <p className="text-sm text-secondary-600">Discover verified suppliers</p>
-                </div>
-              </Link>
-              
-              <Link href="/chat">
-                <div className="p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors cursor-pointer">
-                  <MessageSquare className="w-8 h-8 text-blue-600 mb-2" />
-                  <h4 className="font-medium text-secondary-900">Messages</h4>
-                  <p className="text-sm text-secondary-600">Chat with suppliers</p>
-                </div>
+            <div className="flex space-x-3 mt-4 sm:mt-0">
+              <Link href="/buyer/rfqs/create">
+                <Button variant="secondary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Post RFQ
+                </Button>
               </Link>
             </div>
           </div>
-        </Card>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg border border-secondary-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Package className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-600">Products</p>
+                <p className="text-lg font-bold text-secondary-900">50K+</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border border-secondary-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-600">Suppliers</p>
+                <p className="text-lg font-bold text-secondary-900">2.5K+</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border border-secondary-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-600">Avg Response</p>
+                <p className="text-lg font-bold text-secondary-900">2 hrs</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border border-secondary-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-secondary-600">Success Rate</p>
+                <p className="text-lg font-bold text-secondary-900">95%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Marketplace */}
+        <ProductGrid />
       </div>
     </>
   );

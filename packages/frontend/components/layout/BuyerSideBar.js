@@ -46,15 +46,14 @@ export default function BuyerSideBar({ isOpen, onClose }) {
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/buyer', icon: Home },
-    { name: 'Find Suppliers', href: '/buyer/suppliers', icon: Users },
-    { name: 'My RFQs', href: '/buyer/rfqs', icon: FileText },
-    { name: 'Quotes', href: '/buyer/quotes', icon: Package2 },
-    { name: 'Orders', href: '/buyer/orders', icon: ShoppingCart },
+    { name: 'Home', href: '/buyer', icon: Home },
     { name: 'Messages', href: '/chat', icon: MessageSquare },
-    { name: 'Analytics', href: '/buyer/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/buyer/profile', icon: Building },
-    { name: 'Support', href: '/support', icon: HelpCircle },
+    { name: 'Buying Leads', href: '/buyer/rfqs', icon: FileText },
+    { name: 'Orders', href: '/buyer/orders', icon: ShoppingCart },
+    { name: 'Transactions', href: '/buyer/transactions', icon: Package2 },
+    { name: 'Contacts', href: '/buyer/contacts', icon: Users },
+    { name: 'My Lists', href: '/buyer/lists', icon: BarChart3 },
+    { name: 'Trade Services', href: '/buyer/services', icon: Building },
   ];
 
   const isActive = (href) => {
