@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\MarketplaceController;
+use App\Http\Controllers\Api\BuyerMessageController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 
@@ -37,6 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/companies', [CompanyController::class, 'index']);
 Route::get('/companies/{company}', [CompanyController::class, 'show']);
 Route::get('/companies/{company}/products', [CompanyController::class, 'products']);
+
+// Marketplace routes (public - for buyer home page)
+Route::get('/marketplace/products', [MarketplaceController::class, 'getRandomProducts']);
+Route::get('/marketplace/products/{id}', [MarketplaceController::class, 'getProductDetails']);
+Route::post('/marketplace/inquiries', [MarketplaceController::class, 'submitInquiry']);
+Route::get('/marketplace/categories', [MarketplaceController::class, 'getCategories']);
+Route::get('/marketplace/locations', [MarketplaceController::class, 'getLocations']);
 
 
 // Quote creation (public - buyers don't need accounts)
@@ -100,6 +109,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chat/send', [ChatMessageController::class, 'store']);
     Route::post('/chat/mark-read', [ChatMessageController::class, 'markAsRead']);
     Route::get('/chat/unread-count', [ChatMessageController::class, 'getUnreadCount']);
+
+    // Buyer-specific message routes
+    Route::get('/buyer/conversations', [BuyerMessageController::class, 'getConversations']);
+    Route::get('/buyer/conversations/{id}', [BuyerMessageController::class, 'getConversationMessages']);
+    Route::post('/buyer/messages/send', [BuyerMessageController::class, 'sendMessage']);
+    Route::post('/buyer/messages/mark-read', [BuyerMessageController::class, 'markAsRead']);
+    Route::get('/buyer/messages/unread-count', [BuyerMessageController::class, 'getUnreadCount']);
 
     
 });

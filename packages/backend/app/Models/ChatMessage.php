@@ -16,7 +16,8 @@ class ChatMessage extends Model
         'message',
         'read',
         'message_type',
-        'attachments'
+        'attachments',
+        'product_id'
     ];
 
     protected $casts = [
