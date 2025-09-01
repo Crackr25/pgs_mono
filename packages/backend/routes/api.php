@@ -51,6 +51,7 @@ Route::get('/marketplace/locations', [MarketplaceController::class, 'getLocation
 // Quote creation (public - buyers don't need accounts)
 Route::post('/quotes', [QuoteController::class, 'store']);
 Route::get('/quotes', [QuoteController::class, 'index']);
+Route::get('/quotes/stats', [QuoteController::class, 'stats']);
 Route::get('/quotes/{quote}', [QuoteController::class, 'show']);
 
 // Message creation (public - buyers don't need accounts)

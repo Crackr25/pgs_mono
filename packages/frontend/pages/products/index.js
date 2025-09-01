@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Plus, Search, Filter, Upload, Grid, List, Trash2, AlertTriangle, Download, FileText, CheckCircle, XCircle } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -11,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
 
 export default function Products() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -24,20 +26,59 @@ export default function Products() {
   const { user, isAuthenticated } = useAuth();
   const [userCompany, setUserCompany] = useState(null);
   
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  // Pagination state - using the same structure as quotes
   const [paginationInfo, setPaginationInfo] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
     from: 0,
-    to: 0,
-    total: 0
+    to: 0
   });
 
   useEffect(() => {
     fetchUserCompany();
   }, []);
+
+  // Initialize state from URL on component mount and fetch data
+  useEffect(() => {
+    if (router.isReady && isAuthenticated) {
+      const { page = 1, per_page = 10, search = '' } = router.query;
+      
+      const currentPage = parseInt(page);
+      const itemsPerPage = parseInt(per_page);
+      
+      // Only update state if values have actually changed
+      if (searchTerm !== search) {
+        setSearchTerm(search);
+      }
+      
+      // Update pagination info and fetch data together
+      setPaginationInfo(prev => {
+        const newPaginationInfo = {
+          ...prev,
+          current_page: currentPage,
+          per_page: itemsPerPage
+        };
+        
+        // Fetch data with the new pagination info
+        fetchProductsWithParams(currentPage, itemsPerPage, search);
+        
+        return newPaginationInfo;
+      });
+    }
+  }, [router.isReady, router.query, isAuthenticated]);
+
+  const updateURL = (params) => {
+    const query = { ...router.query, ...params };
+    
+    // Remove default values to keep URL clean
+    if (query.page === 1 || query.page === '1') delete query.page;
+    if (query.per_page === 10 || query.per_page === '10') delete query.per_page;
+    if (!query.search) delete query.search;
+    
+    router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
+  };
 
   const fetchUserCompany = async () => {
     try {
@@ -60,11 +101,17 @@ export default function Products() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [currentPage, searchTerm]);
 
-  const fetchProducts = async (page = currentPage) => {
+
+  const fetchProducts = async () => {
+    return fetchProductsWithParams(
+      paginationInfo.current_page, 
+      paginationInfo.per_page, 
+      searchTerm
+    );
+  };
+
+  const fetchProductsWithParams = async (page, perPage, search) => {
     try {
       setLoading(true);
       setError(null);
@@ -72,11 +119,11 @@ export default function Products() {
       // Build query parameters for pagination and search
       const params = {
         page: page,
-        per_page: itemsPerPage
+        per_page: perPage
       };
       
-      if (searchTerm) {
-        params.search = searchTerm;
+      if (search) {
+        params.search = search;
       }
       
       const response = await apiService.getProducts(params);
@@ -84,24 +131,26 @@ export default function Products() {
       // Handle Laravel pagination response structure
       if (response.data) {
         setProductList(response.data);
-        setCurrentPage(response.current_page);
-        setTotalPages(response.last_page);
-        setTotalItems(response.total);
-        setPaginationInfo({
+        setPaginationInfo(prev => ({
+          ...prev,
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
           from: response.from || 0,
-          to: response.to || 0,
-          total: response.total || 0
-        });
+          to: response.to || 0
+        }));
       } else {
         // Fallback for non-paginated response
         setProductList(response);
-        setTotalPages(1);
-        setTotalItems(response.length);
-        setPaginationInfo({
+        setPaginationInfo(prev => ({
+          ...prev,
+          current_page: 1,
+          last_page: 1,
+          total: response.length,
           from: response.length > 0 ? 1 : 0,
-          to: response.length,
-          total: response.length
-        });
+          to: response.length
+        }));
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -126,7 +175,7 @@ export default function Products() {
       setShowDeleteModal(false);
       setProductToDelete(null);
       // Refresh the current page after deletion
-      await fetchProducts(currentPage);
+      await fetchProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
       setError('Failed to delete product. Please try again.');
@@ -136,14 +185,22 @@ export default function Products() {
   };
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
-    fetchProducts(page);
+    updateURL({ page: page === 1 ? undefined : page });
+  };
+
+  const handlePerPageChange = (perPage) => {
+    updateURL({ 
+      per_page: perPage === 10 ? undefined : perPage, 
+      page: undefined 
+    });
   };
 
   const handleSearch = (e) => {
     const value = e.target.value;
-    setSearchTerm(value);
-    setCurrentPage(1); // Reset to first page when searching
+    updateURL({ 
+      search: value || undefined, 
+      page: undefined 
+    });
   };
 
   const cancelDelete = () => {
@@ -539,16 +596,20 @@ export default function Products() {
             )}
             
             {/* Pagination */}
-            <Card>
+            {paginationInfo.total > 0 && (
               <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
+                currentPage={paginationInfo.current_page}
+                lastPage={paginationInfo.last_page}
+                total={paginationInfo.total}
+                perPage={paginationInfo.per_page}
                 from={paginationInfo.from}
                 to={paginationInfo.to}
-                total={paginationInfo.total}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                showPerPageSelector={true}
+                showInfo={true}
               />
-            </Card>
+            )}
           </>
         )}
       </div>

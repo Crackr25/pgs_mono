@@ -23,6 +23,7 @@ export default function RFQs() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [paginationInfo, setPaginationInfo] = useState({
     from: 0,
     to: 0,
@@ -150,6 +151,11 @@ export default function RFQs() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setItemsPerPage(newPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   const getStatusColor = (status) => {
@@ -390,16 +396,18 @@ export default function RFQs() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Card>
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  from={paginationInfo.from}
-                  to={paginationInfo.to}
-                  total={paginationInfo.total}
-                />
-              </Card>
+              <Pagination
+                currentPage={currentPage}
+                lastPage={totalPages}
+                total={paginationInfo.total}
+                perPage={itemsPerPage}
+                from={paginationInfo.from}
+                to={paginationInfo.to}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                showPerPageSelector={true}
+                showInfo={true}
+              />
             )}
           </>
         )}

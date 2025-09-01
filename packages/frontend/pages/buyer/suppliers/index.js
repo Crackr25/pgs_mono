@@ -39,6 +39,7 @@ export default function Suppliers() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [paginationInfo, setPaginationInfo] = useState({
     from: 0,
     to: 0,
@@ -296,6 +297,11 @@ export default function Suppliers() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setItemsPerPage(newPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   const renderStars = (rating) => {
@@ -635,11 +641,15 @@ export default function Suppliers() {
               <Card>
                 <Pagination
                   currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
+                  lastPage={totalPages}
+                  total={paginationInfo.total}
+                  perPage={itemsPerPage}
                   from={paginationInfo.from}
                   to={paginationInfo.to}
-                  total={paginationInfo.total}
+                  onPageChange={handlePageChange}
+                  onPerPageChange={handlePerPageChange}
+                  showPerPageSelector={true}
+                  showInfo={true}
                 />
               </Card>
             )}

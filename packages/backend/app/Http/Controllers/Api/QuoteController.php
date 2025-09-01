@@ -7,6 +7,7 @@ use App\Models\Quote;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class QuoteController extends Controller
 {
@@ -41,7 +42,11 @@ class QuoteController extends Controller
             });
         }
         
-        $quotes = $query->orderBy('created_at', 'desc')->paginate(15);
+        // Pagination settings
+        $perPage = $request->get('per_page', 10); // Default 10
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 10; // Allowed values
+        
+        $quotes = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
         return response()->json($quotes);
     }
@@ -98,6 +103,11 @@ class QuoteController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        // Only allow responses to pending quotes
+        if ($quote->status !== 'pending') {
+            return response()->json(['message' => 'Quote has already been responded to or is not in pending status'], 400);
+        }
+
         $validated = $request->validate([
             'response_message' => 'required|string',
             'quoted_price' => 'required|numeric|min:0',
@@ -126,5 +136,53 @@ class QuoteController extends Controller
         $quote->delete();
         
         return response()->json(['message' => 'Quote deleted successfully']);
+    }
+
+    public function stats(Request $request): JsonResponse
+    {
+        // Aggregate counts by status with optional filters
+        $query = Quote::query();
+
+        if ($request->has('company_id')) {
+            $query->where('company_id', $request->company_id);
+        }
+
+        if ($request->has('buyer_email')) {
+            $query->where('buyer_email', $request->buyer_email);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('buyer_name', 'like', "%{$search}%")
+                    ->orWhere('buyer_company', 'like', "%{$search}%")
+                    ->orWhereHas('product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $counts = (clone $query)
+            ->select('status', DB::raw('COUNT(*) as aggregate'))
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $total = (clone $query)->count();
+
+        $pending = (int) ($counts['pending'] ?? 0);
+        $responded = (int) ($counts['responded'] ?? 0);
+        $accepted = (int) ($counts['accepted'] ?? 0);
+        $rejected = (int) ($counts['rejected'] ?? 0);
+
+        $responseRate = $total > 0 ? (int) round((($responded + $accepted) / $total) * 100) : 0;
+
+        return response()->json([
+            'pending' => $pending,
+            'responded' => $responded,
+            'accepted' => $accepted,
+            'rejected' => $rejected,
+            'total' => $total,
+            'responseRate' => $responseRate,
+        ]);
     }
 }

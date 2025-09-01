@@ -366,6 +366,18 @@ class ApiService {
     });
   }
 
+  async respondToQuote(id, responseData) {
+    return this.request(`/quotes/${id}/respond`, {
+      method: 'POST',
+      body: JSON.stringify(responseData),
+    });
+  }
+
+  async getQuoteStats(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/quotes/stats${queryString ? `?${queryString}` : ''}`);
+  }
+
   // Order methods
   async getOrders(companyId, params = {}) {
     if (companyId) {
