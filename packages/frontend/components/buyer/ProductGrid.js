@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Filter, 
   Grid, 
@@ -12,30 +13,33 @@ import {
 } from 'lucide-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
+import Pagination from '../common/Pagination';
+import { ProductCardSkeleton, FilterSkeleton } from '../common/Skeleton';
+import apiService from '../../lib/api';
 
 export default function ProductGrid() {
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 30,
+    from: 0,
+    to: 0
+  });
   const [filters, setFilters] = useState({
     category: '',
     priceRange: '',
-    rating: '',
     location: '',
+    search: '',
     sortBy: 'relevance'
   });
 
-  const categories = [
-    'Electronics & Electrical',
-    'Machinery & Industrial Equipment',
-    'Construction & Building Materials',
-    'Textiles & Apparel',
-    'Food & Agriculture',
-    'Automotive & Transportation',
-    'Home & Garden',
-    'Health & Medical'
-  ];
 
   const priceRanges = [
     { label: 'Under $100', value: '0-100' },
@@ -45,16 +49,6 @@ export default function ProductGrid() {
     { label: 'Over $5,000', value: '5000+' }
   ];
 
-  const locations = [
-    'Metro Manila',
-    'Cebu',
-    'Davao',
-    'Laguna',
-    'Cavite',
-    'Bulacan',
-    'Pampanga',
-    'Batangas'
-  ];
 
   const sortOptions = [
     { label: 'Relevance', value: 'relevance' },
@@ -66,98 +60,62 @@ export default function ProductGrid() {
 
   useEffect(() => {
     fetchProducts();
-  }, [filters]);
+    fetchCategories();
+    fetchLocations();
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [filters, pagination.currentPage]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      // Mock product data - replace with actual API call
-      const mockProducts = [
-        {
-          id: 1,
-          title: 'LED Light Fixtures - Industrial Grade',
-          price: '$25.00',
-          minOrder: '100 pieces',
-          supplier: 'Manila Manufacturing Corp',
-          location: 'Metro Manila',
-          rating: 4.8,
-          reviews: 156,
-          image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop',
-          verified: true,
-          responseTime: '< 2 hours'
-        },
-        {
-          id: 2,
-          title: 'Industrial Water Pumps - Heavy Duty',
-          price: '$850.00',
-          minOrder: '10 units',
-          supplier: 'Cebu Industrial Solutions',
-          location: 'Cebu',
-          rating: 4.9,
-          reviews: 89,
-          image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=300&h=200&fit=crop',
-          verified: true,
-          responseTime: '< 4 hours'
-        },
-        {
-          id: 3,
-          title: 'Steel Pipes - Galvanized',
-          price: '$45.00/meter',
-          minOrder: '50 meters',
-          supplier: 'Davao Steel Works',
-          location: 'Davao',
-          rating: 4.7,
-          reviews: 234,
-          image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=300&h=200&fit=crop',
-          verified: true,
-          responseTime: '< 1 hour'
-        },
-        {
-          id: 4,
-          title: 'Construction Safety Equipment',
-          price: '$15.00',
-          minOrder: '200 pieces',
-          supplier: 'Safety First Philippines',
-          location: 'Laguna',
-          rating: 4.6,
-          reviews: 67,
-          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop',
-          verified: false,
-          responseTime: '< 6 hours'
-        },
-        {
-          id: 5,
-          title: 'Electronic Components - Resistors',
-          price: '$0.50',
-          minOrder: '1000 pieces',
-          supplier: 'Tech Components Inc',
-          location: 'Metro Manila',
-          rating: 4.5,
-          reviews: 445,
-          image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=300&h=200&fit=crop',
-          verified: true,
-          responseTime: '< 3 hours'
-        },
-        {
-          id: 6,
-          title: 'Textile Fabric - Cotton Blend',
-          price: '$8.00/yard',
-          minOrder: '100 yards',
-          supplier: 'Philippine Textiles Co',
-          location: 'Pampanga',
-          rating: 4.8,
-          reviews: 178,
-          image: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=300&h=200&fit=crop',
-          verified: true,
-          responseTime: '< 2 hours'
+      const params = {
+        page: pagination.currentPage,
+        ...filters
+      };
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '' || params[key] === null || params[key] === undefined) {
+          delete params[key];
         }
-      ];
-
-      setProducts(mockProducts);
+      });
+      
+      const response = await apiService.getMarketplaceProducts(params);
+      setProducts(response.data);
+      setPagination({
+        currentPage: response.current_page,
+        totalPages: response.last_page,
+        totalItems: response.total,
+        itemsPerPage: response.per_page,
+        from: response.from || 0,
+        to: response.to || 0
+      });
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await apiService.getMarketplaceCategories();
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const response = await apiService.getMarketplaceLocations();
+      setLocations(response.data || []);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
     }
   };
 
@@ -166,87 +124,148 @@ export default function ProductGrid() {
       ...prev,
       [key]: value
     }));
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+  };
+
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
+  };
+
+  const handleSearch = (searchTerm) => {
+    setFilters(prev => ({ ...prev, search: searchTerm }));
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
   const clearFilters = () => {
     setFilters({
       category: '',
       priceRange: '',
-      rating: '',
       location: '',
+      search: '',
       sortBy: 'relevance'
     });
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
   const renderStars = (rating) => {
+    const numRating = parseFloat(rating) || 0;
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         className={`w-4 h-4 ${
-          i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+          i < Math.floor(numRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
         }`}
       />
     ));
   };
 
   const ProductCard = ({ product }) => (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-      <div className="relative">
-        <img
-          src={product.image}
-          alt={product.title}
-          className="w-full h-48 object-cover"
-        />
-        {product.verified && (
-          <span className="absolute top-2 left-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-            Verified
-          </span>
-        )}
-      </div>
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
+      <Link href={`/buyer/products/${product.id}`}>
+        <div className="cursor-pointer">
+          <div className="relative">
+            {product.has_image ? (
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-200 flex items-center justify-center group-hover:bg-gray-300 transition-colors duration-200">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-lg flex items-center justify-center">
+                    <ShoppingCart className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <p className="text-sm text-gray-500">No Image Available</p>
+                </div>
+              </div>
+            )}
+            {product.company.verified && (
+              <span className="absolute top-2 left-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                Verified
+              </span>
+            )}
+          </div>
+          
+          <div className="p-4">
+            <h3 className="font-medium text-secondary-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors duration-200">
+              {product.name}
+            </h3>
+            
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg font-bold text-primary-600">
+                ${parseFloat(product.price).toFixed(2)}{product.unit ? `/${product.unit}` : ''}
+              </span>
+              <span className="text-sm text-secondary-500">MOQ: {product.moq}</span>
+            </div>
+            
+            <div className="flex items-center space-x-1 mb-2">
+              <MapPin className="w-4 h-4 text-secondary-400" />
+              <span className="text-sm text-secondary-600">{product.company.location}</span>
+            </div>
+            
+            <div className="mb-2">
+              <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                {product.category}
+              </span>
+            </div>
+            
+            <div className="mb-3">
+              <p className="text-sm font-medium text-secondary-900">{product.company.name}</p>
+              <p className="text-xs text-secondary-500">Lead time: {product.lead_time}</p>
+            </div>
+          </div>
+        </div>
+      </Link>
       
-      <div className="p-4">
-        <h3 className="font-medium text-secondary-900 mb-2 line-clamp-2">
-          {product.title}
-        </h3>
-        
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-lg font-bold text-primary-600">{product.price}</span>
-          <span className="text-sm text-secondary-500">Min: {product.minOrder}</span>
-        </div>
-        
-        <div className="flex items-center space-x-1 mb-2">
-          {renderStars(product.rating)}
-          <span className="text-sm text-secondary-600">({product.reviews})</span>
-        </div>
-        
-        <div className="flex items-center space-x-1 mb-2">
-          <MapPin className="w-4 h-4 text-secondary-400" />
-          <span className="text-sm text-secondary-600">{product.location}</span>
-        </div>
-        
-        <div className="mb-3">
-          <p className="text-sm font-medium text-secondary-900">{product.supplier}</p>
-          <p className="text-xs text-secondary-500">Response: {product.responseTime}</p>
-        </div>
-        
+      <div className="px-4 pb-4">
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // TODO: Implement quick contact functionality
+              console.log('Quick contact for product:', product.id);
+            }}
+          >
             <MessageSquare className="w-4 h-4 mr-1" />
             Contact
           </Button>
-          <Button size="sm" className="flex-1">
-            <ShoppingCart className="w-4 h-4 mr-1" />
-            Order
-          </Button>
+          <Link href={`/buyer/products/${product.id}`} className="flex-1">
+            <Button size="sm" className="w-full">
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              View Details
+            </Button>
+          </Link>
         </div>
       </div>
     </Card>
   );
 
-  if (loading) {
+  if (loading && products.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        {/* Filter Bar Skeleton */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-4">
+            <div className="w-20 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="w-32 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-16 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Skeleton Product Grid */}
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 12 }).map((_, index) => (
+            <ProductCardSkeleton key={index} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -279,7 +298,9 @@ export default function ProductGrid() {
         </div>
         
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-secondary-600">{products.length} products</span>
+          <span className="text-sm text-secondary-600">
+            {pagination.from}-{pagination.to} of {pagination.totalItems} products
+          </span>
           <div className="flex border border-secondary-300 rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
@@ -313,16 +334,20 @@ export default function ProductGrid() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
-              <select
-                value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+              {categories.length === 0 ? (
+                <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+              ) : (
+                <select
+                  value={filters.category}
+                  onChange={(e) => handleFilterChange('category', e.target.value)}
+                  className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">All Categories</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              )}
             </div>
             
             <div>
@@ -341,30 +366,31 @@ export default function ProductGrid() {
             
             <div>
               <label className="block text-sm font-medium text-secondary-700 mb-2">Location</label>
-              <select
-                value={filters.location}
-                onChange={(e) => handleFilterChange('location', e.target.value)}
-                className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="">All Locations</option>
-                {locations.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
+              {locations.length === 0 ? (
+                <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+              ) : (
+                <select
+                  value={filters.location}
+                  onChange={(e) => handleFilterChange('location', e.target.value)}
+                  className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">All Locations</option>
+                  {locations.map(location => (
+                    <option key={location} value={location}>{location}</option>
+                  ))}
+                </select>
+              )}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Min Rating</label>
-              <select
-                value={filters.rating}
-                onChange={(e) => handleFilterChange('rating', e.target.value)}
+              <label className="block text-sm font-medium text-secondary-700 mb-2">Search</label>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                placeholder="Search products..."
                 className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="">Any Rating</option>
-                <option value="4">4+ Stars</option>
-                <option value="3">3+ Stars</option>
-                <option value="2">2+ Stars</option>
-              </select>
+              />
             </div>
           </div>
         </Card>
@@ -376,10 +402,46 @@ export default function ProductGrid() {
           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'
       }`}>
-        {products.map(product => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {loading && products.length > 0 ? (
+          // Show existing products with skeleton for new ones during pagination
+          [...products.map(product => (
+            <ProductCard key={product.id} product={product} />
+          )), ...Array.from({ length: 6 }).map((_, index) => (
+            <ProductCardSkeleton key={`skeleton-${index}`} />
+          ))]
+        ) : (
+          products.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))
+        )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-8">
+          {loading ? (
+            <div className="flex justify-center items-center space-x-2">
+              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-16 h-4 bg-gray-200 rounded animate-pulse ml-4"></div>
+            </div>
+          ) : (
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.totalItems}
+              itemsPerPage={pagination.itemsPerPage}
+              onPageChange={handlePageChange}
+              paginationInfo={{
+                from: pagination.from,
+                to: pagination.to,
+                total: pagination.totalItems
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -47,7 +47,7 @@ export default function BuyerSideBar({ isOpen, onClose }) {
 
   const navigation = [
     { name: 'Home', href: '/buyer', icon: Home },
-    { name: 'Messages', href: '/chat', icon: MessageSquare },
+    { name: 'Messages', href: '/buyer/messages', icon: MessageSquare },
     { name: 'Buying Leads', href: '/buyer/rfqs', icon: FileText },
     { name: 'Orders', href: '/buyer/orders', icon: ShoppingCart },
     { name: 'Transactions', href: '/buyer/transactions', icon: Package2 },

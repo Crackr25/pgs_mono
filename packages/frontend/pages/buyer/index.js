@@ -16,6 +16,7 @@ import {
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import ProductGrid from '../../components/buyer/ProductGrid';
+import { StatsSkeleton } from '../../components/common/Skeleton';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
 
@@ -130,55 +131,59 @@ export default function BuyerDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-secondary-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-blue-600" />
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Package className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-secondary-600">Products</p>
+                  <p className="text-lg font-bold text-secondary-900">50K+</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-secondary-600">Products</p>
-                <p className="text-lg font-bold text-secondary-900">50K+</p>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Users className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-secondary-600">Suppliers</p>
+                  <p className="text-lg font-bold text-secondary-900">2.5K+</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-secondary-600">Avg Response</p>
+                  <p className="text-lg font-bold text-secondary-900">2 hrs</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-secondary-600">Success Rate</p>
+                  <p className="text-lg font-bold text-secondary-900">95%</p>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-secondary-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-secondary-600">Suppliers</p>
-                <p className="text-lg font-bold text-secondary-900">2.5K+</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-secondary-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-secondary-600">Avg Response</p>
-                <p className="text-lg font-bold text-secondary-900">2 hrs</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-secondary-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-secondary-600">Success Rate</p>
-                <p className="text-lg font-bold text-secondary-900">95%</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Product Marketplace */}
         <ProductGrid />

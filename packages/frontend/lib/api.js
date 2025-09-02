@@ -487,7 +487,78 @@ class ApiService {
   async getUnreadCount() {
     return this.request('/chat/unread-count');
   }
-  
+
+  async sendMessage(conversationId, message, attachment = null) {
+    const formData = new FormData();
+    formData.append('conversation_id', conversationId);
+    formData.append('message', message);
+    formData.append('message_type', attachment ? (attachment.type.startsWith('image/') ? 'image' : 'file') : 'text');
+    
+    if (attachment) {
+      formData.append('attachment', attachment);
+    }
+
+    return this.request('/chat/send', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Don't set Content-Type for FormData, let browser set it
+        'Authorization': `Bearer ${this.token}`,
+      },
+    });
+  }
+
+  // Buyer-specific message methods
+  async getBuyerConversations() {
+    return this.request('/buyer/conversations');
+  }
+
+  async getBuyerConversationMessages(conversationId) {
+    return this.request(`/buyer/conversations/${conversationId}`);
+  }
+
+  async sendBuyerMessage(messageData) {
+    return this.request('/buyer/messages/send', {
+      method: 'POST',
+      body: JSON.stringify(messageData),
+    });
+  }
+
+  async markBuyerMessagesAsRead(data) {
+    return this.request('/buyer/messages/mark-read', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getBuyerUnreadCount() {
+    return this.request('/buyer/messages/unread-count');
+  }
+
+  // Marketplace methods (public - no auth required)
+  async getMarketplaceProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/marketplace/products${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getMarketplaceProductDetails(id) {
+    return this.request(`/marketplace/products/${id}`);
+  }
+
+  async submitMarketplaceInquiry(inquiryData) {
+    return this.request('/marketplace/inquiries', {
+      method: 'POST',
+      body: JSON.stringify(inquiryData),
+    });
+  }
+
+  async getMarketplaceCategories() {
+    return this.request('/marketplace/categories');
+  }
+
+  async getMarketplaceLocations() {
+    return this.request('/marketplace/locations');
+  }
 
 }
 

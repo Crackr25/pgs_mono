@@ -135,6 +135,7 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
                     {router.pathname.includes('/rfqs') && 'RFQs'}
                     {router.pathname.includes('/quotes') && 'Quotes'}
                     {router.pathname.includes('/orders') && 'Orders'}
+                    {router.pathname.includes('/messages') && 'Messages'}
                     {router.pathname.includes('/profile') && 'Profile'}
                     {router.pathname.includes('/analytics') && 'Analytics'}
                   </span>
@@ -222,7 +223,7 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
             </div>
 
             {/* Messages */}
-            <Link href="/chat">
+            <Link href="/buyer/messages">
               <button className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <MessageSquare className="h-5 w-5" />
               </button>
