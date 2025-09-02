@@ -267,7 +267,7 @@ Product Link: ${window.location.href}`;
               {product.images && product.images.length > 0 ? (
                 <>
                   <Image
-                    src={product.images[currentImageIndex]}
+                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${product.images[currentImageIndex]}`}
                     alt={product.name}
                     fill
                     className="object-cover"
@@ -295,29 +295,6 @@ Product Link: ${window.location.href}`;
                 </div>
               )}
             </div>
-
-            {/* Thumbnail Images */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto">
-                {product.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
-                      currentImageIndex === index ? 'border-primary-500' : 'border-secondary-200'
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} ${index + 1}`}
-                      width={80}
-                      height={80}
-                      className="object-cover w-full h-full"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Product Info */}

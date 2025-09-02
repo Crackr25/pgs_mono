@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\MarketplaceController;
 use App\Http\Controllers\Api\BuyerMessageController;
+use App\Http\Controllers\Api\BuyerRFQController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 
@@ -115,8 +116,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buyer/conversations', [BuyerMessageController::class, 'getConversations']);
     Route::get('/buyer/conversations/{id}', [BuyerMessageController::class, 'getConversationMessages']);
     Route::post('/buyer/messages/send', [BuyerMessageController::class, 'sendMessage']);
+    Route::post('/buyer/messages/send-attachment', [BuyerMessageController::class, 'sendAttachment']);
     Route::post('/buyer/messages/mark-read', [BuyerMessageController::class, 'markAsRead']);
     Route::get('/buyer/messages/unread-count', [BuyerMessageController::class, 'getUnreadCount']);
+
+    // Buyer RFQ routes
+    Route::get('/buyer/rfqs', [BuyerRFQController::class, 'index']);
+    Route::post('/buyer/rfqs', [BuyerRFQController::class, 'store']);
+    Route::get('/buyer/rfqs/{id}', [BuyerRFQController::class, 'show']);
+    Route::put('/buyer/rfqs/{id}', [BuyerRFQController::class, 'update']);
+    Route::delete('/buyer/rfqs/{id}', [BuyerRFQController::class, 'destroy']);
+    Route::post('/buyer/rfqs/{id}/publish', [BuyerRFQController::class, 'publish']);
+    Route::post('/buyer/rfqs/{id}/close', [BuyerRFQController::class, 'close']);
+    Route::post('/buyer/rfqs/{id}/upload-attachment', [BuyerRFQController::class, 'uploadAttachment']);
+    Route::delete('/buyer/rfqs/{id}/remove-attachment', [BuyerRFQController::class, 'removeAttachment']);
+    Route::get('/buyer/rfqs/categories', [BuyerRFQController::class, 'getCategories']);
+    Route::get('/buyer/rfqs/dashboard-stats', [BuyerRFQController::class, 'getDashboardStats']);
 
     
 });

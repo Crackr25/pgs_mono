@@ -160,13 +160,13 @@ export default function ProductGrid() {
   };
 
   const ProductCard = ({ product }) => (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group h-full flex flex-col">
       <Link href={`/buyer/products/${product.id}`}>
-        <div className="cursor-pointer">
+        <div className="cursor-pointer flex-1 flex flex-col">
           <div className="relative">
             {product.has_image ? (
               <img
-                src={product.image}
+                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${product.image}`}
                 alt={product.name}
                 className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
               />
@@ -187,10 +187,10 @@ export default function ProductGrid() {
             )}
           </div>
           
-          <div className="p-4">
-            <h3 className="font-medium text-secondary-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors duration-200">
+          <div className="p-4 flex-1 flex flex-col">
+            <h4 className="font-small text-secondary-900 h-12 line-clamp-2 group-hover:text-primary-600 transition-colors duration-200 overflow-hidden">
               {product.name}
-            </h3>
+            </h4>
             
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg font-bold text-primary-600">
@@ -201,7 +201,7 @@ export default function ProductGrid() {
             
             <div className="flex items-center space-x-1 mb-2">
               <MapPin className="w-4 h-4 text-secondary-400" />
-              <span className="text-sm text-secondary-600">{product.company.location}</span>
+              <span className="text-sm text-secondary-600 truncate">{product.company.location}</span>
             </div>
             
             <div className="mb-2">
@@ -210,15 +210,15 @@ export default function ProductGrid() {
               </span>
             </div>
             
-            <div className="mb-3">
-              <p className="text-sm font-medium text-secondary-900">{product.company.name}</p>
+            <div className="mb-3 mt-auto">
+              <p className="text-sm font-medium text-secondary-900 truncate">{product.company.name}</p>
               <p className="text-xs text-secondary-500">Lead time: {product.lead_time}</p>
             </div>
           </div>
         </div>
       </Link>
       
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 mt-auto">
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
@@ -234,12 +234,6 @@ export default function ProductGrid() {
             <MessageSquare className="w-4 h-4 mr-1" />
             Contact
           </Button>
-          <Link href={`/buyer/products/${product.id}`} className="flex-1">
-            <Button size="sm" className="w-full">
-              <ShoppingCart className="w-4 h-4 mr-1" />
-              View Details
-            </Button>
-          </Link>
         </div>
       </div>
     </Card>

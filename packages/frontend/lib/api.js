@@ -441,7 +441,10 @@ class ApiService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}`);
+      const error = new Error(errorData.message || `HTTP ${response.status}`);
+      error.field_errors = errorData.field_errors || errorData.errors;
+      error.status = response.status;
+      throw error;
     }
 
     return response.json();
@@ -535,6 +538,138 @@ class ApiService {
     return this.request('/buyer/messages/unread-count');
   }
 
+  // Buyer RFQ methods
+  async getBuyerRFQs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/buyer/rfqs${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async createBuyerRFQ(rfqData, attachments = []) {
+    try {
+      const formData = new FormData();
+      
+      // Add all RFQ data
+      Object.keys(rfqData).forEach(key => {
+        if (key === 'specifications') {
+          formData.append('specifications', JSON.stringify(rfqData[key]));
+        } else if (rfqData[key] !== null && rfqData[key] !== undefined) {
+          formData.append(key, rfqData[key]);
+        }
+      });
+
+      // Add attachments
+      attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+      });
+
+      const fetchResponse = await fetch(`${this.baseURL}/buyer/rfqs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      if (!fetchResponse.ok) {
+        const errorData = await fetchResponse.json().catch(() => ({}));
+        const error = new Error(errorData.message || `HTTP ${fetchResponse.status}`);
+        error.field_errors = errorData.field_errors || errorData.errors;
+        error.status = fetchResponse.status;
+        throw error;
+      }
+
+      return await fetchResponse.json();
+    } catch (error) {
+      console.error('Error creating RFQ:', error);
+      throw error;
+    }
+  }
+
+  async getBuyerRFQ(id) {
+    return this.request(`/buyer/rfqs/${id}`);
+  }
+
+  async updateBuyerRFQ(id, rfqData) {
+    return this.request(`/buyer/rfqs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(rfqData)
+    });
+  }
+
+  async deleteBuyerRFQ(id) {
+    return this.request(`/buyer/rfqs/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async publishBuyerRFQ(id) {
+    return this.request(`/buyer/rfqs/${id}/publish`, {
+      method: 'POST'
+    });
+  }
+
+  async closeBuyerRFQ(id) {
+    return this.request(`/buyer/rfqs/${id}/close`, {
+      method: 'POST'
+    });
+  }
+
+  async getBuyerRFQCategories() {
+    return this.request('/buyer/rfqs/categories');
+  }
+
+  async getBuyerRFQDashboardStats() {
+    return this.request('/buyer/rfqs/dashboard-stats');
+  }
+
+  async sendBuyerMessageWithAttachment(conversationId, message, selectedFile) {
+    try {
+      let response;
+      if (selectedFile) {
+        // Send message with attachment using direct fetch for FormData
+        const formData = new FormData();
+        formData.append('conversation_id', conversationId);
+        if (message && message.trim()) {
+          formData.append('message', message);
+        }
+        formData.append('attachment', selectedFile);
+        formData.append('message_type', 'attachment');
+        
+        const fetchResponse = await fetch(`${this.baseURL}/buyer/messages/send-attachment`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Accept': 'application/json'
+          },
+          body: formData
+        });
+
+        if (!fetchResponse.ok) {
+          const errorData = await fetchResponse.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP ${fetchResponse.status}`);
+        }
+
+        response = await fetchResponse.json();
+      } else {
+        // Send text message
+        response = await this.request('/buyer/messages/send', {
+          method: 'POST',
+          body: JSON.stringify({
+            conversation_id: conversationId,
+            message: message,
+            message_type: 'text'
+          })
+        });
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error sending buyer message:', error);
+      throw error;
+    }
+  }
+
   // Marketplace methods (public - no auth required)
   async getMarketplaceProducts(params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -559,6 +694,7 @@ class ApiService {
   async getMarketplaceLocations() {
     return this.request('/marketplace/locations');
   }
+
 
 }
 
