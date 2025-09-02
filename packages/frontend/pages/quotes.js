@@ -44,12 +44,30 @@ export default function Quotes() {
   const [quotedLeadTime, setQuotedLeadTime] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [statisticsLoading, setStatisticsLoading] = useState(false);
+  const [userCompany, setUserCompany] = useState(null);
   const { user, isAuthenticated } = useAuth();
+
+  // Fetch user's company data
+  const fetchUserCompany = async () => {
+    try {
+      // Get user's company - assuming user has a company
+      const companies = await apiService.getCompanies({ user_id: user?.id });
+      if (companies.data && companies.data.length > 0) {
+        setUserCompany(companies.data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching user company:', error);
+      setError('Please complete your company profile first');
+    }
+  };
 
   // Initialize state from URL on component mount and fetch data
   useEffect(() => {
     console.log('useEffect triggered - router.isReady:', router.isReady, 'isAuthenticated:', isAuthenticated);
     if (router.isReady && isAuthenticated) {
+      // Fetch user company first
+      fetchUserCompany();
+      
       const { page = 1, per_page = 10, search = '', status = 'all' } = router.query;
       
       const currentPage = parseInt(page);
@@ -61,7 +79,7 @@ export default function Quotes() {
         setStatusFilter(status);
       }
       
-      // Update pagination info and fetch data together
+      // Update pagination info
       setPaginationInfo(prev => {
         const newPaginationInfo = {
           ...prev,
@@ -69,20 +87,22 @@ export default function Quotes() {
           per_page: itemsPerPage
         };
         
-        // Fetch data with the new pagination info
-        fetchQuotesWithParams(currentPage, itemsPerPage, search, status);
-        
-        // Only fetch statistics on initial load or when specifically needed
-        if (!statistics.total && !statisticsLoading) {
-          fetchStatistics();
-        }
-        
         return newPaginationInfo;
       });
     } else if (router.isReady && !isAuthenticated) {
       console.log('User is not authenticated');
     }
   }, [router.isReady, router.query, isAuthenticated]);
+
+  // Refetch quotes when userCompany is available
+  useEffect(() => {
+    if (userCompany && router.isReady) {
+      console.log('Refetching quotes with userCompany:', userCompany.id);
+      const { page = 1, per_page = 10, search = '', status = 'all' } = router.query;
+      fetchQuotesWithParams(parseInt(page), parseInt(per_page), search, status);
+      fetchStatistics();
+    }
+  }, [userCompany]);
 
   const updateURL = (params) => {
     const query = { ...router.query, ...params };
@@ -117,7 +137,8 @@ export default function Quotes() {
       
       if (search) params.search = search;
       if (status !== 'all') params.status = status;
-      // Removed company_id filter to ensure 'All Status' shows all records consistently
+      // Add company_id filter to show only this company's quotes
+      if (userCompany?.id) params.company_id = userCompany.id;
       
       console.log('Fetching quotes with params:', params);
       const response = await apiService.getQuotes(params);
@@ -167,7 +188,7 @@ export default function Quotes() {
       console.log('Fetching statistics...');
       // Use backend aggregated stats to avoid pagination caps
       const params = {};
-      if (user?.company?.id) params.company_id = user.company.id;
+      if (userCompany?.id) params.company_id = userCompany.id;
       const stats = await apiService.getQuoteStats(params);
       console.log('Statistics response:', stats);
       setStatistics({
@@ -193,13 +214,6 @@ export default function Quotes() {
       setStatisticsLoading(false);
     }
   };
-
-  // Fetch statistics on component mount and after quote responses
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchStatistics();
-    }
-  }, [isAuthenticated]);
 
   const handleQuoteResponse = async (quoteId, responseData) => {
     try {
@@ -228,7 +242,7 @@ export default function Quotes() {
       content = content.replace('{product_name}', selectedQuote.product?.name || 'Product');
       content = content.replace('{quantity}', selectedQuote.quantity);
       content = content.replace('{target_price}', selectedQuote.target_price);
-      content = content.replace('{supplier_name}', user?.company?.name || 'Our Company');
+      content = content.replace('{supplier_name}', userCompany?.name || 'Our Company');
       
       setResponseText(content);
     }
@@ -432,99 +446,104 @@ Best regards,
 
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-secondary-900">Quotes & RFQs</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Quotes & RFQs</h1>
             <p className="mt-1 text-sm text-secondary-600">
               Manage incoming requests for quotations and respond to buyers
             </p>
           </div>
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={() => setShowTemplateModal(true)}>
+          <div className="flex space-x-3 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowTemplateModal(true)}
+              className="flex-1 sm:flex-none"
+            >
               <MessageSquare className="w-4 h-4 mr-2" />
-              Manage Templates
+              <span className="hidden sm:inline">Manage Templates</span>
+              <span className="sm:hidden">Templates</span>
             </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-          <Card className="p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6">
+          <Card className="p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock className="w-6 h-6 text-yellow-600" />
+              <div className="p-2 lg:p-3 bg-yellow-100 rounded-lg">
+                <Clock className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Pending</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 lg:ml-4 min-w-0 flex-1">
+                <p className="text-xs lg:text-sm font-medium text-secondary-600 truncate">Pending</p>
+                <p className="text-xl lg:text-2xl font-semibold text-secondary-900">
                   {statistics.pending}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="p-2 lg:p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 lg:w-6 lg:h-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Responded</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 lg:ml-4 min-w-0 flex-1">
+                <p className="text-xs lg:text-sm font-medium text-secondary-600 truncate">Responded</p>
+                <p className="text-xl lg:text-2xl font-semibold text-secondary-900">
                   {statistics.responded}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-emerald-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              <div className="p-2 lg:p-3 bg-emerald-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Accepted</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 lg:ml-4 min-w-0 flex-1">
+                <p className="text-xs lg:text-sm font-medium text-secondary-600 truncate">Accepted</p>
+                <p className="text-xl lg:text-2xl font-semibold text-secondary-900">
                   {statistics.accepted}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-red-100 rounded-lg">
-                <XCircle className="w-6 h-6 text-red-600" />
+              <div className="p-2 lg:p-3 bg-red-100 rounded-lg">
+                <XCircle className="w-5 h-5 lg:w-6 lg:h-6 text-red-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Rejected</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 lg:ml-4 min-w-0 flex-1">
+                <p className="text-xs lg:text-sm font-medium text-secondary-600 truncate">Rejected</p>
+                <p className="text-xl lg:text-2xl font-semibold text-secondary-900">
                   {statistics.rejected}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <div className="p-2 lg:p-3 bg-blue-100 rounded-lg">
+                <FileText className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Total RFQs</p>
-                <p className="text-2xl font-semibold text-secondary-900">{statistics.total}</p>
+              <div className="ml-3 lg:ml-4 min-w-0 flex-1">
+                <p className="text-xs lg:text-sm font-medium text-secondary-600 truncate">Total RFQs</p>
+                <p className="text-xl lg:text-2xl font-semibold text-secondary-900">{statistics.total}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <MessageSquare className="w-6 h-6 text-purple-600" />
+              <div className="p-2 lg:p-3 bg-purple-100 rounded-lg">
+                <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Response Rate</p>
-                <p className="text-2xl font-semibold text-secondary-900">{statistics.responseRate}%</p>
+              <div className="ml-3 lg:ml-4 min-w-0 flex-1">
+                <p className="text-xs lg:text-sm font-medium text-secondary-600 truncate">Response Rate</p>
+                <p className="text-xl lg:text-2xl font-semibold text-secondary-900">{statistics.responseRate}%</p>
               </div>
             </div>
           </Card>
@@ -532,23 +551,23 @@ Best regards,
 
         {/* Filters */}
         <Card className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="relative">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-4">
+              <div className="relative flex-1 sm:flex-none sm:min-w-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search quotes..."
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               
               <select
                 value={statusFilter}
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                className="px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full sm:w-auto px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
@@ -558,7 +577,7 @@ Best regards,
               </select>
             </div>
             
-            <Button variant="outline">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Filter className="w-4 h-4 mr-2" />
               More Filters
             </Button>
@@ -598,23 +617,23 @@ Best regards,
         )}
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="p-4 lg:p-6">
           <h3 className="text-lg font-medium text-secondary-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button 
               variant="outline" 
-              className="h-20 flex-col"
+              className="h-16 lg:h-20 flex-col justify-center"
               onClick={() => {
                 // TODO: Implement bulk response functionality
                 alert('Bulk response feature coming soon!');
               }}
             >
-              <MessageSquare className="w-6 h-6 mb-2" />
-              Bulk Response
+              <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6 mb-1 lg:mb-2" />
+              <span className="text-sm lg:text-base">Bulk Response</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-20 flex-col"
+              className="h-16 lg:h-20 flex-col justify-center"
               onClick={() => {
                 // Export quotes as CSV
                 const csvContent = "data:text/csv;charset=utf-8," 
@@ -632,16 +651,16 @@ Best regards,
                 document.body.removeChild(link);
               }}
             >
-              <FileText className="w-6 h-6 mb-2" />
-              Export RFQs
+              <FileText className="w-5 h-5 lg:w-6 lg:h-6 mb-1 lg:mb-2" />
+              <span className="text-sm lg:text-base">Export RFQs</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-20 flex-col"
+              className="h-16 lg:h-20 flex-col justify-center sm:col-span-2 lg:col-span-1"
               onClick={() => setShowTemplateModal(true)}
             >
-              <Plus className="w-6 h-6 mb-2" />
-              Create Template
+              <Plus className="w-5 h-5 lg:w-6 lg:h-6 mb-1 lg:mb-2" />
+              <span className="text-sm lg:text-base">Create Template</span>
             </Button>
           </div>
         </Card>
