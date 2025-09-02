@@ -41,77 +41,37 @@ export default function RFQs() {
       setLoading(true);
       setError(null);
 
-      // Mock data for now - replace with actual API calls
-      const mockRFQs = [
-        {
-          id: 1,
-          title: 'LED Light Fixtures - 1000 units',
-          description: 'High-quality LED light fixtures for commercial use',
-          category: 'Electronics',
-          quantity: 1000,
-          unit: 'pieces',
-          budget_min: 20,
-          budget_max: 30,
-          status: 'active',
-          created_at: '2024-01-15T10:00:00Z',
-          expires_at: '2024-02-15T10:00:00Z',
-          responses_count: 5,
-          location: 'Manila, Philippines'
-        },
-        {
-          id: 2,
-          title: 'Industrial Pumps - 50 units',
-          description: 'Heavy-duty industrial water pumps',
-          category: 'Industrial Equipment',
-          quantity: 50,
-          unit: 'pieces',
-          budget_min: 800,
-          budget_max: 1000,
-          status: 'closed',
-          created_at: '2024-01-14T09:00:00Z',
-          expires_at: '2024-02-14T09:00:00Z',
-          responses_count: 12,
-          location: 'Cebu, Philippines'
-        },
-        {
-          id: 3,
-          title: 'Steel Pipes - 200 meters',
-          description: 'Galvanized steel pipes for construction',
-          category: 'Construction Materials',
-          quantity: 200,
-          unit: 'meters',
-          budget_min: 40,
-          budget_max: 60,
-          status: 'active',
-          created_at: '2024-01-13T14:00:00Z',
-          expires_at: '2024-02-13T14:00:00Z',
-          responses_count: 3,
-          location: 'Davao, Philippines'
+      const params = {
+        page: page,
+        search: searchTerm,
+        status: statusFilter !== 'all' ? statusFilter : undefined
+      };
+
+      // Remove empty params
+      Object.keys(params).forEach(key => {
+        if (params[key] === '' || params[key] === null || params[key] === undefined) {
+          delete params[key];
         }
-      ];
-
-      // Filter by search term and status
-      let filteredRFQs = mockRFQs;
-      if (searchTerm) {
-        filteredRFQs = filteredRFQs.filter(rfq =>
-          rfq.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          rfq.category.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      if (statusFilter !== 'all') {
-        filteredRFQs = filteredRFQs.filter(rfq => rfq.status === statusFilter);
-      }
-
-      setRfqs(filteredRFQs);
-      setTotalPages(1);
-      setPaginationInfo({
-        from: filteredRFQs.length > 0 ? 1 : 0,
-        to: filteredRFQs.length,
-        total: filteredRFQs.length
       });
+
+      const response = await apiService.getBuyerRFQs(params);
+      
+      if (response.success !== false) {
+        setRfqs(response.data || []);
+        setTotalPages(response.last_page || 1);
+        setItemsPerPage(response.per_page || 15);
+        setPaginationInfo({
+          from: response.from || 0,
+          to: response.to || 0,
+          total: response.total || 0
+        });
+      } else {
+        throw new Error(response.message || 'Failed to fetch RFQs');
+      }
     } catch (error) {
       console.error('Error fetching RFQs:', error);
       setError('Failed to load RFQs. Please try again.');
+      setRfqs([]);
     } finally {
       setLoading(false);
     }
@@ -127,10 +87,15 @@ export default function RFQs() {
 
     setIsDeleting(true);
     try {
-      // await apiService.deleteRFQ(rfqToDelete.id);
-      setRfqs(prev => prev.filter(r => r.id !== rfqToDelete.id));
-      setShowDeleteModal(false);
-      setRfqToDelete(null);
+      const response = await apiService.deleteBuyerRFQ(rfqToDelete.id);
+      
+      if (response.success) {
+        setRfqs(prev => prev.filter(r => r.id !== rfqToDelete.id));
+        setShowDeleteModal(false);
+        setRfqToDelete(null);
+      } else {
+        setError(response.message || 'Failed to delete RFQ. Please try again.');
+      }
     } catch (error) {
       console.error('Error deleting RFQ:', error);
       setError('Failed to delete RFQ. Please try again.');
@@ -160,7 +125,8 @@ export default function RFQs() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
+      case 'published': return 'bg-green-100 text-green-800';
+      case 'active': return 'bg-green-100 text-green-800'; // Legacy support
       case 'closed': return 'bg-gray-100 text-gray-800';
       case 'expired': return 'bg-red-100 text-red-800';
       case 'draft': return 'bg-yellow-100 text-yellow-800';
@@ -241,14 +207,24 @@ export default function RFQs() {
                   All
                 </button>
                 <button
-                  onClick={() => handleStatusFilter('active')}
+                  onClick={() => handleStatusFilter('published')}
                   className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                    statusFilter === 'active'
+                    statusFilter === 'published'
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-secondary-600 hover:bg-secondary-100'
                   }`}
                 >
-                  Active
+                  Published
+                </button>
+                <button
+                  onClick={() => handleStatusFilter('draft')}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                    statusFilter === 'draft'
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-secondary-600 hover:bg-secondary-100'
+                  }`}
+                >
+                  Draft
                 </button>
                 <button
                   onClick={() => handleStatusFilter('closed')}
@@ -356,7 +332,7 @@ export default function RFQs() {
                       <span>{rfq.responses_count} responses</span>
                       <span>Created {formatDate(rfq.created_at)}</span>
                     </div>
-                    {rfq.status === 'active' && (
+                    {rfq.status === 'published' && (
                       <div className="flex items-center text-sm">
                         <Clock className="w-4 h-4 text-orange-500 mr-1" />
                         <span className="text-orange-600">
@@ -373,7 +349,7 @@ export default function RFQs() {
                         View
                       </Button>
                     </Link>
-                    {rfq.status === 'active' && (
+                    {(rfq.status === 'draft' || rfq.status === 'published') && (
                       <Link href={`/buyer/rfqs/${rfq.id}/edit`}>
                         <Button variant="outline" size="sm">
                           <Edit className="w-4 h-4 mr-1" />

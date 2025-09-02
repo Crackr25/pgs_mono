@@ -10,6 +10,8 @@ use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class BuyerMessageController extends Controller
 {
@@ -215,6 +217,97 @@ class BuyerMessageController extends Controller
                 'message' => $message->message,
                 'message_type' => $message->message_type,
                 'product_id' => $message->product_id,
+                'created_at' => $message->created_at->toISOString(),
+                'read' => $message->read,
+                'sender' => [
+                    'id' => $message->sender->id,
+                    'name' => $message->sender->name,
+                    'email' => $message->sender->email
+                ]
+            ]
+        ], 201);
+    }
+
+    /**
+     * Send a message with attachment from buyer to seller
+     */
+    public function sendAttachment(Request $request)
+    {
+        $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'message' => 'nullable|string|max:1000',
+            'attachment' => 'required|file|max:10240', // 10MB max
+            'message_type' => 'sometimes|string|in:attachment,image,file'
+        ]);
+
+        $user = Auth::user();
+        
+        // Verify buyer owns this conversation
+        $conversation = Conversation::where('id', $request->conversation_id)
+            ->where('buyer_id', $user->id) // Only buyer's conversations
+            ->first();
+
+        if (!$conversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Conversation not found or access denied'
+            ], 404);
+        }
+
+        // Handle file attachment
+        $attachmentData = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('chat-attachments', $filename, 'public');
+            
+            $attachmentData = [
+                'name' => $file->getClientOriginalName(),
+                'original_name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'url' => url('storage/' . $path),
+                'size' => $file->getSize(),
+                'type' => $file->getMimeType(),
+                'mime_type' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension()
+            ];
+        }
+
+        // Determine message type
+        $messageType = 'attachment';
+        if ($attachmentData) {
+            $messageType = str_starts_with($attachmentData['type'], 'image/') ? 'image' : 'file';
+        }
+
+        // Create message
+        $message = ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $user->id,
+            'receiver_id' => $conversation->seller_id,
+            'message' => $request->message,
+            'message_type' => $messageType,
+            'attachments' => $attachmentData ? [$attachmentData] : null
+        ]);
+
+        // Update conversation's last message timestamp
+        $conversation->update(['last_message_at' => now()]);
+
+        // Load relationships for broadcasting
+        $message->load('sender', 'receiver');
+
+        // Broadcast the message
+        broadcast(new MessageSent($message));
+
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'id' => $message->id,
+                'conversation_id' => $message->conversation_id,
+                'sender_id' => $message->sender_id,
+                'receiver_id' => $message->receiver_id,
+                'message' => $message->message,
+                'message_type' => $message->message_type,
+                'attachments' => $message->attachments,
                 'created_at' => $message->created_at->toISOString(),
                 'read' => $message->read,
                 'sender' => [

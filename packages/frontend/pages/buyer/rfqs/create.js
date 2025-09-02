@@ -12,6 +12,7 @@ export default function CreateRFQ() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   
   const [formData, setFormData] = useState({
     title: '',
@@ -60,6 +61,14 @@ export default function CreateRFQ() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: null
+      }));
+    }
   };
 
   const handleSpecificationChange = (index, field, value) => {
@@ -104,6 +113,20 @@ export default function CreateRFQ() {
     }));
   };
 
+  // Helper function to get field error message
+  const getFieldError = (fieldName) => {
+    return fieldErrors[fieldName] ? fieldErrors[fieldName][0] : null;
+  };
+
+  // Helper function to get field CSS classes with error styling
+  const getFieldClasses = (fieldName, baseClasses = "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent") => {
+    const hasError = fieldErrors[fieldName];
+    if (hasError) {
+      return `${baseClasses} border-red-300 focus:ring-red-500`;
+    }
+    return `${baseClasses} border-secondary-300 focus:ring-primary-500`;
+  };
+
   const validateForm = () => {
     const errors = [];
     
@@ -143,24 +166,52 @@ export default function CreateRFQ() {
     setError(null);
 
     try {
+      // Clear previous errors
+      setError(null);
+      setFieldErrors({});
+
       // Prepare form data for submission
       const submitData = {
         ...formData,
         specifications: formData.specifications.filter(spec => spec.key && spec.value),
-        expires_at: new Date(Date.now() + (formData.validity_days * 24 * 60 * 60 * 1000)).toISOString()
+        status: 'published' // Publish immediately when submitting
       };
 
-      // Mock API call - replace with actual API
-      console.log('Submitting RFQ:', submitData);
+      // Remove attachments from submitData as they'll be sent separately
+      const { attachments, ...rfqData } = submitData;
+
+      const response = await apiService.createBuyerRFQ(rfqData, formData.attachments);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirect to RFQs list on success
-      router.push('/buyer/rfqs');
+      if (response.success) {
+        router.push('/buyer/rfqs');
+      } else {
+        setError(response.message || 'Failed to create RFQ. Please try again.');
+        
+        // Handle field-specific errors
+        if (response.field_errors) {
+          setFieldErrors(response.field_errors);
+        }
+      }
     } catch (error) {
       console.error('Error creating RFQ:', error);
-      setError('Failed to create RFQ. Please try again.');
+      
+      // Handle field-specific errors from API
+      if (error.field_errors) {
+        setFieldErrors(error.field_errors);
+      }
+      
+      // Parse error response for better user feedback
+      if (error.status === 422 || error.message.includes('Validation')) {
+        setError(error.message || 'Please check the form for errors and try again.');
+      } else if (error.status === 413 || error.message.includes('too large')) {
+        setError('One or more files are too large. Please use files smaller than 10MB.');
+      } else if (error.status === 401 || error.message.includes('Unauthorized')) {
+        setError('Your session has expired. Please log in again.');
+      } else if (error.status === 500) {
+        setError('Server error occurred. Please try again later.');
+      } else {
+        setError(error.message || 'Failed to create RFQ. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -168,14 +219,47 @@ export default function CreateRFQ() {
 
   const handleSaveDraft = async () => {
     setLoading(true);
+    setError(null);
+    setFieldErrors({});
+
     try {
-      // Mock save draft functionality
-      console.log('Saving draft:', formData);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      router.push('/buyer/rfqs');
+      // Prepare form data for submission
+      const submitData = {
+        ...formData,
+        specifications: formData.specifications.filter(spec => spec.key && spec.value),
+        status: 'draft' // Save as draft
+      };
+
+      // Remove attachments from submitData as they'll be sent separately
+      const { attachments, ...rfqData } = submitData;
+
+      const response = await apiService.createBuyerRFQ(rfqData, formData.attachments);
+      
+      if (response.success) {
+        router.push('/buyer/rfqs');
+      } else {
+        setError(response.message || 'Failed to save draft. Please try again.');
+        
+        // Handle field-specific errors
+        if (response.field_errors) {
+          setFieldErrors(response.field_errors);
+        }
+      }
     } catch (error) {
       console.error('Error saving draft:', error);
-      setError('Failed to save draft. Please try again.');
+      
+      // Parse error response for better user feedback
+      if (error.message.includes('422') || error.message.includes('Validation')) {
+        setError('Please check the form for errors and try again.');
+      } else if (error.message.includes('413') || error.message.includes('too large')) {
+        setError('One or more files are too large. Please use files smaller than 10MB.');
+      } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        setError('Your session has expired. Please log in again.');
+      } else if (error.message.includes('500')) {
+        setError('Server error occurred. Please try again later.');
+      } else {
+        setError(error.message || 'Failed to save draft. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -221,9 +305,12 @@ export default function CreateRFQ() {
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="e.g., LED Light Fixtures - 1000 units"
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={getFieldClasses('title')}
                     required
                   />
+                  {getFieldError('title') && (
+                    <p className="mt-1 text-sm text-red-600">{getFieldError('title')}</p>
+                  )}
                 </div>
 
                 <div className="lg:col-span-2">
@@ -236,9 +323,12 @@ export default function CreateRFQ() {
                     onChange={handleInputChange}
                     rows={4}
                     placeholder="Provide detailed description of your requirements..."
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={getFieldClasses('description')}
                     required
                   />
+                  {getFieldError('description') && (
+                    <p className="mt-1 text-sm text-red-600">{getFieldError('description')}</p>
+                  )}
                 </div>
 
                 <div>
@@ -249,7 +339,7 @@ export default function CreateRFQ() {
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={getFieldClasses('category')}
                     required
                   >
                     <option value="">Select a category</option>
@@ -257,6 +347,9 @@ export default function CreateRFQ() {
                       <option key={category} value={category}>{category}</option>
                     ))}
                   </select>
+                  {getFieldError('category') && (
+                    <p className="mt-1 text-sm text-red-600">{getFieldError('category')}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -269,10 +362,13 @@ export default function CreateRFQ() {
                       name="quantity"
                       value={formData.quantity}
                       onChange={handleInputChange}
-                      min="1"
-                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Enter quantity"
+                      className={getFieldClasses('quantity')}
                       required
                     />
+                    {getFieldError('quantity') && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError('quantity')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-2">
@@ -282,7 +378,8 @@ export default function CreateRFQ() {
                       name="unit"
                       value={formData.unit}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={getFieldClasses('unit')}
+                      required
                     >
                       {units.map(unit => (
                         <option key={unit} value={unit}>{unit}</option>
@@ -312,9 +409,12 @@ export default function CreateRFQ() {
                       onChange={handleInputChange}
                       min="0"
                       step="0.01"
-                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={getFieldClasses('budget_min')}
                       required
                     />
+                    {getFieldError('budget_min') && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError('budget_min')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-2">
@@ -327,9 +427,12 @@ export default function CreateRFQ() {
                       onChange={handleInputChange}
                       min="0"
                       step="0.01"
-                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={getFieldClasses('budget_max')}
                       required
                     />
+                    {getFieldError('budget_max') && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError('budget_max')}</p>
+                    )}
                   </div>
                 </div>
 
@@ -343,9 +446,12 @@ export default function CreateRFQ() {
                     value={formData.delivery_location}
                     onChange={handleInputChange}
                     placeholder="e.g., Manila, Philippines"
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={getFieldClasses('delivery_location')}
                     required
                   />
+                  {getFieldError('delivery_location') && (
+                    <p className="mt-1 text-sm text-red-600">{getFieldError('delivery_location')}</p>
+                  )}
                 </div>
 
                 <div>
@@ -359,9 +465,12 @@ export default function CreateRFQ() {
                       value={formData.delivery_date}
                       onChange={handleInputChange}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={getFieldClasses('delivery_date')}
                       required
                     />
+                    {getFieldError('delivery_date') && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError('delivery_date')}</p>
+                    )}
                     <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4 pointer-events-none" />
                   </div>
                 </div>
@@ -374,7 +483,7 @@ export default function CreateRFQ() {
                     name="validity_days"
                     value={formData.validity_days}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={getFieldClasses('validity_days')}
                   >
                     <option value={7}>7 days</option>
                     <option value={14}>14 days</option>
@@ -382,6 +491,9 @@ export default function CreateRFQ() {
                     <option value={60}>60 days</option>
                     <option value={90}>90 days</option>
                   </select>
+                  {getFieldError('validity_days') && (
+                    <p className="mt-1 text-sm text-red-600">{getFieldError('validity_days')}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -406,14 +518,14 @@ export default function CreateRFQ() {
                       placeholder="Specification name"
                       value={spec.key}
                       onChange={(e) => handleSpecificationChange(index, 'key', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={getFieldClasses(`specifications.${index}.key`, "flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent")}
                     />
                     <input
                       type="text"
                       placeholder="Value/Requirement"
                       value={spec.value}
                       onChange={(e) => handleSpecificationChange(index, 'value', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className={getFieldClasses(`specifications.${index}.value`, "flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent")}
                     />
                     {formData.specifications.length > 1 && (
                       <button
@@ -426,6 +538,11 @@ export default function CreateRFQ() {
                     )}
                   </div>
                 ))}
+                {(getFieldError('specifications.0.key') || getFieldError('specifications.0.value')) && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {getFieldError('specifications.0.key') || getFieldError('specifications.0.value')}
+                  </p>
+                )}
               </div>
             </div>
           </Card>
@@ -455,6 +572,10 @@ export default function CreateRFQ() {
                     </Button>
                   </label>
                 </div>
+
+                {getFieldError('attachments') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('attachments')}</p>
+                )}
 
                 {formData.attachments.length > 0 && (
                   <div className="space-y-2">

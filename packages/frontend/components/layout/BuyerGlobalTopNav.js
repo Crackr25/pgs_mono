@@ -164,7 +164,7 @@ export default function BuyerGlobalTopNav() {
             </div>
 
             {/* Messages */}
-            <Link href="/chat">
+            <Link href="/buyer/messages">
               <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
                 <MessageSquare className="w-5 h-5" />
                 {messageCount > 0 && (
