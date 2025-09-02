@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         // Run the OrderSeeder
         $this->call([
             OrderSeeder::class,
+            ComprehensiveQuoteRFQSeeder::class,
         ]);
     }
 }

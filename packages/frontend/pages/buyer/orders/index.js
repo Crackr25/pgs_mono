@@ -34,6 +34,7 @@ export default function Orders() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [paginationInfo, setPaginationInfo] = useState({
     from: 0,
     to: 0,
@@ -273,6 +274,11 @@ export default function Orders() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handlePerPageChange = (perPage) => {
+    setItemsPerPage(perPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
   const getStatusColor = (status) => {
@@ -596,8 +602,11 @@ export default function Orders() {
               <Card>
                 <Pagination
                   currentPage={currentPage}
-                  totalPages={totalPages}
+                  lastPage={totalPages}
+                  perPage={itemsPerPage}
                   onPageChange={handlePageChange}
+                  onPerPageChange={handlePerPageChange}
+                  showPerPageSelector={true}
                   from={paginationInfo.from}
                   to={paginationInfo.to}
                   total={paginationInfo.total}

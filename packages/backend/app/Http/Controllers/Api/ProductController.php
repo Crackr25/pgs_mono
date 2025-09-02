@@ -59,7 +59,14 @@ class ProductController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
         
-        $products = $query->paginate(15);
+        // Pagination settings (align with Quotes controller)
+        $perPage = (int) $request->get('per_page', 10);
+        $allowedPerPage = [10, 15, 25, 50, 100];
+        if (!in_array($perPage, $allowedPerPage, true)) {
+            $perPage = 10;
+        }
+        
+        $products = $query->orderBy('created_at', 'desc')->paginate($perPage);
         
         return response()->json($products);
     }
