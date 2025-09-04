@@ -695,6 +695,67 @@ class ApiService {
     return this.request('/marketplace/locations');
   }
 
+  // Saved Products methods
+  async getSavedProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/saved-products${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async saveProduct(productId) {
+    return this.request('/saved-products', {
+      method: 'POST',
+      body: JSON.stringify({ product_id: productId }),
+    });
+  }
+
+  async unsaveProduct(productId) {
+    return this.request(`/saved-products/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async checkSavedProduct(productId) {
+    return this.request(`/saved-products/check/${productId}`);
+  }
+
+  // Supplier methods
+  async getSupplierDetails(supplierId) {
+    return this.request(`/suppliers/${supplierId}`);
+  }
+
+  async getSupplierProducts(supplierId, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/suppliers/${supplierId}/products${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getSupplierReviews(supplierId, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/suppliers/${supplierId}/reviews${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Starred Suppliers methods
+  async getStarredSuppliers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/starred-suppliers${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async starSupplier(supplierId) {
+    return this.request('/starred-suppliers', {
+      method: 'POST',
+      body: JSON.stringify({ supplier_id: supplierId }),
+    });
+  }
+
+  async unstarSupplier(supplierId) {
+    return this.request(`/starred-suppliers/${supplierId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async checkStarredSupplier(supplierId) {
+    return this.request(`/starred-suppliers/check/${supplierId}`);
+  }
+
 
 }
 
