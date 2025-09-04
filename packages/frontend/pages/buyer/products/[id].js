@@ -42,6 +42,8 @@ export default function ProductDetail() {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
   
   const inquiryTemplates = [
     {
@@ -79,6 +81,7 @@ export default function ProductDetail() {
   useEffect(() => {
     if (id) {
       fetchProductDetails();
+      checkIfProductSaved();
     }
   }, [id]);
 
@@ -93,6 +96,36 @@ export default function ProductDetail() {
       setError('Failed to load product details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkIfProductSaved = async () => {
+    try {
+      const savedStatus = await apiService.checkSavedProduct(id);
+      setIsSaved(savedStatus.is_saved);
+    } catch (error) {
+      console.error('Error checking saved status:', error);
+    }
+  };
+
+  const handleSaveProduct = async () => {
+    if (savingProduct) return;
+    
+    try {
+      setSavingProduct(true);
+      
+      if (isSaved) {
+        await apiService.unsaveProduct(id);
+        setIsSaved(false);
+      } else {
+        await apiService.saveProduct(id);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error saving/unsaving product:', error);
+      alert('Failed to save product. Please try again.');
+    } finally {
+      setSavingProduct(false);
     }
   };
 
@@ -346,7 +379,11 @@ Product Link: ${window.location.href}`;
                   </div>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold text-secondary-900">{product.company.name}</h3>
+                      <Link href={`/buyer/suppliers/${product.company.id}`}>
+                        <h3 className="font-semibold text-secondary-900 hover:text-primary-600 cursor-pointer">
+                          {product.company.name}
+                        </h3>
+                      </Link>
                       {product.company.verified && (
                         <Shield className="w-4 h-4 text-green-500" />
                       )}
@@ -386,9 +423,14 @@ Product Link: ${window.location.href}`;
 
             {/* Quick Actions */}
             <div className="flex space-x-4">
-              <Button variant="outline" className="flex-1">
-                <Heart className="w-4 h-4 mr-2" />
-                Save
+              <Button 
+                variant="outline" 
+                className={`flex-1 `}
+                onClick={handleSaveProduct}
+                disabled={savingProduct}
+              >
+                <Heart className={`w-4 h-4 mr-2  ${isSaved ? 'fill-current text-red-500' : ''}`} />
+                {savingProduct ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
               </Button>
               <Button variant="outline" className="flex-1">
                 <Share2 className="w-4 h-4 mr-2" />

@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\MarketplaceController;
 use App\Http\Controllers\Api\BuyerMessageController;
 use App\Http\Controllers\Api\BuyerRFQController;
+use App\Http\Controllers\Api\SavedProductController;
+use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\StarredSupplierController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 
@@ -132,6 +135,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/buyer/rfqs/{id}/remove-attachment', [BuyerRFQController::class, 'removeAttachment']);
     Route::get('/buyer/rfqs/categories', [BuyerRFQController::class, 'getCategories']);
     Route::get('/buyer/rfqs/dashboard-stats', [BuyerRFQController::class, 'getDashboardStats']);
+
+    // Saved Products routes
+    Route::get('/saved-products', [SavedProductController::class, 'index']);
+    Route::post('/saved-products', [SavedProductController::class, 'store']);
+    Route::delete('/saved-products/{productId}', [SavedProductController::class, 'destroy']);
+    Route::get('/saved-products/check/{productId}', [SavedProductController::class, 'checkSaved']);
+
+    // Supplier routes
+    Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
+    Route::get('/suppliers/{id}/products', [SupplierController::class, 'products']);
+    Route::get('/suppliers/{id}/reviews', [SupplierController::class, 'reviews']);
+
+    // Starred Suppliers routes
+    Route::get('/starred-suppliers', [StarredSupplierController::class, 'index']);
+    Route::post('/starred-suppliers', [StarredSupplierController::class, 'store']);
+    Route::delete('/starred-suppliers/{supplierId}', [StarredSupplierController::class, 'destroy']);
+    Route::get('/starred-suppliers/check/{supplierId}', [StarredSupplierController::class, 'checkStarred']);
 
     
 });
