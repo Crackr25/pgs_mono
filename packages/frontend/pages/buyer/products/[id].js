@@ -22,16 +22,22 @@ import {
   ChevronRight,
   Heart,
   Share2,
-  AlertCircle
+  AlertCircle,
+  ShoppingCart,
+  Plus,
+  Minus
 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Skeleton from '../../../components/common/Skeleton';
+import CartNotification from '../../../components/common/CartNotification';
+import { useCart } from '../../../contexts/CartContext';
 import apiService from '../../../lib/api';
 
 export default function ProductDetail() {
   const router = useRouter();
   const { id } = router.query;
+  const { addToCart: addToCartContext } = useCart();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +50,10 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [cartQuantity, setCartQuantity] = useState(1);
+  const [selectedSpecs, setSelectedSpecs] = useState({});
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [showCartNotification, setShowCartNotification] = useState(false);
   
   const inquiryTemplates = [
     {
@@ -84,6 +94,13 @@ export default function ProductDetail() {
       checkIfProductSaved();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (product) {
+      // Set minimum quantity to MOQ
+      setCartQuantity(product.moq || 1);
+    }
+  }, [product]);
 
   const fetchProductDetails = async () => {
     try {
@@ -127,6 +144,43 @@ export default function ProductDetail() {
     } finally {
       setSavingProduct(false);
     }
+  };
+
+  const handleAddToCart = async () => {
+    if (addingToCart) return;
+    
+    try {
+      setAddingToCart(true);
+      
+      await addToCartContext(parseInt(id), cartQuantity, selectedSpecs);
+      setShowCartNotification(true);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        alert(errorMessages.join('\n'));
+      } else {
+        alert('Failed to add product to cart. Please try again.');
+      }
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const handleQuantityChange = (newQuantity) => {
+    const minQty = product?.moq || 1;
+    const maxQty = product?.stock_quantity || 999999;
+    
+    if (newQuantity >= minQty && newQuantity <= maxQty) {
+      setCartQuantity(newQuantity);
+    }
+  };
+
+  const handleSpecChange = (specKey, specValue) => {
+    setSelectedSpecs(prev => ({
+      ...prev,
+      [specKey]: specValue
+    }));
   };
 
   const handleMessageSubmit = async (e) => {
@@ -421,15 +475,134 @@ Product Link: ${window.location.href}`;
               </div>
             </Card>
 
+            {/* Add to Cart Section */}
+            {product.stock_quantity > 0 && (
+              <Card className="p-6 bg-gray-50 border-2 border-dashed border-gray-200">
+                <h3 className="text-lg font-semibold mb-4">Add to Cart</h3>
+                
+                {/* Specifications Selection */}
+                {product.specifications && Object.keys(product.specifications).length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-medium mb-2">Select Specifications:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(product.specifications).map(([key, value]) => {
+                        if (typeof value === 'string' && value.includes(',')) {
+                          // Handle comma-separated options
+                          const options = value.split(',').map(opt => opt.trim());
+                          return (
+                            <div key={key}>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {key}:
+                              </label>
+                              <select
+                                value={selectedSpecs[key] || ''}
+                                onChange={(e) => handleSpecChange(key, e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              >
+                                <option value="">Select {key}</option>
+                                {options.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        } else {
+                          // Display as read-only info
+                          return (
+                            <div key={key} className="flex justify-between py-1">
+                              <span className="text-sm font-medium text-gray-700">{key}:</span>
+                              <span className="text-sm text-gray-900">{value}</span>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantity:
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleQuantityChange(cartQuantity - 1)}
+                      disabled={cartQuantity <= (product.moq || 1)}
+                      className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="number"
+                      value={cartQuantity}
+                      onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
+                      min={product.moq || 1}
+                      max={product.stock_quantity}
+                      className="w-20 px-3 py-2 text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <button
+                      onClick={() => handleQuantityChange(cartQuantity + 1)}
+                      disabled={cartQuantity >= product.stock_quantity}
+                      className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      {product.unit} (Min: {product.moq}, Max: {product.stock_quantity})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Total Price */}
+                <div className="mb-4 p-3 bg-white rounded-md border">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Total Price:</span>
+                    <span className="text-xl font-bold text-primary-600">
+                      ${(product.price * cartQuantity).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    ${product.price.toFixed(2)} × {cartQuantity} {product.unit}
+                  </div>
+                </div>
+
+                {/* Add to Cart Button */}
+                <Button
+                  onClick={handleAddToCart}
+                  disabled={addingToCart || cartQuantity < (product.moq || 1) || cartQuantity > product.stock_quantity}
+                  className="w-full bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  {addingToCart ? 'Adding to Cart...' : 'Add to Cart'}
+                </Button>
+              </Card>
+            )}
+
+            {/* Out of Stock Message */}
+            {product.stock_quantity === 0 && (
+              <Card className="p-4 bg-red-50 border border-red-200">
+                <div className="flex items-center space-x-2 text-red-700">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="font-medium">Out of Stock</span>
+                </div>
+                <p className="text-sm text-red-600 mt-1">
+                  This product is currently out of stock. Contact the supplier for availability.
+                </p>
+              </Card>
+            )}
+
             {/* Quick Actions */}
             <div className="flex space-x-4">
               <Button 
                 variant="outline" 
-                className={`flex-1 `}
+                className={`flex-1 ${isSaved ? 'bg-red-500 text-white border-red-500' : ''}`}
                 onClick={handleSaveProduct}
                 disabled={savingProduct}
               >
-                <Heart className={`w-4 h-4 mr-2  ${isSaved ? 'fill-current text-red-500' : ''}`} />
+                <Heart className={`w-4 h-4 mr-2 ${isSaved ? 'fill-current' : ''}`} />
                 {savingProduct ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
               </Button>
               <Button variant="outline" className="flex-1">
@@ -721,6 +894,14 @@ Product Link: ${window.location.href}`;
             </div>
           </div>
         )}
+
+        {/* Cart Notification */}
+        <CartNotification
+          show={showCartNotification}
+          onClose={() => setShowCartNotification(false)}
+          productName={product?.name}
+          quantity={cartQuantity}
+        />
       </div>
     </>
   );

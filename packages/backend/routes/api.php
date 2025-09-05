@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\BuyerRFQController;
 use App\Http\Controllers\Api\SavedProductController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\StarredSupplierController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 
@@ -152,6 +153,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/starred-suppliers', [StarredSupplierController::class, 'store']);
     Route::delete('/starred-suppliers/{supplierId}', [StarredSupplierController::class, 'destroy']);
     Route::get('/starred-suppliers/check/{supplierId}', [StarredSupplierController::class, 'checkStarred']);
+
+    // Cart routes
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+    Route::delete('/cart', [CartController::class, 'clear']);
+    Route::get('/cart/count', [CartController::class, 'count']);
 
     
 });

@@ -16,17 +16,18 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
 
 export default function BuyerGlobalTopNav() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { cartCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const [selectedCountry, setSelectedCountry] = useState('Philippines');
-  const [cartCount, setCartCount] = useState(3);
   const [messageCount, setMessageCount] = useState(5);
   const [orderCount, setOrderCount] = useState(2);
 
@@ -192,7 +193,7 @@ export default function BuyerGlobalTopNav() {
               <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
                 )}
