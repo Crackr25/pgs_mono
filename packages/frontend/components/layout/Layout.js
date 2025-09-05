@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
+import { CartProvider } from '../../contexts/CartContext';
 import NavBar from './NavBar';
 import BuyerNavBar from './BuyerNavBar';
 import BuyerGlobalTopNav from './BuyerGlobalTopNav';
@@ -59,35 +60,39 @@ export default function Layout({ children }) {
   // Layout for buyer dashboard (home) - only global topnav, no sidenav
   if (isBuyerDashboard) {
     return (
-      <div className="min-h-screen bg-secondary-50">
-        <BuyerGlobalTopNav />
-        <main className="p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-        <Footer />
-      </div>
+      <CartProvider>
+        <div className="min-h-screen bg-secondary-50">
+          <BuyerGlobalTopNav />
+          <main className="p-4 sm:p-6 lg:p-8">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
+          <Footer />
+        </div>
+      </CartProvider>
     );
   }
 
   // Layout for other buyer pages - both global topnav and sidenav
   if (isBuyerPage) {
     return (
-      <div className="min-h-screen bg-secondary-50">
-        <BuyerGlobalTopNav />
-        <div className="flex">
-          <BuyerSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
-          <div className="flex-1 flex flex-col lg:ml-0">
-            <main className="flex-1 p-4 sm:p-6 lg:p-8">
-              <div className="max-w-7xl mx-auto">
-                {children}
-              </div>
-            </main>
+      <CartProvider>
+        <div className="min-h-screen bg-secondary-50">
+          <BuyerGlobalTopNav />
+          <div className="flex">
+            <BuyerSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
+            <div className="flex-1 flex flex-col lg:ml-0">
+              <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                <div className="max-w-7xl mx-auto">
+                  {children}
+                </div>
+              </main>
+            </div>
           </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
+      </CartProvider>
     );
   }
 

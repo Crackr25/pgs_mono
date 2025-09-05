@@ -756,6 +756,45 @@ class ApiService {
     return this.request(`/starred-suppliers/check/${supplierId}`);
   }
 
+  // Cart methods
+  async getCartItems() {
+    return this.request('/cart');
+  }
+
+  async addToCart(productId, quantity, selectedSpecifications = {}) {
+    return this.request('/cart', {
+      method: 'POST',
+      body: JSON.stringify({
+        product_id: productId,
+        quantity: quantity,
+        selected_specifications: selectedSpecifications
+      }),
+    });
+  }
+
+  async updateCartItem(cartItemId, quantity) {
+    return this.request(`/cart/${cartItemId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity: quantity }),
+    });
+  }
+
+  async removeFromCart(cartItemId) {
+    return this.request(`/cart/${cartItemId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearCart() {
+    return this.request('/cart', {
+      method: 'DELETE',
+    });
+  }
+
+  async getCartCount() {
+    return this.request('/cart/count');
+  }
+
 
 }
 

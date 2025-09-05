@@ -11,14 +11,17 @@ import {
   Settings,
   Building,
   MessageSquare,
-  Plus
+  Plus,
+  ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
 import apiService from '../../lib/api';
 
 export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { cartCount } = useCart();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -221,6 +224,18 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
                 </div>
               )}
             </div>
+
+            {/* Cart */}
+            <Link href="/buyer/cart">
+              <button className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 relative">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </button>
+            </Link>
 
             {/* Messages */}
             <Link href="/buyer/messages">
