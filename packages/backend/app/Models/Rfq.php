@@ -29,12 +29,17 @@ class Rfq extends Model
         'validity_days',
         'expires_at',
         'status',
-        'quote_count'
+        'quote_count',
+        'sample_requirements',
+        'supplier_location_preference',
+        'quality_standards',
+        'certifications_required'
     ];
 
     protected $casts = [
         'specifications' => 'array',
         'attachments' => 'array',
+        'certifications_required' => 'array',
         'delivery_date' => 'date',
         'expires_at' => 'datetime',
         'budget_min' => 'decimal:2',
@@ -58,6 +63,11 @@ class Rfq extends Model
     public function quotes(): HasMany
     {
         return $this->hasMany(Quote::class);
+    }
+
+    public function responses(): HasMany
+    {
+        return $this->hasMany(RfqResponse::class);
     }
 
     // Scopes

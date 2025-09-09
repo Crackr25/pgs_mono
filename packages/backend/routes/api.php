@@ -132,6 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/buyer/rfqs/{id}', [BuyerRFQController::class, 'destroy']);
     Route::post('/buyer/rfqs/{id}/publish', [BuyerRFQController::class, 'publish']);
     Route::post('/buyer/rfqs/{id}/close', [BuyerRFQController::class, 'close']);
+    Route::get('/buyer/rfqs/{id}/responses', [BuyerRFQController::class, 'getResponses']);
     Route::post('/buyer/rfqs/{id}/upload-attachment', [BuyerRFQController::class, 'uploadAttachment']);
     Route::delete('/buyer/rfqs/{id}/remove-attachment', [BuyerRFQController::class, 'removeAttachment']);
     Route::get('/buyer/rfqs/categories', [BuyerRFQController::class, 'getCategories']);

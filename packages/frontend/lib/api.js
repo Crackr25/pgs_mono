@@ -49,11 +49,20 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        // Create a proper error object with response data
+        const error = new Error(data.message || `HTTP error! status: ${response.status}`);
+        error.response = { data, status: response.status };
+        throw error;
       }
 
       return data;
     } catch (error) {
+      // If it's already our custom error, just re-throw it
+      if (error.response) {
+        throw error;
+      }
+      
+      // Otherwise, it's a network or other error
       console.error('API request failed:', error);
       throw error;
     }
@@ -590,11 +599,66 @@ class ApiService {
     return this.request(`/buyer/rfqs/${id}`);
   }
 
-  async updateBuyerRFQ(id, rfqData) {
-    return this.request(`/buyer/rfqs/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(rfqData)
-    });
+  async updateBuyerRFQ(id, rfqData, attachments = []) {
+    try {
+      console.log('=== API SERVICE DEBUG START ===');
+      console.log('updateBuyerRFQ called with:', { id, rfqData, attachments });
+      
+      const formData = new FormData();
+      
+      // Add all RFQ data
+      Object.keys(rfqData).forEach(key => {
+        console.log(`Processing key: ${key}, value:`, rfqData[key]);
+        if (key === 'specifications') {
+          formData.append('specifications', JSON.stringify(rfqData[key]));
+        } else if (key === 'existing_attachments') {
+          formData.append('existing_attachments', JSON.stringify(rfqData[key]));
+        } else if (key === 'certifications_required') {
+          formData.append('certifications_required', JSON.stringify(rfqData[key] || []));
+        } else if (rfqData[key] !== null && rfqData[key] !== undefined) {
+          formData.append(key, rfqData[key]);
+        }
+      });
+
+      // Add method spoofing for Laravel FormData handling
+      formData.append('_method', 'PUT');
+
+      // Log FormData contents
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      // Add new attachments (files that need to be uploaded)
+      const newAttachments = attachments.filter(file => file instanceof File);
+      newAttachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+      });
+      
+      console.log('=== API SERVICE DEBUG END ===');
+
+      const fetchResponse = await fetch(`${this.baseURL}/buyer/rfqs/${id}`, {
+        method: 'POST', // Changed from PUT to POST with method spoofing
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      if (!fetchResponse.ok) {
+        const errorData = await fetchResponse.json().catch(() => ({}));
+        const error = new Error(errorData.message || `HTTP ${fetchResponse.status}`);
+        error.field_errors = errorData.field_errors || errorData.errors;
+        error.status = fetchResponse.status;
+        throw error;
+      }
+
+      return await fetchResponse.json();
+    } catch (error) {
+      console.error('Error updating RFQ:', error);
+      throw error;
+    }
   }
 
   async deleteBuyerRFQ(id) {
@@ -623,51 +687,8 @@ class ApiService {
     return this.request('/buyer/rfqs/dashboard-stats');
   }
 
-  async sendBuyerMessageWithAttachment(conversationId, message, selectedFile) {
-    try {
-      let response;
-      if (selectedFile) {
-        // Send message with attachment using direct fetch for FormData
-        const formData = new FormData();
-        formData.append('conversation_id', conversationId);
-        if (message && message.trim()) {
-          formData.append('message', message);
-        }
-        formData.append('attachment', selectedFile);
-        formData.append('message_type', 'attachment');
-        
-        const fetchResponse = await fetch(`${this.baseURL}/buyer/messages/send-attachment`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Accept': 'application/json'
-          },
-          body: formData
-        });
-
-        if (!fetchResponse.ok) {
-          const errorData = await fetchResponse.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${fetchResponse.status}`);
-        }
-
-        response = await fetchResponse.json();
-      } else {
-        // Send text message
-        response = await this.request('/buyer/messages/send', {
-          method: 'POST',
-          body: JSON.stringify({
-            conversation_id: conversationId,
-            message: message,
-            message_type: 'text'
-          })
-        });
-      }
-
-      return response;
-    } catch (error) {
-      console.error('Error sending buyer message:', error);
-      throw error;
-    }
+  async getRFQResponses(rfqId) {
+    return this.request(`/buyer/rfqs/${rfqId}/responses`);
   }
 
   // Marketplace methods (public - no auth required)
@@ -793,6 +814,64 @@ class ApiService {
 
   async getCartCount() {
     return this.request('/cart/count');
+  }
+
+  // Buyer-specific Quote methods (using existing quote endpoints)
+  async getBuyerQuotes(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/quotes${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getBuyerQuote(id) {
+    return this.request(`/quotes/${id}`);
+  }
+
+  async getBuyerQuoteStats(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/quotes/stats${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async acceptQuote(id) {
+    return this.request(`/quotes/${id}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'accept' }),
+    });
+  }
+
+  async rejectQuote(id, reason = '') {
+    return this.request(`/quotes/${id}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reject', reason }),
+    });
+  }
+
+  async cancelQuote(id, reason = '') {
+    return this.request(`/quotes/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async duplicateQuote(id) {
+    return this.request(`/quotes/${id}/duplicate`, {
+      method: 'POST',
+    });
+  }
+
+  async exportQuote(id, format = 'pdf') {
+    return this.request(`/quotes/${id}/export?format=${format}`, {
+      method: 'GET',
+    });
+  }
+
+  async bulkUpdateQuotes(quoteIds, action, data = {}) {
+    return this.request('/quotes/bulk', {
+      method: 'POST',
+      body: JSON.stringify({
+        quote_ids: quoteIds,
+        action,
+        ...data
+      }),
+    });
   }
 
 
