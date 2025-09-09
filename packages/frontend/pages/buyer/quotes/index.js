@@ -69,11 +69,14 @@ export default function MyQuotes() {
 
   // Selected quotes for bulk actions
   const [selectedQuotes, setSelectedQuotes] = useState([]);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user?.email) {
-      fetchQuotes();
-      fetchStats();
+      fetchQuotes().then(() => {
+        // Fetch stats after quotes are loaded so we can calculate expired quotes
+        fetchStats();
+      });
     }
   }, [isAuthenticated, user?.email, currentPage, searchTerm, statusFilter, dateFilter, sortBy, sortOrder]);
 
@@ -137,6 +140,16 @@ export default function MyQuotes() {
       const response = await apiService.getBuyerQuoteStats(params);
       console.log('Stats API response:', response);
       if (response.success !== false) {
+        // Check for expired quotes
+        const expiredCount = quotes.filter(quote => {
+          if (quote.status === 'pending' || quote.status === 'responded') {
+            const deadline = new Date(quote.deadline);
+            const now = new Date();
+            return deadline < now;
+          }
+          return false;
+        }).length;
+
         // Handle the stats response structure from Laravel
         const newStats = {
           total: response.total || 0,
@@ -145,7 +158,7 @@ export default function MyQuotes() {
           responded: response.responded || 0,
           accepted: response.accepted || 0,
           rejected: response.rejected || 0,
-          expired: 0 // Not included in backend stats yet
+          expired: expiredCount // Calculate expired quotes locally
         };
         console.log('Setting stats to:', newStats);
         setStats(newStats);
@@ -197,6 +210,56 @@ export default function MyQuotes() {
   const handlePerPageChange = (perPage) => {
     setItemsPerPage(perPage);
     setCurrentPage(1);
+  };
+
+  const handleQuickAccept = async (quoteId) => {
+    try {
+      setActionLoading(true);
+      await apiService.updateQuoteStatus(quoteId, 'accepted');
+      
+      // Update local state
+      setQuotes(prevQuotes => 
+        prevQuotes.map(quote => 
+          quote.id === quoteId 
+            ? { ...quote, status: 'accepted' }
+            : quote
+        )
+      );
+      
+      // Refresh stats
+      fetchStats();
+      
+    } catch (error) {
+      console.error('Error accepting quote:', error);
+      alert('Failed to accept quote. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleQuickReject = async (quoteId) => {
+    try {
+      setActionLoading(true);
+      await apiService.updateQuoteStatus(quoteId, 'rejected');
+      
+      // Update local state
+      setQuotes(prevQuotes => 
+        prevQuotes.map(quote => 
+          quote.id === quoteId 
+            ? { ...quote, status: 'rejected' }
+            : quote
+        )
+      );
+      
+      // Refresh stats
+      fetchStats();
+      
+    } catch (error) {
+      console.error('Error rejecting quote:', error);
+      alert('Failed to reject quote. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleSelectQuote = (quoteId) => {
@@ -663,6 +726,34 @@ export default function MyQuotes() {
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               </Link>
+                              
+                              {/* Accept/Reject buttons for responded quotes */}
+                              {quote.status === 'responded' && (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleQuickAccept(quote.id);
+                                    }}
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleQuickReject(quote.id);
+                                    }}
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                              
                               <Link href={`/buyer/messages?supplier=${quote.company_id}&quote=${quote.id}`}>
                                 <Button size="sm" variant="outline">
                                   <MessageSquare className="w-4 h-4" />

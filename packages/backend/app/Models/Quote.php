@@ -22,7 +22,8 @@ class Quote extends Model
         'message',
         'response_message',
         'quoted_price',
-        'quoted_lead_time'
+        'quoted_lead_time',
+        'rejection_reason'
     ];
 
     protected $casts = [

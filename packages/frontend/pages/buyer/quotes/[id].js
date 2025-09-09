@@ -33,6 +33,7 @@ import {
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Badge from '../../../components/common/Badge';
+import Modal from '../../../components/common/Modal';
 import Skeleton from '../../../components/common/Skeleton';
 import { useAuth } from '../../../contexts/AuthContext';
 import apiService from '../../../lib/api';
@@ -47,12 +48,91 @@ export default function QuoteDetails() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const [showResponseModal, setShowResponseModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // Utility functions
+  const getDaysRemaining = (deadline) => {
+    const today = new Date();
+    const deadlineDate = new Date(deadline);
+    const diffTime = deadlineDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const formatCurrency = (amount) => {
+    if (!amount) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   useEffect(() => {
     if (id) {
       fetchQuoteDetails();
     }
   }, [id]);
+
+  const handleAcceptQuote = async () => {
+    try {
+      setActionLoading(true);
+      await apiService.updateQuoteStatus(quote.id, 'accepted');
+      
+      // Update local state
+      setQuote(prev => ({ ...prev, status: 'accepted' }));
+      setShowAcceptModal(false);
+      
+      // Show success message
+      alert('Quote accepted successfully! The supplier will be notified.');
+      
+    } catch (error) {
+      console.error('Error accepting quote:', error);
+      alert('Failed to accept quote. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectQuote = async () => {
+    try {
+      setActionLoading(true);
+      await apiService.updateQuoteStatus(quote.id, 'rejected', { 
+        rejection_reason: rejectionReason.trim() || undefined 
+      });
+      
+      // Update local state
+      setQuote(prev => ({ 
+        ...prev, 
+        status: 'rejected', 
+        rejection_reason: rejectionReason.trim() || null 
+      }));
+      setShowRejectModal(false);
+      setRejectionReason('');
+      
+      // Show success message
+      alert('Quote declined. The supplier will be notified.');
+      
+    } catch (error) {
+      console.error('Error rejecting quote:', error);
+      alert('Failed to decline quote. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const fetchQuoteDetails = async () => {
     try {
@@ -99,31 +179,6 @@ export default function QuoteDetails() {
       case 'expired': return <AlertCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const getDaysRemaining = (deadline) => {
-    const now = new Date();
-    const deadlineDate = new Date(deadline);
-    const diffTime = deadlineDate - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
   };
 
   const renderStars = (rating) => {
@@ -348,7 +403,11 @@ export default function QuoteDetails() {
 
                   {/* Action Buttons */}
                   <div className="flex space-x-3 mt-6">
-                    <Button className="bg-green-600 hover:bg-green-700 text-white">
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => setShowAcceptModal(true)}
+                      disabled={actionLoading || quote.status !== 'responded'}
+                    >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Accept Quote
                     </Button>
@@ -356,7 +415,12 @@ export default function QuoteDetails() {
                       <MessageSquare className="w-4 h-4 mr-2" />
                       Negotiate
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowRejectModal(true)}
+                      disabled={actionLoading || quote.status !== 'responded'}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
                       <XCircle className="w-4 h-4 mr-2" />
                       Decline
                     </Button>
@@ -539,6 +603,132 @@ export default function QuoteDetails() {
           </div>
         </div>
       </div>
+
+      {/* Accept Quote Modal */}
+      <Modal
+        isOpen={showAcceptModal}
+        onClose={() => setShowAcceptModal(false)}
+        title="Accept Quote"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <h3 className="text-lg font-medium text-secondary-900 mb-2">
+              Accept this quote?
+            </h3>
+            <p className="text-sm text-secondary-600 mb-4">
+              You are about to accept this quote from the supplier. This action cannot be undone.
+            </p>
+            
+            {/* Quote Summary */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="text-left">
+                  <span className="text-secondary-600">Product:</span>
+                  <span className="ml-2 font-medium">{quote?.product?.name}</span>
+                </div>
+                <div className="text-left">
+                  <span className="text-secondary-600">Quantity:</span>
+                  <span className="ml-2 font-medium">{quote?.quantity} units</span>
+                </div>
+                <div className="text-left">
+                  <span className="text-secondary-600">Unit Price:</span>
+                  <span className="ml-2 font-medium text-green-600">{formatCurrency(quote?.quoted_price)}</span>
+                </div>
+                <div className="text-left">
+                  <span className="text-secondary-600">Total Value:</span>
+                  <span className="ml-2 font-bold text-green-600">
+                    {formatCurrency(quote?.quoted_price * quote?.quantity)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAcceptModal(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleAcceptQuote}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Processing...' : 'Yes, Accept Quote'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reject Quote Modal */}
+      <Modal
+        isOpen={showRejectModal}
+        onClose={() => {
+          setShowRejectModal(false);
+          setRejectionReason('');
+        }}
+        title="Decline Quote"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <XCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-medium text-secondary-900 mb-2">
+              Decline this quote?
+            </h3>
+            <p className="text-sm text-secondary-600 mb-4">
+              You are about to decline this quote. The supplier will be notified of your decision.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-2">
+              Reason for declining (optional)
+            </label>
+            <textarea
+              rows={4}
+              className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              placeholder="Let the supplier know why you're declining their quote. This helps them improve their future offers."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              maxLength={500}
+            />
+            <p className="text-xs text-secondary-500 mt-1">
+              {rejectionReason.length}/500 characters
+            </p>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowRejectModal(false);
+                setRejectionReason('');
+              }}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50"
+              onClick={handleRejectQuote}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Processing...' : 'Decline Quote'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Quote management
     Route::put('/quotes/{quote}', [QuoteController::class, 'update']);
+    Route::put('/quotes/{quote}/status', [QuoteController::class, 'updateStatus']);
     Route::post('/quotes/{quote}/respond', [QuoteController::class, 'respond']);
     Route::delete('/quotes/{quote}', [QuoteController::class, 'destroy']);
     
