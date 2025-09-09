@@ -31,13 +31,16 @@ import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Skeleton from '../../../components/common/Skeleton';
 import CartNotification from '../../../components/common/CartNotification';
+import ToastNotification from '../../../components/common/ToastNotification';
 import { useCart } from '../../../contexts/CartContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import apiService from '../../../lib/api';
 
 export default function ProductDetail() {
   const router = useRouter();
   const { id } = router.query;
   const { addToCart: addToCartContext } = useCart();
+  const { user } = useAuth();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,14 @@ export default function ProductDetail() {
   const [selectedSpecs, setSelectedSpecs] = useState({});
   const [addingToCart, setAddingToCart] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteQuantity, setQuoteQuantity] = useState('');
+  const [targetPrice, setTargetPrice] = useState('');
+  const [quoteDeadline, setQuoteDeadline] = useState('');
+  const [quoteMessage, setQuoteMessage] = useState('');
+  const [submittingQuote, setSubmittingQuote] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastConfig, setToastConfig] = useState({});
   
   const inquiryTemplates = [
     {
@@ -102,6 +113,11 @@ export default function ProductDetail() {
     }
   }, [product]);
 
+  const showToastNotification = (type, title, message, duration = 5000) => {
+    setToastConfig({ type, title, message, duration });
+    setShowToast(true);
+  };
+
   const fetchProductDetails = async () => {
     try {
       setLoading(true);
@@ -148,23 +164,154 @@ export default function ProductDetail() {
 
   const handleAddToCart = async () => {
     if (addingToCart) return;
-    
+
     try {
       setAddingToCart(true);
       
-      await addToCartContext(parseInt(id), cartQuantity, selectedSpecs);
+      const cartItem = {
+        product_id: product.id,
+        quantity: cartQuantity,
+        specifications: selectedSpecs
+      };
+
+      await addToCartContext(cartItem);
       setShowCartNotification(true);
+      
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setShowCartNotification(false);
+      }, 3000);
+      
     } catch (error) {
       console.error('Error adding to cart:', error);
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.values(error.response.data.errors).flat();
-        alert(errorMessages.join('\n'));
-      } else {
-        alert('Failed to add product to cart. Please try again.');
-      }
+      showToastNotification(
+        'error',
+        'Cart Error',
+        'Failed to add product to cart. Please try again.'
+      );
     } finally {
       setAddingToCart(false);
     }
+  };
+
+  const handleQuoteRequest = async () => {
+    if (submittingQuote) return;
+
+    // Validation
+    if (!quoteQuantity || quoteQuantity < 1) {
+      showToastNotification('error', 'Invalid Quantity', 'Please enter a valid quantity');
+      return;
+    }
+
+    // MOQ validation - like Alibaba
+    const minQuantity = product.moq || 1;
+    if (parseInt(quoteQuantity) < minQuantity) {
+      showToastNotification(
+        'warning', 
+        'Minimum Order Quantity', 
+        `Quantity must be at least ${minQuantity} ${product.unit} (Minimum Order Quantity). Please adjust your quantity.`
+      );
+      return;
+    }
+    
+    if (!quoteDeadline) {
+      showToastNotification('error', 'Missing Deadline', 'Please select a deadline');
+      return;
+    }
+
+    if (!quoteMessage.trim()) {
+      showToastNotification('error', 'Missing Message', 'Please enter a message');
+      return;
+    }
+
+    try {
+      setSubmittingQuote(true);
+
+      const quoteData = {
+        product_id: product.id,
+        company_id: product.company.id,
+        buyer_name: user?.name || user?.full_name || 'Anonymous Buyer',
+        buyer_email: user?.email || '',
+        buyer_company: user?.company_name || user?.company || '',
+        quantity: parseInt(quoteQuantity),
+        target_price: targetPrice ? parseFloat(targetPrice) : null,
+        deadline: quoteDeadline,
+        message: quoteMessage.trim()
+      };
+
+      console.log('User object:', user); // Debug log
+      console.log('Sending quote data:', quoteData); // Debug log
+
+      const response = await apiService.createQuote(quoteData);
+      
+      console.log('Quote response:', response); // Debug log
+      
+      if (response.success !== false) {
+        showToastNotification(
+          'quote',
+          'Quote request submitted successfully!',
+          'The supplier will respond soon. You can track your quote requests in your dashboard.',
+          6000
+        );
+        setShowQuoteModal(false);
+        // Reset form
+        setQuoteQuantity('');
+        setTargetPrice('');
+        setQuoteDeadline('');
+        setQuoteMessage('');
+      } else {
+        throw new Error(response.message || 'Failed to submit quote request');
+      }
+
+    } catch (error) {
+      console.error('Error submitting quote request:', error);
+      
+      // More detailed error handling for Laravel validation
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.errors) {
+          // Laravel validation errors
+          const errorMessages = Object.values(errorData.errors).flat();
+          showToastNotification(
+            'error',
+            'Validation Error',
+            errorMessages.join(', ')
+          );
+        } else if (errorData.message) {
+          showToastNotification('error', 'Error', errorData.message);
+        } else {
+          showToastNotification(
+            'error',
+            'Request Failed',
+            'Failed to submit quote request. Please try again.'
+          );
+        }
+      } else if (error.message) {
+        showToastNotification('error', 'Error', error.message);
+      } else {
+        showToastNotification(
+          'error',
+          'Network Error',
+          'Failed to submit quote request. Please check your connection and try again.'
+        );
+      }
+    } finally {
+      setSubmittingQuote(false);
+    }
+  };
+
+  const openQuoteModal = () => {
+    // Pre-populate form with product details
+    setQuoteQuantity(product.moq || 1);
+    setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
+    
+    // Set default deadline to tomorrow (Laravel requires after:today)
+    const defaultDeadline = new Date();
+    defaultDeadline.setDate(defaultDeadline.getDate() + 1); // Tomorrow, not today
+    setQuoteDeadline(defaultDeadline.toISOString().split('T')[0]);
+    
+    setShowQuoteModal(true);
   };
 
   const handleQuantityChange = (newQuantity) => {
@@ -463,14 +610,20 @@ Product Link: ${window.location.href}`;
               <div className="flex space-x-2">
                 <Button 
                   onClick={() => setShowMessageForm(true)}
-                  className="w-full bg-primary-600 hover:bg-primary-700 text-white"
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Send Message
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Contact
+                <Button 
+                  onClick={openQuoteModal}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Request Quote
+                </Button>
+                <Button variant="outline" className="px-3">
+                  <Phone className="w-4 h-4" />
                 </Button>
               </div>
             </Card>
@@ -895,12 +1048,199 @@ Product Link: ${window.location.href}`;
           </div>
         )}
 
+        {/* Quote Request Modal */}
+        {showQuoteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-secondary-900">Request Quote</h3>
+                  <button
+                    onClick={() => setShowQuoteModal(false)}
+                    className="text-secondary-400 hover:text-secondary-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Product Info Summary */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <Package className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-secondary-900">{product?.name}</h4>
+                      <p className="text-sm text-secondary-600">{product?.company?.name}</p>
+                      <p className="text-sm text-primary-600 font-medium">${product?.price}/piece</p>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); handleQuoteRequest(); }} className="space-y-4">
+                  {/* Quantity */}
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Quantity *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={quoteQuantity}
+                        onChange={(e) => setQuoteQuantity(e.target.value)}
+                        min={product?.moq || 1}
+                        placeholder={`Min: ${product?.moq || 1} ${product?.unit}`}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          quoteQuantity && parseInt(quoteQuantity) < (product?.moq || 1)
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-secondary-300'
+                        }`}
+                        required
+                      />
+                      <span className="absolute right-3 top-2 text-sm text-secondary-500">
+                        {product?.unit}
+                      </span>
+                    </div>
+                    <div className="mt-1 space-y-1">
+                      <p className="text-xs text-secondary-500">
+                        Minimum order: {product?.moq} {product?.unit}
+                      </p>
+                      {quoteQuantity && parseInt(quoteQuantity) < (product?.moq || 1) && (
+                        <p className="text-xs text-red-600 flex items-center">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Quantity must be at least {product?.moq} {product?.unit}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Target Price (Optional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Target Price per {product?.unit} (Optional)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-secondary-500">$</span>
+                      <input
+                        type="number"
+                        value={targetPrice}
+                        onChange={(e) => setTargetPrice(e.target.value)}
+                        step="0.01"
+                        placeholder="Enter your target price"
+                        className="w-full pl-8 pr-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Deadline */}
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Response Deadline *
+                    </label>
+                    <input
+                      type="date"
+                      value={quoteDeadline}
+                      onChange={(e) => setQuoteDeadline(e.target.value)}
+                      min={(() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        return tomorrow.toISOString().split('T')[0];
+                      })()}
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Message */}
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Message *
+                    </label>
+                    <textarea
+                      value={quoteMessage}
+                      onChange={(e) => setQuoteMessage(e.target.value)}
+                      rows={4}
+                      placeholder="Please provide details about your requirements..."
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Helper message when form is invalid */}
+                  {(quoteQuantity && parseInt(quoteQuantity) < (product?.moq || 1)) && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-orange-800">
+                          <p className="font-medium">Cannot proceed with current quantity</p>
+                          <p className="mt-1">
+                            This supplier requires a minimum order of <strong>{product?.moq} {product?.unit}</strong>. 
+                            Please adjust your quantity to meet the minimum requirement.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex space-x-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowQuoteModal(false)}
+                      className="flex-1"
+                      disabled={submittingQuote}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                      disabled={
+                        submittingQuote || 
+                        !quoteQuantity || 
+                        parseInt(quoteQuantity) < (product?.moq || 1) ||
+                        !quoteDeadline ||
+                        !quoteMessage.trim()
+                      }
+                    >
+                      {submittingQuote ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          Send Quote Request
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Cart Notification */}
         <CartNotification
           show={showCartNotification}
           onClose={() => setShowCartNotification(false)}
           productName={product?.name}
           quantity={cartQuantity}
+        />
+
+        {/* Toast Notification */}
+        <ToastNotification
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          type={toastConfig.type}
+          title={toastConfig.title}
+          message={toastConfig.message}
+          duration={toastConfig.duration}
         />
       </div>
     </>

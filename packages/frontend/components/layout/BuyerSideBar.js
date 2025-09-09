@@ -13,7 +13,8 @@ import {
   HelpCircle,
   Package2,
   Users,
-  Building
+  Building,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
@@ -48,6 +49,7 @@ export default function BuyerSideBar({ isOpen, onClose }) {
   const navigation = [
     { name: 'Home', href: '/buyer', icon: Home },
     { name: 'Messages', href: '/buyer/messages', icon: MessageSquare },
+    { name: 'My Quotes', href: '/buyer/quotes', icon: DollarSign },
     { name: 'Buying Leads', href: '/buyer/rfqs', icon: FileText },
     { name: 'Orders', href: '/buyer/orders', icon: ShoppingCart },
     { name: 'Transactions', href: '/buyer/transactions', icon: Package2 },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { Plus, Search, Filter, Eye, Edit, Trash2, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, Clock, CheckCircle, XCircle, Grid, List } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Pagination from '../../../components/common/Pagination';
@@ -16,6 +16,7 @@ export default function RFQs() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [rfqToDelete, setRfqToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -35,6 +36,20 @@ export default function RFQs() {
       fetchRFQs();
     }
   }, [isAuthenticated, currentPage, searchTerm, statusFilter]);
+
+  // Load saved view mode from localStorage on component mount
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('rfq-view-mode');
+    if (savedViewMode && (savedViewMode === 'card' || savedViewMode === 'list')) {
+      setViewMode(savedViewMode);
+    }
+  }, []);
+
+  // Save view mode to localStorage when it changes
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('rfq-view-mode', mode);
+  };
 
   const fetchRFQs = async (page = currentPage) => {
     try {
@@ -149,6 +164,70 @@ export default function RFQs() {
     });
   };
 
+  // Helper functions for attachment handling
+  const isImageAttachment = (attachment) => {
+    if (!attachment) return false;
+    const fileName = attachment.original_name || attachment.filename || '';
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    return imageExtensions.includes(extension);
+  };
+
+  const isVideoAttachment = (attachment) => {
+    if (!attachment) return false;
+    const fileName = attachment.original_name || attachment.filename || '';
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const videoExtensions = ['mp4', 'mov', 'avi', 'wmv', 'mkv', 'webm'];
+    return videoExtensions.includes(extension);
+  };
+
+  const getAttachmentUrl = (attachment) => {
+    if (!attachment) {
+      console.log('No attachment provided');
+      return '';
+    }
+    
+    // If there's already a file_url, use it
+    if (attachment.file_url) {
+      console.log('Using existing file_url:', attachment.file_url);
+      return attachment.file_url;
+    }
+    
+    // Otherwise construct the URL based on your Laravel storage configuration
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const storagePath = attachment.path || attachment.file_path;
+    
+    if (!storagePath) {
+      console.log('No storage path found for attachment:', attachment);
+      return '';
+    }
+    
+    // Remove 'rfq-attachments/' prefix if it exists in the path since we're adding it
+    const cleanPath = storagePath.replace(/^rfq-attachments\//, '');
+    
+    const fullUrl = `${baseUrl}/storage/rfq-attachments/${cleanPath}`;
+    console.log('Generated URL for attachment:', fullUrl);
+    
+    return fullUrl;
+  };
+
+  const getFileIcon = (filename) => {
+    if (!filename) return '📎';
+    
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const videoExts = ['mp4', 'mov', 'avi', 'wmv', 'mkv', 'webm'];
+    const docExts = ['pdf', 'doc', 'docx'];
+    
+    if (imageExts.includes(ext)) return '🖼️';
+    if (videoExts.includes(ext)) return '🎥';
+    if (docExts.includes(ext)) return '📄';
+    if (['xlsx', 'xls'].includes(ext)) return '📊';
+    if (['pptx', 'ppt'].includes(ext)) return '📋';
+    if (['zip', 'rar'].includes(ext)) return '📦';
+    return '📎';
+  };
+
   const getDaysRemaining = (expiresAt) => {
     const now = new Date();
     const expiry = new Date(expiresAt);
@@ -238,6 +317,33 @@ export default function RFQs() {
                 </button>
               </div>
             </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-secondary-600">View:</span>
+              <div className="flex border border-secondary-300 rounded-lg">
+                <button
+                  onClick={() => handleViewModeChange('card')}
+                  className={`px-3 py-2 text-sm font-medium rounded-l-lg ${
+                    viewMode === 'card'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-secondary-600 hover:bg-secondary-100'
+                  }`}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleViewModeChange('list')}
+                  className={`px-3 py-2 text-sm font-medium rounded-r-lg ${
+                    viewMode === 'list'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-secondary-600 hover:bg-secondary-100'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </Card>
 
@@ -284,91 +390,342 @@ export default function RFQs() {
           </Card>
         )}
 
-        {/* RFQs Grid */}
+        {/* RFQs Display */}
         {!loading && !error && rfqs.length > 0 && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {rfqs.map((rfq) => (
-                <Card key={rfq.id} className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-secondary-900 mb-2">
-                        {rfq.title}
-                      </h3>
-                      <p className="text-sm text-secondary-600 mb-3">
-                        {rfq.description}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rfq.status)}`}>
-                      {rfq.status}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-secondary-500">Quantity</p>
-                      <p className="text-sm font-medium text-secondary-900">
-                        {rfq.quantity.toLocaleString()} {rfq.unit}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-secondary-500">Budget Range</p>
-                      <p className="text-sm font-medium text-secondary-900">
-                        {formatCurrency(rfq.budget_min)} - {formatCurrency(rfq.budget_max)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-secondary-500">Category</p>
-                      <p className="text-sm font-medium text-secondary-900">{rfq.category}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-secondary-500">Location</p>
-                      <p className="text-sm font-medium text-secondary-900">{rfq.location}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4 text-sm text-secondary-600">
-                      <span>{rfq.responses_count} responses</span>
-                      <span>Created {formatDate(rfq.created_at)}</span>
-                    </div>
-                    {rfq.status === 'published' && (
-                      <div className="flex items-center text-sm">
-                        <Clock className="w-4 h-4 text-orange-500 mr-1" />
-                        <span className="text-orange-600">
-                          {getDaysRemaining(rfq.expires_at)} days left
+            {viewMode === 'card' ? (
+              /* Card View */
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {rfqs.map((rfq) => (
+                  <Card key={rfq.id} className="p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-medium text-secondary-900">
+                            {rfq.title}
+                          </h3>
+                          {rfq.certifications_required?.length > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Certified
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-secondary-600 mb-3 line-clamp-2">
+                          {rfq.description}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rfq.status)}`}>
+                          {rfq.status}
                         </span>
+                        {rfq.status === 'published' && (
+                          <div className="flex items-center text-xs text-orange-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {getDaysRemaining(rfq.expires_at)} days left
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-secondary-50 p-3 rounded-lg">
+                        <p className="text-xs text-secondary-500 mb-1">Quantity</p>
+                        <p className="text-sm font-medium text-secondary-900">
+                          {rfq.quantity.toLocaleString()} {rfq.unit}
+                        </p>
+                      </div>
+                      <div className="bg-secondary-50 p-3 rounded-lg">
+                        <p className="text-xs text-secondary-500 mb-1">Budget Range</p>
+                        <p className="text-sm font-medium text-secondary-900">
+                          {formatCurrency(rfq.budget_min)} - {formatCurrency(rfq.budget_max)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-secondary-500">Category</p>
+                        <p className="text-sm font-medium text-secondary-900">{rfq.category}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-secondary-500">Location</p>
+                        <p className="text-sm font-medium text-secondary-900">{rfq.location}</p>
+                      </div>
+                    </div>
+
+                    {/* Attachments preview */}
+                    {rfq.attachments && rfq.attachments.length > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <span className="text-xs text-secondary-500 font-medium">
+                            📎 {rfq.attachments.length} file{rfq.attachments.length > 1 ? 's' : ''} attached
+                          </span>
+                          {/* Debug button for attachment data */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              console.log('=== DEBUG: RFQ Attachment Data ===');
+                              console.log('RFQ ID:', rfq.id);
+                              console.log('Attachments:', rfq.attachments);
+                              rfq.attachments.forEach((attachment, index) => {
+                                console.log(`Attachment ${index}:`, {
+                                  ...attachment,
+                                  isImage: isImageAttachment(attachment),
+                                  isVideo: isVideoAttachment(attachment),
+                                  generatedUrl: getAttachmentUrl(attachment)
+                                });
+                              });
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800"
+                          >
+                            Debug
+                          </button>
+                        </div>
+                        
+                        {/* Attachment thumbnails */}
+                        <div className="flex flex-wrap gap-2">
+                          {rfq.attachments.slice(0, 4).map((attachment, index) => (
+                            <div key={index} className="relative group">
+                              {isImageAttachment(attachment) ? (
+                                <div 
+                                  className="w-12 h-12 rounded border overflow-hidden bg-gray-100 hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer"
+                                  onClick={() => window.open(getAttachmentUrl(attachment), '_blank')}
+                                >
+                                  <img 
+                                    src={getAttachmentUrl(attachment)} 
+                                    alt={attachment.original_name || `Image ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onLoad={(e) => {
+                                      console.log('Image loaded successfully:', attachment.original_name);
+                                    }}
+                                    onError={(e) => {
+                                      console.error('Image failed to load:', attachment.original_name, getAttachmentUrl(attachment));
+                                      e.target.style.display = 'none';
+                                      const fallback = e.target.parentElement.querySelector('.fallback-display');
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="fallback-display w-full h-full bg-gray-200 flex items-center justify-center text-lg absolute inset-0" style={{display: 'none'}}>
+                                    🖼️
+                                  </div>
+                                </div>
+                              ) : isVideoAttachment(attachment) ? (
+                                <div 
+                                  className="w-12 h-12 rounded border overflow-hidden bg-gray-100 hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer relative"
+                                  onClick={() => window.open(getAttachmentUrl(attachment), '_blank')}
+                                >
+                                  <video 
+                                    src={getAttachmentUrl(attachment)}
+                                    className="w-full h-full object-cover"
+                                    muted
+                                    preload="metadata"
+                                    onLoadedMetadata={(e) => {
+                                      console.log('Video loaded successfully:', attachment.original_name);
+                                    }}
+                                    onError={(e) => {
+                                      console.error('Video failed to load:', attachment.original_name, getAttachmentUrl(attachment));
+                                      e.target.style.display = 'none';
+                                      const fallback = e.target.parentElement.querySelector('.fallback-display');
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="fallback-display w-full h-full bg-gray-200 flex items-center justify-center text-lg absolute inset-0" style={{display: 'none'}}>
+                                    🎥
+                                  </div>
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20">
+                                    <div className="w-4 h-4 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                                      <div className="w-0 h-0 border-l-[3px] border-l-black border-t-[2px] border-t-transparent border-b-[2px] border-b-transparent ml-0.5"></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div 
+                                  className="w-12 h-12 rounded border bg-gray-100 flex items-center justify-center hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer"
+                                  onClick={() => window.open(getAttachmentUrl(attachment), '_blank')}
+                                >
+                                  <span className="text-lg">{getFileIcon(attachment.original_name)}</span>
+                                </div>
+                              )}
+                              
+                              {/* Tooltip with filename */}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                {attachment.original_name || 'Attachment'}
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* Show count if more than 4 files */}
+                          {rfq.attachments.length > 4 && (
+                            <div className="w-12 h-12 rounded border bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                              +{rfq.attachments.length - 4}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-                  </div>
 
-                  <div className="flex space-x-2">
-                    <Link href={`/buyer/rfqs/${rfq.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                    </Link>
-                    {(rfq.status === 'draft' || rfq.status === 'published') && (
-                      <Link href={`/buyer/rfqs/${rfq.id}/edit`}>
+                    {/* Certifications indicator */}
+                    {rfq.certifications_required && rfq.certifications_required.length > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-2 text-xs text-blue-600">
+                          <span>🏆</span>
+                          <span>{rfq.certifications_required.length} certification{rfq.certifications_required.length > 1 ? 's' : ''} required</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mb-4 pt-3 border-t border-secondary-200">
+                      <div className="flex items-center space-x-4 text-sm text-secondary-600">
+                        <span className="flex items-center">
+                          <Eye className="w-4 h-4 mr-1" />
+                          {rfq.responses_count} responses
+                        </span>
+                        <span>Created {formatDate(rfq.created_at)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Link href={`/buyer/rfqs/${rfq.id}`}>
                         <Button variant="outline" size="sm">
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
                         </Button>
                       </Link>
-                    )}
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDeleteRFQ(rfq)}
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                      {(rfq.status === 'draft' || rfq.status === 'published') && (
+                        <Link href={`/buyer/rfqs/${rfq.id}/edit`}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                      )}
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteRFQ(rfq)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              /* List View */
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-secondary-200">
+                    <thead className="bg-secondary-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          RFQ Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Category & Location
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Quantity & Budget
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Status & Responses
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-secondary-200">
+                      {rfqs.map((rfq) => (
+                        <tr key={rfq.id} className="hover:bg-secondary-50">
+                          <td className="px-6 py-4">
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <p className="text-sm font-medium text-secondary-900 truncate">
+                                    {rfq.title}
+                                  </p>
+                                  {rfq.certifications_required?.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      Certified
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-secondary-500 line-clamp-2">
+                                  {rfq.description}
+                                </p>
+                                <div className="flex items-center space-x-4 mt-2">
+                                  <span className="text-xs text-secondary-400">
+                                    Created {formatDate(rfq.created_at)}
+                                  </span>
+                                  {rfq.attachments && rfq.attachments.length > 0 && (
+                                    <span className="text-xs text-secondary-500">
+                                      📎 {rfq.attachments.length} file{rfq.attachments.length > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-secondary-900">{rfq.category}</div>
+                            <div className="text-sm text-secondary-500">{rfq.location}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-secondary-900">
+                              {rfq.quantity.toLocaleString()} {rfq.unit}
+                            </div>
+                            <div className="text-sm text-secondary-500">
+                              {formatCurrency(rfq.budget_min)} - {formatCurrency(rfq.budget_max)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col space-y-2">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rfq.status)}`}>
+                                {rfq.status}
+                              </span>
+                              <div className="flex items-center text-sm text-secondary-600">
+                                <Eye className="w-4 h-4 mr-1" />
+                                {rfq.responses_count} responses
+                              </div>
+                              {rfq.status === 'published' && (
+                                <div className="flex items-center text-xs text-orange-600">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {getDaysRemaining(rfq.expires_at)} days left
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex space-x-2">
+                              <Link href={`/buyer/rfqs/${rfq.id}`}>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                              {(rfq.status === 'draft' || rfq.status === 'published') && (
+                                <Link href={`/buyer/rfqs/${rfq.id}/edit`}>
+                                  <Button variant="outline" size="sm">
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </Link>
+                              )}
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteRFQ(rfq)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
