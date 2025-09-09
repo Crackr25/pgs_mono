@@ -120,6 +120,33 @@ class QuoteController extends Controller
         return response()->json($quote->load(['product', 'company']));
     }
 
+    public function updateStatus(Request $request, Quote $quote): JsonResponse
+    {
+        // Allow status updates by buyers for their own quotes
+        $validated = $request->validate([
+            'status' => 'required|in:accepted,rejected',
+            'rejection_reason' => 'nullable|string|max:500'
+        ]);
+
+        // Only allow buyers to accept/reject quotes that have been responded to
+        if ($quote->status !== 'responded') {
+            return response()->json(['message' => 'Quote must be in responded status to accept or reject'], 400);
+        }
+
+        $updateData = ['status' => $validated['status']];
+        
+        if ($validated['status'] === 'rejected' && isset($validated['rejection_reason'])) {
+            $updateData['rejection_reason'] = $validated['rejection_reason'];
+        }
+
+        $quote->update($updateData);
+        
+        return response()->json([
+            'message' => 'Quote status updated successfully',
+            'quote' => $quote->load(['product', 'company'])
+        ]);
+    }
+
     public function destroy(Quote $quote): JsonResponse
     {
         // Allow deletion by either the company or the buyer (if authenticated)

@@ -382,6 +382,13 @@ class ApiService {
     });
   }
 
+  async updateQuoteStatus(id, status, additionalData = {}) {
+    return this.request(`/quotes/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, ...additionalData }),
+    });
+  }
+
   async getQuoteStats(params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return this.request(`/quotes/stats${queryString ? `?${queryString}` : ''}`);

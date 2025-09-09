@@ -9,7 +9,9 @@ import {
   MessageSquare, 
   Filter,
   Search,
-  Plus
+  Plus,
+  Paperclip,
+  X
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -45,6 +47,9 @@ export default function Quotes() {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [statisticsLoading, setStatisticsLoading] = useState(false);
   const [userCompany, setUserCompany] = useState(null);
+  const [formData, setFormData] = useState({
+    attachments: []
+  });
   const { user, isAuthenticated } = useAuth();
 
   // Fetch user's company data
@@ -227,6 +232,9 @@ export default function Quotes() {
       setQuotedPrice('');
       setQuotedLeadTime('');
       setSelectedTemplate('');
+      setFormData({
+        attachments: []
+      });
     } catch (error) {
       console.error('Error responding to quote:', error);
       alert('Failed to send response. Please try again.');
@@ -293,61 +301,147 @@ export default function Quotes() {
   const autoReplyTemplates = [
     {
       id: 1,
-      name: 'Standard Quote Response',
-      subject: 'Re: Your Product Inquiry',
+      name: 'Professional Quote Response',
+      subject: 'Quotation for {product_name} - {supplier_name}',
       content: `Dear {buyer_name},
 
-Thank you for your interest in our {product_name}.
+Thank you for your inquiry regarding {product_name}. We are pleased to submit our competitive quotation:
 
-Based on your requirements:
+PRODUCT DETAILS:
+- Product: {product_name}
 - Quantity: {quantity} units
-- Target Price: {target_price}
+- Your Target Price: {target_price}
 
-We are pleased to offer:
-- Our Price: $XX.XX per unit
+OUR QUOTATION:
+- Unit Price: $XX.XX FOB [Port Name]
+- Total Amount: $XXX,XXX.XX
+- Lead Time: XX-XX business days
 - MOQ: XXX units
-- Lead Time: XX-XX days
-- Payment Terms: 30% advance, 70% before shipment
+- Payment Terms: 30% T/T advance, 70% against shipping documents
 
-Please let us know if you need any additional information.
+PRODUCT SPECIFICATIONS:
+- [List key specifications]
+- Quality Standard: [ISO/CE/FDA compliance]
+- Packaging: [Standard/Custom packaging details]
+
+BUSINESS TERMS:
+- Validity: 30 days from quote date
+- Warranty: 12 months from delivery
+- Sample: Available (cost and terms to be discussed)
+
+We look forward to establishing a long-term business relationship.
 
 Best regards,
-{supplier_name}`
+{supplier_name}
+Sales Department`
     },
     {
       id: 2,
-      name: 'Sample Request Response',
-      subject: 'Sample Availability - {product_name}',
+      name: 'Sample & Technical Response',
+      subject: 'Technical Quotation & Sample Offer - {product_name}',
       content: `Dear {buyer_name},
 
-Thank you for your inquiry about {product_name}.
+Thank you for your technical inquiry about {product_name}.
 
-We would be happy to provide samples for your evaluation:
-- Sample Cost: $XX.XX per piece
-- Shipping: Via DHL/FedEx
-- Lead Time: 3-5 business days
+TECHNICAL QUOTATION:
+- Product: {product_name}
+- Quantity: {quantity} units
+- Unit Price: $XX.XX
+- Technical Specifications: [As per your requirements]
 
-Please confirm your shipping address and we'll send you a proforma invoice.
+SAMPLE OFFER:
+- Sample Cost: $XX.XX per piece (refundable upon order)
+- Sample Lead Time: 5-7 business days
+- Sample Shipping: Via DHL/FedEx (freight collect)
+- Sample Validity: 30 days
 
-Best regards,
-{supplier_name}`
+TECHNICAL SUPPORT:
+- R&D Team: 15+ engineers
+- Customization: Available for orders >1000 units
+- Quality Control: 100% inspection before shipment
+- Certifications: CE, RoHS, ISO 9001:2015
+
+PRODUCTION CAPACITY:
+- Monthly Output: XXX,XXX units
+- Lead Time: XX-XX days after order confirmation
+- OEM/ODM: Welcome
+
+Please confirm your shipping address for sample dispatch.
+
+Technical regards,
+{supplier_name}
+Engineering Team`
     },
     {
       id: 3,
-      name: 'Custom Requirements',
-      subject: 'Custom Solution for {product_name}',
+      name: 'Volume Discount & Partnership',
+      subject: 'Strategic Partnership Proposal - {product_name}',
       content: `Dear {buyer_name},
 
-Thank you for your detailed requirements for {product_name}.
+We appreciate your interest in {product_name} and the substantial quantity of {quantity} units.
 
-We can customize the product according to your specifications:
-- Custom Features: [List customizations]
-- Additional Cost: $XX.XX per unit
-- Extended Lead Time: XX-XX days
+VOLUME PRICING STRUCTURE:
+- 1,000-4,999 units: $XX.XX per unit
+- 5,000-9,999 units: $XX.XX per unit (5% discount)
+- 10,000+ units: $XX.XX per unit (10% discount)
 
-Would you like to schedule a call to discuss further?
+PARTNERSHIP BENEFITS:
+- Dedicated Account Manager
+- Priority Production Schedule
+- Quarterly Business Reviews
+- Annual Volume Rebates
+- Technical Support & Training
 
-Best regards,
+SUPPLY CHAIN ADVANTAGES:
+- Multiple Manufacturing Facilities
+- Raw Material Inventory Management
+- Flexible Delivery Schedules
+- Quality Assurance Program
+
+TERMS & CONDITIONS:
+- Payment: Flexible terms available for qualified buyers
+- Exclusivity: Territory exclusivity options
+- Contract: Annual supply agreement available
+
+We would welcome the opportunity to discuss a strategic partnership.
+
+Partnership regards,
+{supplier_name}
+Business Development Team`
+    },
+    {
+      id: 4,
+      name: 'Express/Urgent Order Response',
+      subject: 'Urgent Order Capability - {product_name}',
+      content: `Dear {buyer_name},
+
+We understand your urgent requirement for {product_name}.
+
+EXPRESS PRODUCTION OPTION:
+- Standard Lead Time: XX-XX days
+- Express Lead Time: XX-XX days (rush order)
+- Express Surcharge: 15% additional
+- Capacity Check: [Confirmed/Need to verify]
+
+LOGISTICS SOLUTIONS:
+- Air Freight: 3-5 days worldwide
+- Express Courier: 2-3 days door-to-door
+- Sea Freight: Standard option for cost saving
+
+QUALITY ASSURANCE:
+- Pre-production Sample: 2-3 days
+- In-line Inspection: Available
+- Final QC Report: Provided before shipment
+
+URGENT ORDER PROCESS:
+1. Order Confirmation: Same day
+2. Production Start: Within 24 hours
+3. Daily Progress Updates: Provided
+4. Shipping Notification: Real-time tracking
+
+We specialize in urgent orders and maintain emergency inventory.
+
+Urgent response team,
 {supplier_name}`
     }
   ];
@@ -731,9 +825,10 @@ Best regards,
           isOpen={!!selectedQuote}
           onClose={() => setSelectedQuote(null)}
           title={`Respond to RFQ #${selectedQuote.id.toString().padStart(4, '0')}`}
-          size="lg"
+          size="md"
         >
           <div className="space-y-4">
+            {/* RFQ Details */}
             <div className="bg-secondary-50 p-4 rounded-lg">
               <h4 className="font-medium text-secondary-900 mb-2">RFQ Details</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -749,8 +844,9 @@ Best regards,
               </div>
             </div>
             
+            {/* Quick Template Selection */}
             <div>
-              <label className="form-label">Select Template</label>
+              <label className="form-label">Quick Response Template (Optional)</label>
               <select 
                 className="form-input"
                 value={selectedTemplate}
@@ -761,38 +857,31 @@ Best regards,
                   }
                 }}
               >
-                <option value="">Choose a template...</option>
+                <option value="">Choose a template or write custom response...</option>
                 {autoReplyTemplates.map(template => (
                   <option key={template.id} value={template.id}>{template.name}</option>
                 ))}
               </select>
             </div>
             
-            <div>
-              <label className="form-label">Your Response</label>
-              <textarea
-                rows={6}
-                className="form-input"
-                placeholder="Type your response here..."
-                value={responseText}
-                onChange={(e) => setResponseText(e.target.value)}
-              />
-            </div>
-            
+            {/* Simple Pricing */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Quoted Price (USD)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="form-input"
-                  placeholder="0.00"
-                  value={quotedPrice}
-                  onChange={(e) => setQuotedPrice(e.target.value)}
-                />
+                <label className="form-label">Your Price (USD) *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-input pl-8"
+                    placeholder="0.00"
+                    value={quotedPrice}
+                    onChange={(e) => setQuotedPrice(e.target.value)}
+                  />
+                </div>
               </div>
               <div>
-                <label className="form-label">Lead Time</label>
+                <label className="form-label">Lead Time *</label>
                 <select
                   className="form-input"
                   value={quotedLeadTime}
@@ -808,7 +897,77 @@ Best regards,
                 </select>
               </div>
             </div>
+
+            {/* Total Amount Display */}
+            {quotedPrice && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="text-sm text-secondary-600">Total Amount:</div>
+                <div className="text-lg font-semibold text-blue-900">
+                  ${(parseFloat(quotedPrice) * (selectedQuote?.quantity || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </div>
+              </div>
+            )}
             
+            {/* Response Message */}
+            <div>
+              <label className="form-label">Your Response *</label>
+              <textarea
+                rows={5}
+                className="form-input"
+                placeholder="Hi! Thank you for your interest in our product. I can offer you the price above with the specified lead time. Please let me know if you have any questions."
+                value={responseText}
+                onChange={(e) => setResponseText(e.target.value)}
+              />
+            </div>
+            
+            {/* Optional: Attach Files */}
+            <div>
+              <label className="form-label">Attach Files (Optional)</label>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="form-input"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files);
+                  setFormData(prev => ({
+                    ...prev,
+                    attachments: [...prev.attachments, ...files]
+                  }));
+                }}
+              />
+              <p className="text-xs text-secondary-500 mt-1">
+                Product photos, catalogs, or certificates (Optional)
+              </p>
+            </div>
+
+            {/* Show attached files */}
+            {formData.attachments.length > 0 && (
+              <div className="space-y-2">
+                {formData.attachments.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                    <div className="flex items-center space-x-2">
+                      <Paperclip className="w-4 h-4 text-secondary-400" />
+                      <span className="text-sm text-secondary-700">{file.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          attachments: prev.attachments.filter((_, i) => i !== index)
+                        }));
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t">
               <Button variant="outline" onClick={() => setSelectedQuote(null)}>
                 Cancel
@@ -836,7 +995,7 @@ Best regards,
                   template_id: selectedTemplate || null
                 });
               }}>
-                Send Response
+                Send Quote Response
               </Button>
             </div>
           </div>
