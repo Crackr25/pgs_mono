@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Filter, 
@@ -28,7 +28,7 @@ export default function ProductGrid() {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    itemsPerPage: 30,
+    itemsPerPage: 12,
     from: 0,
     to: 0
   });
@@ -39,6 +39,7 @@ export default function ProductGrid() {
     search: '',
     sortBy: 'relevance'
   });
+  const isInitialMount = useRef(true);
 
 
   const priceRanges = [
@@ -65,8 +66,12 @@ export default function ProductGrid() {
   }, []);
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     fetchProducts();
-  }, [filters, pagination.currentPage]);
+  }, [filters.category, filters.priceRange, filters.location, filters.search, filters.sortBy, pagination.currentPage]);
 
   const fetchProducts = async () => {
     try {
@@ -84,6 +89,7 @@ export default function ProductGrid() {
       });
       
       const response = await apiService.getMarketplaceProducts(params);
+      
       setProducts(response.data);
       setPagination({
         currentPage: response.current_page,
@@ -264,6 +270,8 @@ export default function ProductGrid() {
     );
   }
 
+  
+
   return (
     <div className="space-y-6">
       {/* Filter Bar */}
@@ -410,8 +418,9 @@ export default function ProductGrid() {
         )}
       </div>
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {/* Pagination - Always show if there are products */}
+      
+      {products.length > 0 && (
         <div className="mt-8">
           {loading ? (
             <div className="flex justify-center items-center space-x-2">

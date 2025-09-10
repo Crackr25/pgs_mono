@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use App\Models\Product;
 
 class CompanyController extends Controller
 {
@@ -260,5 +261,20 @@ class CompanyController extends Controller
             'files' => $uploadedFiles,
             'company' => $company->fresh()
         ]);
+    }
+
+    /**
+     * Get marketplace statistics
+     */
+    public function getMarketplaceStats(): JsonResponse
+    {
+        $stats = [
+            'total_suppliers' => Company::count(),
+            'verified_suppliers' => Company::where('verified', '1')->count(),
+            'total_products' => Product::count(),
+            'active_products' => Product::where('active', '1')->count(),
+        ];
+
+        return response()->json($stats);
     }
 }

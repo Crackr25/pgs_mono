@@ -23,6 +23,12 @@ import apiService from '../../lib/api';
 export default function BuyerDashboard() {
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [marketplaceStats, setMarketplaceStats] = useState({
+    total_suppliers: 0,
+    verified_suppliers: 0,
+    total_products: 0,
+    active_products: 0
+  });
   const [dashboardData, setDashboardData] = useState({
     activeRFQs: 0,
     pendingQuotes: 0,
@@ -35,10 +41,20 @@ export default function BuyerDashboard() {
   });
 
   useEffect(() => {
+    fetchMarketplaceStats();
     if (isAuthenticated) {
       fetchDashboardData();
     }
   }, [isAuthenticated]);
+
+  const fetchMarketplaceStats = async () => {
+    try {
+      const response = await apiService.getMarketplaceStats();
+      setMarketplaceStats(response);
+    } catch (error) {
+      console.error('Error fetching marketplace stats:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -142,7 +158,11 @@ export default function BuyerDashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-secondary-600">Products</p>
-                  <p className="text-lg font-bold text-secondary-900">50K+</p>
+                  <p className="text-lg font-bold text-secondary-900">
+                    {marketplaceStats.active_products > 0 
+                      ? marketplaceStats.active_products.toLocaleString() 
+                      : '50K+'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -154,7 +174,11 @@ export default function BuyerDashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-secondary-600">Suppliers</p>
-                  <p className="text-lg font-bold text-secondary-900">2.5K+</p>
+                  <p className="text-lg font-bold text-secondary-900">
+                    {marketplaceStats.total_suppliers > 0 
+                      ? marketplaceStats.total_suppliers.toLocaleString() 
+                      : '2.5K+'}
+                  </p>
                 </div>
               </div>
             </div>
