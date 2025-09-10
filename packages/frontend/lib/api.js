@@ -694,7 +694,11 @@ class ApiService {
   // Marketplace methods (public - no auth required)
   async getMarketplaceProducts(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/marketplace/products${queryString ? `?${queryString}` : ''}`);
+    return this.request(`/marketplace/products?${queryString}`);
+  }
+
+  async getMarketplaceStats() {
+    return this.request('/marketplace/stats');
   }
 
   async getMarketplaceProductDetails(id) {

@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/companies', [CompanyController::class, 'index']);
 Route::get('/companies/{company}', [CompanyController::class, 'show']);
 Route::get('/companies/{company}/products', [CompanyController::class, 'products']);
+Route::get('/marketplace/stats', [CompanyController::class, 'getMarketplaceStats']);
 
 // Marketplace routes (public - for buyer home page)
 Route::get('/marketplace/products', [MarketplaceController::class, 'getRandomProducts']);

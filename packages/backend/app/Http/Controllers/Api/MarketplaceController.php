@@ -16,7 +16,7 @@ class MarketplaceController extends Controller
      */
     public function getRandomProducts(Request $request): JsonResponse
     {
-        $perPage = 30;
+        $perPage = 12; // Reduced from 30 to 12 to make pagination more visible
         $page = $request->get('page', 1);
         
         // Get random products with their company and main image
