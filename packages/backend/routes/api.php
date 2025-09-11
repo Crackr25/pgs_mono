@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\SavedProductController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\StarredSupplierController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\ContactInquiryController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 
@@ -164,6 +165,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{id}', [CartController::class, 'destroy']);
     Route::delete('/cart', [CartController::class, 'clear']);
     Route::get('/cart/count', [CartController::class, 'count']);
+});
 
-    
+// Contact inquiry routes (public - anyone can submit)
+Route::post('/contact-inquiries', [ContactInquiryController::class, 'store']);
+
+// Contact inquiry management routes (protected - admin only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/contact-inquiries', [ContactInquiryController::class, 'index']);
+    Route::get('/contact-inquiries/stats', [ContactInquiryController::class, 'stats']);
+    Route::get('/contact-inquiries/{contactInquiry}', [ContactInquiryController::class, 'show']);
+    Route::put('/contact-inquiries/{contactInquiry}', [ContactInquiryController::class, 'update']);
+    Route::delete('/contact-inquiries/{contactInquiry}', [ContactInquiryController::class, 'destroy']);
 });

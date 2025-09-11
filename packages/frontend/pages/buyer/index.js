@@ -11,18 +11,21 @@ import {
   Package,
   Users,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  Phone
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import ProductGrid from '../../components/buyer/ProductGrid';
 import { StatsSkeleton } from '../../components/common/Skeleton';
+import ContactModal from '../../components/common/ContactModal';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
 
 export default function BuyerDashboard() {
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [marketplaceStats, setMarketplaceStats] = useState({
     total_suppliers: 0,
     verified_suppliers: 0,
@@ -136,6 +139,13 @@ export default function BuyerDashboard() {
               </p>
             </div>
             <div className="flex space-x-3 mt-4 sm:mt-0">
+              <Button 
+                variant="secondary" 
+                onClick={() => setIsContactModalOpen(true)}
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Contact Us
+              </Button>
               <Link href="/buyer/rfqs/create">
                 <Button variant="secondary">
                   <Plus className="w-4 h-4 mr-2" />
@@ -210,7 +220,13 @@ export default function BuyerDashboard() {
         )}
 
         {/* Product Marketplace */}
-        <ProductGrid />
+        <ProductGrid hideFilters={true} />
+
+        {/* Contact Modal */}
+        <ContactModal 
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
+        />
       </div>
     </>
   );

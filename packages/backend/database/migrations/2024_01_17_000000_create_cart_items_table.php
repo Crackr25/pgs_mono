@@ -17,11 +17,12 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->json('selected_specifications')->nullable(); // Store selected specs as JSON
+            $table->string('specifications_hash')->nullable(); // Hash of specifications for uniqueness
             $table->decimal('unit_price', 10, 2); // Store price at time of adding to cart
             $table->timestamps();
             
             // Ensure a user can't add the same product with same specs multiple times
-            $table->unique(['user_id', 'product_id', 'selected_specifications'], 'unique_cart_item');
+            $table->unique(['user_id', 'product_id', 'specifications_hash'], 'unique_cart_item');
         });
     }
 

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, MoreVertical, Phone, Video, Info, MessageSquare, Clock, Check, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, X, FileText, Image, Download } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info } from 'lucide-react';
+import ProductMessageHeader from './ProductMessageHeader';
 import Button from '../common/Button';
 import ConfirmationModal from '../common/ConfirmationModal';
 
@@ -460,6 +461,14 @@ export default function ChatWindow({
                       {formatDate(message.created_at)}
                     </div>
                   </div>
+                )}
+                
+                {/* Product Message Header */}
+                {message.product_context && (
+                  <ProductMessageHeader 
+                    productContext={message.product_context}
+                    messageType={message.message_type || 'message'}
+                  />
                 )}
                 
                 <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>

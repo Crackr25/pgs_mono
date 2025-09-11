@@ -874,8 +874,8 @@ class ApiService {
     });
   }
 
-  async bulkUpdateQuotes(quoteIds, action, data = {}) {
-    return this.request('/quotes/bulk', {
+  async bulkQuoteAction(quoteIds, action, data = {}) {
+    return this.request('/quotes/bulk-action', {
       method: 'POST',
       body: JSON.stringify({
         quote_ids: quoteIds,
@@ -885,6 +885,82 @@ class ApiService {
     });
   }
 
+  // Contact Inquiry methods
+  async submitContactInquiry(inquiryData) {
+    return this.request('/contact-inquiries', {
+      method: 'POST',
+      body: JSON.stringify(inquiryData),
+    });
+  }
+
+  async getContactInquiries(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/contact-inquiries${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getContactInquiry(id) {
+    return this.request(`/contact-inquiries/${id}`);
+  }
+
+  async updateContactInquiry(id, data) {
+    return this.request(`/contact-inquiries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteContactInquiry(id) {
+    return this.request(`/contact-inquiries/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getContactInquiryStats() {
+    return this.request('/contact-inquiries/stats');
+  }
+
+  // Product Message and Quote methods
+  async sendProductMessage(messageData) {
+    // Use existing buyer messages endpoint
+    return this.request('/buyer/messages/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        recipient_id: messageData.supplier_id,
+        recipient_type: 'user',
+        message: messageData.message,
+        message_type: 'product_inquiry',
+        product_id: messageData.product_id,
+        product_context: messageData.product_context
+      }),
+    });
+  }
+
+  async requestProductQuote(quoteData) {
+    // Use existing quotes endpoint
+    return this.request('/quotes', {
+      method: 'POST',
+      body: JSON.stringify({
+        product_id: quoteData.product_id,
+        supplier_id: quoteData.supplier_id,
+        quantity: quoteData.quantity,
+        target_price: quoteData.target_price,
+        deadline: quoteData.deadline,
+        message: quoteData.message,
+        product_name: quoteData.product_name,
+        supplier_name: quoteData.supplier_name
+      }),
+    });
+  }
+
+  async getProductMessages(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/product-messages${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getProductQuotes(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/product-quotes${queryString ? `?${queryString}` : ''}`);
+  }
 
 }
 

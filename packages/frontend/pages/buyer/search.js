@@ -1,27 +1,33 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
 import Link from 'next/link';
 import { 
-  Filter, 
-  Grid, 
-  List, 
-  Star, 
-  MapPin, 
-  MessageSquare, 
-  ShoppingCart,
-  ChevronDown,
+  ArrowLeft,
+  Search,
+  Filter,
+  Grid,
+  List,
   X,
-  DollarSign
+  MapPin,
+  MessageSquare,
+  ShoppingCart,
+  DollarSign,
+  ChevronDown
 } from 'lucide-react';
-import Card from '../common/Card';
-import Button from '../common/Button';
-import Pagination from '../common/Pagination';
-import { ProductCardSkeleton, FilterSkeleton } from '../common/Skeleton';
-import QuickMessageModal from '../common/QuickMessageModal';
-import QuickQuoteModal from '../common/QuickQuoteModal';
-import ToastNotification from '../common/ToastNotification';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Pagination from '../../components/common/Pagination';
+import { ProductCardSkeleton } from '../../components/common/Skeleton';
+import QuickMessageModal from '../../components/common/QuickMessageModal';
+import QuickQuoteModal from '../../components/common/QuickQuoteModal';
+import ToastNotification from '../../components/common/ToastNotification';
 import apiService from '../../lib/api';
 
-export default function ProductGrid({ hideFilters = false }) {
+export default function SearchResults() {
+  const router = useRouter();
+  const { q: searchQuery } = router.query;
+  
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [products, setProducts] = useState([]);
@@ -40,7 +46,7 @@ export default function ProductGrid({ hideFilters = false }) {
     category: '',
     priceRange: '',
     location: '',
-    search: '',
+    search: searchQuery || '',
     sortBy: 'relevance'
   });
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -48,8 +54,6 @@ export default function ProductGrid({ hideFilters = false }) {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastConfig, setToastConfig] = useState({});
-  const isInitialMount = useRef(true);
-
 
   const priceRanges = [
     { label: 'Under $100', value: '0-100' },
@@ -58,7 +62,6 @@ export default function ProductGrid({ hideFilters = false }) {
     { label: '$1,000 - $5,000', value: '1000-5000' },
     { label: 'Over $5,000', value: '5000+' }
   ];
-
 
   const sortOptions = [
     { label: 'Relevance', value: 'relevance' },
@@ -69,17 +72,21 @@ export default function ProductGrid({ hideFilters = false }) {
   ];
 
   useEffect(() => {
+    if (searchQuery) {
+      setFilters(prev => ({ ...prev, search: searchQuery }));
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchLocations();
   }, []);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
+    if (filters.search || filters.category || filters.priceRange || filters.location || filters.sortBy) {
+      fetchProducts();
     }
-    fetchProducts();
   }, [filters.category, filters.priceRange, filters.location, filters.search, filters.sortBy, pagination.currentPage]);
 
   const fetchProducts = async () => {
@@ -99,15 +106,17 @@ export default function ProductGrid({ hideFilters = false }) {
       
       const response = await apiService.getMarketplaceProducts(params);
       
-      setProducts(response.data);
-      setPagination({
-        currentPage: response.current_page,
-        totalPages: response.last_page,
-        totalItems: response.total,
-        itemsPerPage: response.per_page,
-        from: response.from || 0,
-        to: response.to || 0
-      });
+      if (response && response.data) {
+        setProducts(response.data);
+        setPagination({
+          currentPage: response.current_page || 1,
+          totalPages: response.last_page || 1,
+          totalItems: response.total || 0,
+          itemsPerPage: response.per_page || 12,
+          from: response.from || 0,
+          to: response.to || 0
+        });
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       setProducts([]);
@@ -118,8 +127,8 @@ export default function ProductGrid({ hideFilters = false }) {
 
   const fetchCategories = async () => {
     try {
-      const response = await apiService.getMarketplaceCategories();
-      setCategories(response.data || []);
+      const response = await apiService.getCategories();
+      setCategories(response || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -127,27 +136,15 @@ export default function ProductGrid({ hideFilters = false }) {
 
   const fetchLocations = async () => {
     try {
-      const response = await apiService.getMarketplaceLocations();
-      setLocations(response.data || []);
+      const response = await apiService.getLocations();
+      setLocations(response || []);
     } catch (error) {
       console.error('Error fetching locations:', error);
     }
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
-
-  const handlePageChange = (page) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
-  };
-
-  const handleSearch = (searchTerm) => {
-    setFilters(prev => ({ ...prev, search: searchTerm }));
+    setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
@@ -156,10 +153,14 @@ export default function ProductGrid({ hideFilters = false }) {
       category: '',
       priceRange: '',
       location: '',
-      search: '',
+      search: searchQuery || '',
       sortBy: 'relevance'
     });
     setPagination(prev => ({ ...prev, currentPage: 1 }));
+  };
+
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
   };
 
   const handleContactProduct = (product) => {
@@ -172,31 +173,13 @@ export default function ProductGrid({ hideFilters = false }) {
     setShowQuoteModal(true);
   };
 
-  const handleModalSuccess = (toastData) => {
-    setToastConfig(toastData);
+  const showToastNotification = (config) => {
+    setToastConfig(config);
     setShowToast(true);
   };
 
-  const closeModals = () => {
-    setShowMessageModal(false);
-    setShowQuoteModal(false);
-    setSelectedProduct(null);
-  };
-
-  const renderStars = (rating) => {
-    const numRating = parseFloat(rating) || 0;
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${
-          i < Math.floor(numRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-        }`}
-      />
-    ));
-  };
-
-  const ProductCard = ({ product }) => (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group h-full flex flex-col">
+  const renderProductCard = (product) => (
+    <Card key={product.id} className="group hover:shadow-lg transition-shadow duration-200 flex flex-col">
       <Link href={`/buyer/products/${product.id}`}>
         <div className="cursor-pointer flex-1 flex flex-col">
           <div className="relative">
@@ -287,37 +270,34 @@ export default function ProductGrid({ hideFilters = false }) {
     </Card>
   );
 
-  if (loading && products.length === 0) {
-    return (
-      <div className="space-y-6">
-        {/* Filter Bar Skeleton */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-          <div className="flex items-center space-x-4">
-            <div className="w-20 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="w-32 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
-            <div className="w-16 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-        </div>
-
-        {/* Skeleton Product Grid */}
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 12 }).map((_, index) => (
-            <ProductCardSkeleton key={index} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  
-
   return (
-    <div className="space-y-6">
-      {/* Filter Bar - Hidden on homepage */}
-      {!hideFilters && (
+    <>
+      <Head>
+        <title>Search Results - Pinoy Global Supply</title>
+      </Head>
+
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link href="/buyer">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-secondary-900">Search Results</h1>
+              {searchQuery && (
+                <p className="text-secondary-600">
+                  Results for "<span className="font-medium">{searchQuery}</span>"
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
           <div className="flex items-center space-x-4">
             <Button
@@ -362,159 +342,169 @@ export default function ProductGrid({ hideFilters = false }) {
             </div>
           </div>
         </div>
-      )}
 
-      {/* Filters Panel - Hidden on homepage */}
-      {!hideFilters && showFilters && (
-        <Card className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium text-secondary-900">Filters</h3>
-            <button
-              onClick={clearFilters}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Clear All
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
-              {categories.length === 0 ? (
-                <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-              ) : (
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Price Range</label>
-              <select
-                value={filters.priceRange}
-                onChange={(e) => handleFilterChange('priceRange', e.target.value)}
-                className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+        {/* Filters Panel */}
+        {showFilters && (
+          <Card className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-medium text-secondary-900">Filters</h3>
+              <button
+                onClick={clearFilters}
+                className="text-sm text-primary-600 hover:text-primary-700"
               >
-                <option value="">Any Price</option>
-                {priceRanges.map(range => (
-                  <option key={range.value} value={range.value}>{range.label}</option>
-                ))}
-              </select>
+                Clear All
+              </button>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Location</label>
-              {locations.length === 0 ? (
-                <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-              ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
+                {categories.length === 0 ? (
+                  <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                ) : (
+                  <select
+                    value={filters.category}
+                    onChange={(e) => handleFilterChange('category', e.target.value)}
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">Price Range</label>
                 <select
-                  value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
+                  value={filters.priceRange}
+                  onChange={(e) => handleFilterChange('priceRange', e.target.value)}
                   className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="">All Locations</option>
-                  {locations.map(location => (
-                    <option key={location} value={location}>{location}</option>
+                  <option value="">All Prices</option>
+                  {priceRanges.map(range => (
+                    <option key={range.value} value={range.value}>{range.label}</option>
                   ))}
                 </select>
-              )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">Location</label>
+                {locations.length === 0 ? (
+                  <div className="w-full h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                ) : (
+                  <select
+                    value={filters.location}
+                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">All Locations</option>
+                    {locations.map(location => (
+                      <option key={location} value={location}>{location}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">Search</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full px-3 py-2 pr-10 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-secondary-400" />
+                </div>
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Search</label>
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                placeholder="Search products..."
-                className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Product Grid */}
-      <div className={`grid gap-6 ${
-        viewMode === 'grid' 
-          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-          : 'grid-cols-1'
-      }`}>
-        {loading && products.length > 0 ? (
-          // Show existing products with skeleton for new ones during pagination
-          [...products.map(product => (
-            <ProductCard key={product.id} product={product} />
-          )), ...Array.from({ length: 6 }).map((_, index) => (
-            <ProductCardSkeleton key={`skeleton-${index}`} />
-          ))]
-        ) : (
-          products.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))
+          </Card>
         )}
-      </div>
 
-      {/* Pagination - Always show if there are products */}
-      
-      {products.length > 0 && (
-        <div className="mt-8">
-          {loading ? (
-            <div className="flex justify-center items-center space-x-2">
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-16 h-4 bg-gray-200 rounded animate-pulse ml-4"></div>
+        {/* Products Grid */}
+        {loading ? (
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <ProductCardSkeleton key={index} />
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+              <Search className="w-12 h-12 text-gray-400" />
             </div>
-          ) : (
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.totalItems}
-              itemsPerPage={pagination.itemsPerPage}
-              onPageChange={handlePageChange}
-              paginationInfo={{
-                from: pagination.from,
-                to: pagination.to,
-                total: pagination.totalItems
-              }}
-            />
-          )}
-        </div>
-      )}
+            <h3 className="text-lg font-medium text-secondary-900 mb-2">No products found</h3>
+            <p className="text-secondary-600 mb-4">
+              {searchQuery 
+                ? `No products match your search for "${searchQuery}"`
+                : "No products match your current filters"
+              }
+            </p>
+            <Button onClick={clearFilters} variant="outline">
+              Clear Filters
+            </Button>
+          </div>
+        ) : (
+          <div className={`grid gap-6 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+              : 'grid-cols-1'
+          }`}>
+            {products.map(renderProductCard)}
+          </div>
+        )}
 
-      {/* Quick Message Modal */}
-      <QuickMessageModal
-        isOpen={showMessageModal}
-        onClose={closeModals}
-        product={selectedProduct}
-        onSuccess={handleModalSuccess}
-      />
+        {/* Pagination */}
+        {!loading && products.length > 0 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+            onPageChange={handlePageChange}
+            from={pagination.from}
+            to={pagination.to}
+          />
+        )}
 
-      {/* Quick Quote Modal */}
-      <QuickQuoteModal
-        isOpen={showQuoteModal}
-        onClose={closeModals}
-        product={selectedProduct}
-        onSuccess={handleModalSuccess}
-      />
+        {/* Modals */}
+        <QuickMessageModal
+          isOpen={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          product={selectedProduct}
+          onSuccess={(message) => {
+            showToastNotification({
+              type: 'success',
+              title: 'Message Sent!',
+              message: 'Your inquiry has been sent to the supplier.'
+            });
+          }}
+        />
 
-      {/* Toast Notification */}
-      <ToastNotification
-        show={showToast}
-        onClose={() => setShowToast(false)}
-        type={toastConfig.type}
-        title={toastConfig.title}
-        message={toastConfig.message}
-        duration={toastConfig.duration}
-      />
-    </div>
+        <QuickQuoteModal
+          isOpen={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          product={selectedProduct}
+          onSuccess={(quote) => {
+            showToastNotification({
+              type: 'success',
+              title: 'Quote Request Sent!',
+              message: 'Your quote request has been sent to the supplier.'
+            });
+          }}
+        />
+
+        <ToastNotification
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          type={toastConfig.type}
+          title={toastConfig.title}
+          message={toastConfig.message}
+        />
+      </div>
+    </>
   );
 }
