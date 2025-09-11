@@ -17,12 +17,14 @@ class ChatMessage extends Model
         'read',
         'message_type',
         'attachments',
-        'product_id'
+        'product_id',
+        'product_context'
     ];
 
     protected $casts = [
         'read' => 'boolean',
         'attachments' => 'array',
+        'product_context' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];

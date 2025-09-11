@@ -168,13 +168,8 @@ export default function ProductDetail() {
     try {
       setAddingToCart(true);
       
-      const cartItem = {
-        product_id: product.id,
-        quantity: cartQuantity,
-        specifications: selectedSpecs
-      };
-
-      await addToCartContext(cartItem);
+      // Call addToCart with correct parameters: productId, quantity, specifications
+      await addToCartContext(product.id, cartQuantity, selectedSpecs);
       setShowCartNotification(true);
       
       // Hide notification after 3 seconds

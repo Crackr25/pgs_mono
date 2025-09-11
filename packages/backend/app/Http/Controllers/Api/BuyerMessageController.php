@@ -94,6 +94,7 @@ class BuyerMessageController extends Controller
                 'message' => $message->message,
                 'message_type' => $message->message_type,
                 'product_id' => $message->product_id,
+                'product_context' => $message->product_context,
                 'attachments' => $message->attachments,
                 'created_at' => $message->created_at->toISOString(),
                 'read' => $message->read,
@@ -139,7 +140,8 @@ class BuyerMessageController extends Controller
             'recipient_type' => 'sometimes|string|in:user,company',
             'message' => 'required|string|max:1000',
             'message_type' => 'sometimes|string|in:text,product_inquiry',
-            'product_id' => 'nullable|exists:products,id'
+            'product_id' => 'nullable|exists:products,id',
+            'product_context' => 'nullable|array'
         ]);
 
         $user = Auth::user();
@@ -195,7 +197,8 @@ class BuyerMessageController extends Controller
             'receiver_id' => $conversation->seller_id,
             'message' => $request->message,
             'message_type' => $request->message_type ?? 'text',
-            'product_id' => $request->product_id
+            'product_id' => $request->product_id,
+            'product_context' => $request->product_context
         ]);
 
         // Update conversation's last message timestamp
@@ -217,6 +220,7 @@ class BuyerMessageController extends Controller
                 'message' => $message->message,
                 'message_type' => $message->message_type,
                 'product_id' => $message->product_id,
+                'product_context' => $message->product_context,
                 'created_at' => $message->created_at->toISOString(),
                 'read' => $message->read,
                 'sender' => [

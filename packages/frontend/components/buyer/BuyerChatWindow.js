@@ -15,6 +15,7 @@ import {
   Building2
 } from 'lucide-react';
 import Button from '../common/Button';
+import ProductMessageHeader from '../chat/ProductMessageHeader';
 
 export default function BuyerChatWindow({ 
   conversation, 
@@ -302,6 +303,11 @@ export default function BuyerChatWindow({
             const previousMessage = index > 0 ? messages[index - 1] : null;
             const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
 
+            // Debug log to check message structure
+            if (message.product_context) {
+              console.log('Message with product_context:', message);
+            }
+
             return (
               <div key={message.id}>
                 {showDateSeparator && (
@@ -310,6 +316,14 @@ export default function BuyerChatWindow({
                       {formatDate(message.created_at)}
                     </div>
                   </div>
+                )}
+                
+                {/* Product Message Header */}
+                {message.product_context && (
+                  <ProductMessageHeader 
+                    productContext={message.product_context}
+                    messageType={message.message_type || 'message'}
+                  />
                 )}
                 
                 <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>

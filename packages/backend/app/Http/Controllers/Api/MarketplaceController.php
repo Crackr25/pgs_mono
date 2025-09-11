@@ -21,7 +21,7 @@ class MarketplaceController extends Controller
         
         // Get random products with their company and main image
         $query = Product::with([
-            'company:id,name,location,verified',
+            'company:user_id,id,name,location,verified',
             'mainImage:id,product_id,image_path'
         ])
         ->where('active', true)
@@ -82,6 +82,7 @@ class MarketplaceController extends Controller
                 'has_image' => !is_null($imageUrl),
                 'company' => [
                     'id' => $product->company->id,
+                    'user_id' => $product->company->user_id,
                     'name' => $product->company->name,
                     'location' => $product->company->location,
                     'verified' => $product->company->verified ?? false,
@@ -148,7 +149,7 @@ class MarketplaceController extends Controller
     {
         try {
             $product = Product::with([
-                'company:id,name,location,verified,description,year_established,email,phone,website',
+                'company:user_id,id,name,location,verified,description,year_established,email,phone,website',
                 'images:id,product_id,image_path,is_main,sort_order,alt_text'
             ])
             ->where('active', 1)

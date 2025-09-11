@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { api } from '../../lib/api';
 
 export default function BuyerGlobalTopNav() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function BuyerGlobalTopNav() {
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const [selectedCountry, setSelectedCountry] = useState('Philippines');
-  const [messageCount, setMessageCount] = useState(5);
+  const [messageCount, setMessageCount] = useState(0);
   const [orderCount, setOrderCount] = useState(2);
 
   const languages = [
@@ -51,6 +52,38 @@ export default function BuyerGlobalTopNav() {
       router.push(`/buyer/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  // Fetch unread message count
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await api.getBuyerUnreadCount();
+      if (response.success) {
+        setMessageCount(response.unread_count);
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  // Fetch unread count on component mount and when user changes
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [user]);
+
+  // Refresh unread count when navigating to/from messages page
+  useEffect(() => {
+    if (router.pathname === '/buyer/messages') {
+      // When leaving messages page, refresh count
+      const handleRouteChange = () => {
+        setTimeout(fetchUnreadCount, 500); // Small delay to allow backend to update
+      };
+      
+      router.events.on('routeChangeComplete', handleRouteChange);
+      return () => router.events.off('routeChangeComplete', handleRouteChange);
+    }
+  }, [router.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -86,13 +119,6 @@ export default function BuyerGlobalTopNav() {
                   placeholder="Search products, suppliers, categories..."
                   className="flex-1 px-4 py-2 border border-secondary-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
-                <button
-                  type="button"
-                  className="px-3 py-2 border-t border-b border-secondary-300 text-secondary-500 hover:text-secondary-700"
-                  title="Search by image"
-                >
-                  <Camera className="w-5 h-5" />
-                </button>
                 <button
                   type="submit"
                   className="px-6 py-2 bg-primary-600 text-white rounded-r-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
