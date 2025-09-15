@@ -962,6 +962,45 @@ class ApiService {
     return this.request(`/product-quotes${queryString ? `?${queryString}` : ''}`);
   }
 
+  // Shipping Address API methods
+  async getShippingAddresses() {
+    return this.request('/shipping-addresses');
+  }
+
+  async createShippingAddress(addressData) {
+    return this.request('/shipping-addresses', {
+      method: 'POST',
+      body: JSON.stringify(addressData),
+    });
+  }
+
+  async getShippingAddress(id) {
+    return this.request(`/shipping-addresses/${id}`);
+  }
+
+  async updateShippingAddress(id, addressData) {
+    return this.request(`/shipping-addresses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(addressData),
+    });
+  }
+
+  async deleteShippingAddress(id) {
+    return this.request(`/shipping-addresses/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async setDefaultShippingAddress(id) {
+    return this.request(`/shipping-addresses/${id}/set-default`, {
+      method: 'POST',
+    });
+  }
+
+  async getDefaultShippingAddress() {
+    return this.request('/shipping-addresses/default/get');
+  }
+
 }
 
 const apiService = new ApiService();
