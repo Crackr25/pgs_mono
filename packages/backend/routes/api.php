@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\StarredSupplierController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ContactInquiryController;
+use App\Http\Controllers\Api\ShippingAddressController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 
@@ -165,6 +166,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{id}', [CartController::class, 'destroy']);
     Route::delete('/cart', [CartController::class, 'clear']);
     Route::get('/cart/count', [CartController::class, 'count']);
+
+    // Shipping Address routes
+    Route::get('/shipping-addresses', [ShippingAddressController::class, 'index']);
+    Route::post('/shipping-addresses', [ShippingAddressController::class, 'store']);
+    Route::get('/shipping-addresses/{id}', [ShippingAddressController::class, 'show']);
+    Route::put('/shipping-addresses/{id}', [ShippingAddressController::class, 'update']);
+    Route::delete('/shipping-addresses/{id}', [ShippingAddressController::class, 'destroy']);
+    Route::post('/shipping-addresses/{id}/set-default', [ShippingAddressController::class, 'setDefault']);
+    Route::get('/shipping-addresses/default/get', [ShippingAddressController::class, 'getDefault']);
 });
 
 // Contact inquiry routes (public - anyone can submit)

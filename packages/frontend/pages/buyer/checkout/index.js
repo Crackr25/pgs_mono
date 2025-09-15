@@ -23,6 +23,8 @@ import {
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import { useCart } from '../../../contexts/CartContext';
+import ShippingAddressModal from '../../../components/checkout/ShippingAddressModal';
+import apiService from '../../../lib/api';
 
 export default function Checkout() {
   const router = useRouter();
@@ -30,6 +32,13 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Shipping address states
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [useNewAddress, setUseNewAddress] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
   
   // Form states
   const [shippingAddress, setShippingAddress] = useState({
@@ -81,8 +90,90 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    fetchCartItems().finally(() => setLoading(false));
+    const initializeCheckout = async () => {
+      try {
+        await fetchCartItems();
+        await fetchSavedAddresses();
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeCheckout();
   }, []);
+
+  const fetchSavedAddresses = async () => {
+    try {
+      setLoadingAddresses(true);
+      const response = await apiService.getShippingAddresses();
+      if (response.success) {
+        setSavedAddresses(response.data);
+        
+        // Auto-select default address if available
+        const defaultAddress = response.data.find(addr => addr.is_default);
+        if (defaultAddress && !selectedAddress) {
+          setSelectedAddress(defaultAddress);
+          populateShippingForm(defaultAddress);
+        } else if (response.data.length === 0) {
+          setUseNewAddress(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  const populateShippingForm = (address) => {
+    setShippingAddress({
+      firstName: address.first_name,
+      lastName: address.last_name,
+      company: address.company || '',
+      address1: address.address_line_1,
+      address2: address.address_line_2 || '',
+      city: address.city,
+      state: address.state,
+      zipCode: address.zip_code,
+      country: address.country,
+      phone: address.phone,
+      email: address.email
+    });
+  };
+
+  const handleAddressSelect = (address) => {
+    setSelectedAddress(address);
+    populateShippingForm(address);
+    setUseNewAddress(false);
+  };
+
+  const handleSaveNewAddress = async () => {
+    try {
+      const addressData = {
+        first_name: shippingAddress.firstName,
+        last_name: shippingAddress.lastName,
+        company: shippingAddress.company,
+        address_line_1: shippingAddress.address1,
+        address_line_2: shippingAddress.address2,
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        zip_code: shippingAddress.zipCode,
+        country: shippingAddress.country,
+        phone: shippingAddress.phone,
+        email: shippingAddress.email,
+        is_default: savedAddresses.length === 0 // Set as default if first address
+      };
+
+      const response = await apiService.createShippingAddress(addressData);
+      if (response.success) {
+        await fetchSavedAddresses();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error saving address:', error);
+    }
+    return false;
+  };
 
   const validateStep = (step) => {
     const newErrors = {};
@@ -131,8 +222,16 @@ export default function Checkout() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (validateStep(currentStep)) {
+      // If using new address and want to save it, save before proceeding
+      if (currentStep === 1 && useNewAddress && document.getElementById('saveAddress')?.checked) {
+        const saved = await handleSaveNewAddress();
+        if (!saved) {
+          alert('Failed to save address. Please try again.');
+          return;
+        }
+      }
       setCurrentStep(currentStep + 1);
     }
   };
@@ -287,7 +386,95 @@ export default function Checkout() {
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-6">Shipping Information</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Address Selection */}
+                {!loadingAddresses && savedAddresses.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">Choose Address</h3>
+                      <Button
+                        onClick={() => setShowAddressModal(true)}
+                        variant="outline"
+                        className="text-sm"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Manage Addresses
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3 mb-4">
+                      {savedAddresses.map((address) => (
+                        <label
+                          key={address.id}
+                          className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedAddress?.id === address.id
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="savedAddress"
+                            checked={selectedAddress?.id === address.id}
+                            onChange={() => handleAddressSelect(address)}
+                            className="mt-1 text-primary-600 focus:ring-primary-500"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-medium text-gray-900">
+                                {address.first_name} {address.last_name}
+                              </span>
+                              {address.label && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">
+                                  {address.label}
+                                </span>
+                              )}
+                              {address.is_default && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            {address.company && (
+                              <p className="text-sm text-gray-600">{address.company}</p>
+                            )}
+                            <p className="text-sm text-gray-600">
+                              {address.address_line_1}
+                              {address.address_line_2 && `, ${address.address_line_2}`}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {address.city}, {address.state} {address.zip_code}
+                            </p>
+                            <p className="text-sm text-gray-600">{address.phone}</p>
+                          </div>
+                        </label>
+                      ))}
+                      
+                      <label className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                        useNewAddress ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="savedAddress"
+                          checked={useNewAddress}
+                          onChange={() => {
+                            setUseNewAddress(true);
+                            setSelectedAddress(null);
+                          }}
+                          className="mt-1 text-primary-600 focus:ring-primary-500"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <Plus className="w-4 h-4 text-gray-600" />
+                          <span className="font-medium text-gray-900">Use a new address</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show form if using new address or no saved addresses */}
+                {(useNewAddress || savedAddresses.length === 0) && (
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       First Name *
@@ -436,6 +623,22 @@ export default function Checkout() {
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                 </div>
+
+                    {/* Save Address Option */}
+                    {useNewAddress && (
+                      <div className="mb-6">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            id="saveAddress"
+                            type="checkbox"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">Save this address for future orders</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Billing Address Toggle */}
                 <div className="mb-6">
@@ -817,6 +1020,14 @@ export default function Checkout() {
             </Card>
           </div>
         </div>
+
+        {/* Shipping Address Modal */}
+        <ShippingAddressModal
+          isOpen={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onSelectAddress={handleAddressSelect}
+          selectedAddressId={selectedAddress?.id}
+        />
       </div>
     </>
   );
