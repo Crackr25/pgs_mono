@@ -2,16 +2,11 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
-  Search, 
   Plus, 
   TrendingUp, 
-  ShoppingCart, 
-  MessageSquare, 
   Clock,
   Package,
   Users,
-  DollarSign,
-  AlertCircle,
   Phone
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -23,7 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
 
 export default function BuyerDashboard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [marketplaceStats, setMarketplaceStats] = useState({
@@ -32,95 +27,25 @@ export default function BuyerDashboard() {
     total_products: 0,
     active_products: 0
   });
-  const [dashboardData, setDashboardData] = useState({
-    activeRFQs: 0,
-    pendingQuotes: 0,
-    activeOrders: 0,
-    totalSpent: 0,
-    recentRFQs: [],
-    recentQuotes: [],
-    recentOrders: [],
-    topSuppliers: []
-  });
 
   useEffect(() => {
     fetchMarketplaceStats();
-    if (isAuthenticated) {
-      fetchDashboardData();
-    }
-  }, [isAuthenticated]);
+  }, []);
 
   const fetchMarketplaceStats = async () => {
     try {
+      setLoading(true);
       const response = await apiService.getMarketplaceStats();
       setMarketplaceStats(response);
     } catch (error) {
       console.error('Error fetching marketplace stats:', error);
-    }
-  };
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      // Mock data for now - replace with actual API calls
-      setDashboardData({
-        activeRFQs: 12,
-        pendingQuotes: 8,
-        activeOrders: 5,
-        totalSpent: 125000,
-        recentRFQs: [
-          { id: 1, title: 'LED Light Fixtures - 1000 units', status: 'active', created_at: '2024-01-15', responses: 5 },
-          { id: 2, title: 'Industrial Pumps - 50 units', status: 'closed', created_at: '2024-01-14', responses: 12 },
-          { id: 3, title: 'Steel Pipes - 200 meters', status: 'active', created_at: '2024-01-13', responses: 3 }
-        ],
-        recentQuotes: [
-          { id: 1, supplier: 'Manila Manufacturing Corp', product: 'LED Light Fixtures', price: '$25.00', status: 'pending' },
-          { id: 2, supplier: 'Cebu Industrial Solutions', product: 'Industrial Pumps', price: '$850.00', status: 'accepted' },
-          { id: 3, supplier: 'Davao Steel Works', product: 'Steel Pipes', price: '$45.00/m', status: 'pending' }
-        ],
-        recentOrders: [
-          { id: 1, supplier: 'Manila Manufacturing Corp', total: '$25,000', status: 'in_production', date: '2024-01-10' },
-          { id: 2, supplier: 'Cebu Industrial Solutions', total: '$42,500', status: 'shipped', date: '2024-01-08' }
-        ],
-        topSuppliers: [
-          { name: 'Manila Manufacturing Corp', orders: 15, rating: 4.8 },
-          { name: 'Cebu Industrial Solutions', orders: 12, rating: 4.9 },
-          { name: 'Davao Steel Works', orders: 8, rating: 4.7 }
-        ]
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      case 'accepted': return 'bg-blue-100 text-blue-800';
-      case 'in_production': return 'bg-orange-100 text-orange-800';
-      case 'shipped': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   return (
     <>

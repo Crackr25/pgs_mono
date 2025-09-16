@@ -40,7 +40,10 @@ class Company extends Model
         'quality_control_photos',
         'warehouse_photos',
         'certifications_display_photos',
-        'onboarding_step'
+        'onboarding_step',
+        'stripe_account_id',
+        'stripe_onboarding_status',
+        'stripe_account_created_at'
     ];
 
     protected $casts = [
@@ -55,7 +58,8 @@ class Company extends Model
         'production_line_photos' => 'array',
         'quality_control_photos' => 'array',
         'warehouse_photos' => 'array',
-        'certifications_display_photos' => 'array'
+        'certifications_display_photos' => 'array',
+        'stripe_account_created_at' => 'datetime'
     ];
 
     // Relationships

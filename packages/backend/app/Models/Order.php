@@ -18,6 +18,8 @@ class Order extends Model
         'total_amount',
         'status',
         'payment_status',
+        'payment_intent_id',
+        'paid_at',
         'estimated_delivery',
         'progress',
         'buyer_name',
@@ -31,7 +33,8 @@ class Order extends Model
         'quantity' => 'integer',
         'total_amount' => 'decimal:2',
         'progress' => 'integer',
-        'estimated_delivery' => 'date'
+        'estimated_delivery' => 'date',
+        'paid_at' => 'datetime'
     ];
 
     // Relationships

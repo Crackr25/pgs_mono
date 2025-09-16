@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\ContactInquiryController;
 use App\Http\Controllers\Api\ShippingAddressController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
+use App\Http\Controllers\StripeConnectController;
+use App\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +41,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::get('/auth/user/company', [AuthController::class, 'getUserCompany']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 });
 
@@ -188,3 +191,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/contact-inquiries/{contactInquiry}', [ContactInquiryController::class, 'update']);
     Route::delete('/contact-inquiries/{contactInquiry}', [ContactInquiryController::class, 'destroy']);
 });
+
+// Stripe Connect routes (protected - merchants only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/stripe/create-express-account', [StripeConnectController::class, 'createExpressAccount']);
+    Route::post('/stripe/create-onboarding-link', [StripeConnectController::class, 'createOnboardingLink']);
+    Route::get('/stripe/account-status', [StripeConnectController::class, 'getAccountStatus']);
+    Route::post('/stripe/create-login-link', [StripeConnectController::class, 'createLoginLink']);
+});
+
+// Stripe webhook (public - no authentication)
+Route::post('/stripe/webhook', [StripeConnectController::class, 'handleWebhook']);
+
+// Payment processing routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/payments/create-intent', [PaymentController::class, 'createPaymentIntent']);
+    Route::post('/payments/create-order-intent', [PaymentController::class, 'createOrderPaymentIntent']);
+    Route::post('/payments/confirm', [PaymentController::class, 'confirmPayment']);
+});
+
+// Payment webhook (public - no authentication)
+Route::post('/payments/webhook', [PaymentController::class, 'handlePaymentWebhook']);
