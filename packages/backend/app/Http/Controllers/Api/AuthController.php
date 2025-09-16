@@ -74,6 +74,24 @@ class AuthController extends Controller
         return response()->json($request->user());
     }
 
+    public function getUserCompany(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $company = $user->company;
+
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No company found for this user'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $company
+        ]);
+    }
+
     public function updateProfile(Request $request): JsonResponse
     {
         $validated = $request->validate([

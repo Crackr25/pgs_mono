@@ -62,11 +62,25 @@ export default function Login() {
       console.log('User data:', response.user);
       console.log('User type:', response.user?.usertype);
       
-      // Redirect based on user type
+      // Redirect based on user type and Stripe onboarding status
       const userType = response.user?.usertype || 'seller';
-      const redirectPath = userType === 'buyer' ? '/buyer' : '/';
-      console.log('Redirecting to:', redirectPath);
-      router.push(redirectPath);
+      
+      if (userType === 'buyer') {
+        router.push('/buyer');
+      } else {
+        // For sellers, check if they have completed Stripe onboarding
+        const company = response.user?.company;
+        const hasStripeAccount = company?.stripe_account_id;
+        const onboardingComplete = company?.stripe_onboarding_status === 'completed';
+        
+        if (!hasStripeAccount || !onboardingComplete) {
+          console.log('Redirecting to Stripe onboarding - missing merchant setup');
+          router.push('/merchant/onboarding/stripe');
+        } else {
+          console.log('Redirecting to seller dashboard');
+          router.push('/');
+        }
+      }
     } catch (error) {
       console.error('Auth error:', error);
     } finally {

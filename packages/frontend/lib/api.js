@@ -44,6 +44,12 @@ class ApiService {
       ...options,
     };
 
+    // Convert data to body if present
+    if (options.data) {
+      config.body = JSON.stringify(options.data);
+      delete config.data;
+    }
+
     try {
       const response = await fetch(url, config);
       const data = await response.json();
@@ -105,6 +111,10 @@ class ApiService {
 
   async getCurrentUser() {
     return this.request('/auth/user');
+  }
+
+  async getCurrentUserCompany() {
+    return this.request('/auth/user/company');
   }
 
   // Company methods

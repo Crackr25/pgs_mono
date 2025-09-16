@@ -14,10 +14,14 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import { useLanguage } from '../hooks/useLanguage';
+import { useStripeOnboardingCheck } from '../hooks/useStripeOnboardingCheck';
 import { analyticsData, products, orders, quotes } from '../lib/dummyData';
 
 export default function Dashboard() {
   const { translate } = useLanguage();
+  
+  // Check if seller needs Stripe onboarding and redirect if necessary
+  useStripeOnboardingCheck();
 
   const stats = [
     {

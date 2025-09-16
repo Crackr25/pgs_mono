@@ -20,10 +20,13 @@ import {
   Edit,
   Plus
 } from 'lucide-react';
+import { Elements } from '@stripe/react-stripe-js';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import { useCart } from '../../../contexts/CartContext';
 import ShippingAddressModal from '../../../components/checkout/ShippingAddressModal';
+import StripePaymentForm from '../../../components/checkout/StripePaymentForm';
+import getStripe from '../../../lib/stripe';
 import apiService from '../../../lib/api';
 
 export default function Checkout() {
@@ -70,20 +73,13 @@ export default function Checkout() {
   });
   
   const [sameAsShipping, setSameAsShipping] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    cardholderName: ''
-  });
+  const [paymentMethod, setPaymentMethod] = useState('stripe');
   
-  const [bankDetails, setBankDetails] = useState({
-    accountName: '',
-    accountNumber: '',
-    bankName: '',
-    routingNumber: ''
-  });
+  // Stripe payment states
+  const [clientSecret, setClientSecret] = useState('');
+  const [paymentIntentId, setPaymentIntentId] = useState('');
+  const [stripePromise] = useState(() => getStripe());
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   
   const [orderNotes, setOrderNotes] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -201,16 +197,9 @@ export default function Checkout() {
     }
     
     if (step === 2) {
-      // Validate payment method
-      if (paymentMethod === 'credit_card') {
-        if (!cardDetails.cardNumber.trim()) newErrors.cardNumber = 'Card number is required';
-        if (!cardDetails.expiryDate.trim()) newErrors.expiryDate = 'Expiry date is required';
-        if (!cardDetails.cvv.trim()) newErrors.cvv = 'CVV is required';
-        if (!cardDetails.cardholderName.trim()) newErrors.cardholderName = 'Cardholder name is required';
-      } else if (paymentMethod === 'bank_transfer') {
-        if (!bankDetails.accountName.trim()) newErrors.accountName = 'Account name is required';
-        if (!bankDetails.accountNumber.trim()) newErrors.accountNumber = 'Account number is required';
-        if (!bankDetails.bankName.trim()) newErrors.bankName = 'Bank name is required';
+      // Validate payment method - Stripe handles validation internally
+      if (paymentMethod === 'stripe' && !clientSecret) {
+        newErrors.payment = 'Payment setup required';
       }
     }
     
@@ -232,6 +221,12 @@ export default function Checkout() {
           return;
         }
       }
+      
+      // If moving to payment step, create payment intent
+      if (currentStep === 1) {
+        await createPaymentIntent();
+      }
+      
       setCurrentStep(currentStep + 1);
     }
   };
@@ -257,17 +252,92 @@ export default function Checkout() {
     return getSubtotal() + getShipping() + getTax();
   };
 
-  const handlePlaceOrder = async () => {
-    if (!validateStep(3)) return;
-    
+  const createPaymentIntent = async () => {
+    try {
+      setLoading(true);
+      
+      // Group cart items by merchant (company)
+      const merchantGroups = cartItems.reduce((groups, item) => {
+        const companyId = item.product.company?.id;
+        if (!companyId) {
+          throw new Error(`Product "${item.product.name}" has no associated company`);
+        }
+        if (!groups[companyId]) {
+          groups[companyId] = {
+            company: item.product.company,
+            items: [],
+            total: 0
+          };
+        }
+        groups[companyId].items.push(item);
+        groups[companyId].total += item.quantity * parseFloat(item.unit_price || 0);
+        return groups;
+      }, {});
+
+      // For now, we'll handle single merchant orders
+      // In a multi-merchant scenario, you'd need to create separate payment intents
+      const merchantIds = Object.keys(merchantGroups).filter(id => id !== 'undefined' && id !== 'null');
+      if (merchantIds.length === 0) {
+        throw new Error('No valid merchant found for cart items');
+      }
+      if (merchantIds.length > 1) {
+        throw new Error('Multi-merchant orders not yet supported');
+      }
+
+      const merchantId = parseInt(merchantIds[0]);
+      const orderTotal = getTotal();
+
+      // Validate required data before sending
+      if (!merchantId || isNaN(merchantId)) {
+        throw new Error('Invalid merchant ID');
+      }
+      if (!shippingAddress.email) {
+        throw new Error('Customer email is required');
+      }
+      if (orderTotal < 0.50) {
+        throw new Error('Order total must be at least $0.50');
+      }
+
+      const response = await apiService.request('/payments/create-intent', {
+        method: 'POST',
+        data: {
+          amount: parseFloat(orderTotal.toFixed(2)),
+          currency: 'usd',
+          merchant_company_id: merchantId,
+          customer_email: shippingAddress.email,
+          description: `Order from ${merchantGroups[merchantId].company?.name || 'Merchant'}`,
+          metadata: {
+            cart_items: cartItems.length,
+            shipping_city: shippingAddress.city,
+            shipping_state: shippingAddress.state
+          }
+        }
+      });
+
+      if (response.success) {
+        setClientSecret(response.client_secret);
+        setPaymentIntentId(response.payment_intent_id);
+      } else {
+        throw new Error(response.message || 'Failed to create payment intent');
+      }
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      setErrors({ payment: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentIntent) => {
     try {
       setSubmitting(true);
       
+      // Create order with payment confirmation
       const orderData = {
         shipping_address: shippingAddress,
         billing_address: sameAsShipping ? shippingAddress : billingAddress,
-        payment_method: paymentMethod,
-        payment_details: paymentMethod === 'credit_card' ? cardDetails : bankDetails,
+        payment_method: 'stripe',
+        payment_intent_id: paymentIntent.id,
         order_notes: orderNotes,
         items: cartItems.map(item => ({
           product_id: item.product.id,
@@ -277,18 +347,40 @@ export default function Checkout() {
         }))
       };
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create order via API
+      const response = await apiService.request('/orders', {
+        method: 'POST',
+        data: orderData
+      });
       
-      // Redirect to success page
-      router.push('/buyer/orders/success');
+      if (response.success) {
+        // Confirm payment on backend
+        await apiService.request('/payments/confirm', {
+          method: 'POST',
+          data: {
+            payment_intent_id: paymentIntent.id,
+            order_id: response.data.id
+          }
+        });
+        
+        // Clear cart and redirect
+        // await clearCart(); // Implement this in CartContext if needed
+        router.push(`/buyer/orders/success?order_id=${response.data.id}`);
+      } else {
+        throw new Error(response.message || 'Failed to create order');
+      }
       
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Failed to place order. Please try again.');
+      console.error('Error completing order:', error);
+      setErrors({ order: error.message });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePaymentError = (error) => {
+    console.error('Payment error:', error);
+    setErrors({ payment: error.message || 'Payment failed. Please try again.' });
   };
 
   if (loading) {
@@ -666,184 +758,52 @@ export default function Checkout() {
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-6">Payment Information</h2>
                 
-                {/* Payment Method Selection */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-4">Select Payment Method</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="credit_card"
-                        checked={paymentMethod === 'credit_card'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="text-primary-600 focus:ring-primary-500"
-                      />
-                      <CreditCard className="w-5 h-5 text-gray-600" />
-                      <span className="font-medium">Credit/Debit Card</span>
-                    </label>
-                    
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="bank_transfer"
-                        checked={paymentMethod === 'bank_transfer'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="text-primary-600 focus:ring-primary-500"
-                      />
-                      <Building className="w-5 h-5 text-gray-600" />
-                      <span className="font-medium">Bank Transfer</span>
-                    </label>
-                    
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="cod"
-                        checked={paymentMethod === 'cod'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="text-primary-600 focus:ring-primary-500"
-                      />
-                      <Package className="w-5 h-5 text-gray-600" />
-                      <span className="font-medium">Cash on Delivery</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Credit Card Form */}
-                {paymentMethod === 'credit_card' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cardholder Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={cardDetails.cardholderName}
-                        onChange={(e) => setCardDetails({...cardDetails, cardholderName: e.target.value})}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.cardholderName ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors.cardholderName && <p className="text-red-500 text-xs mt-1">{errors.cardholderName}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Card Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={cardDetails.cardNumber}
-                        onChange={(e) => setCardDetails({...cardDetails, cardNumber: e.target.value})}
-                        placeholder="1234 5678 9012 3456"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.cardNumber ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors.cardNumber && <p className="text-red-500 text-xs mt-1">{errors.cardNumber}</p>}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Expiry Date *
-                        </label>
-                        <input
-                          type="text"
-                          value={cardDetails.expiryDate}
-                          onChange={(e) => setCardDetails({...cardDetails, expiryDate: e.target.value})}
-                          placeholder="MM/YY"
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.expiryDate ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                        />
-                        {errors.expiryDate && <p className="text-red-500 text-xs mt-1">{errors.expiryDate}</p>}
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          CVV *
-                        </label>
-                        <input
-                          type="text"
-                          value={cardDetails.cvv}
-                          onChange={(e) => setCardDetails({...cardDetails, cvv: e.target.value})}
-                          placeholder="123"
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.cvv ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                        />
-                        {errors.cvv && <p className="text-red-500 text-xs mt-1">{errors.cvv}</p>}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Bank Transfer Form */}
-                {paymentMethod === 'bank_transfer' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Account Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={bankDetails.accountName}
-                        onChange={(e) => setBankDetails({...bankDetails, accountName: e.target.value})}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.accountName ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors.accountName && <p className="text-red-500 text-xs mt-1">{errors.accountName}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Account Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={bankDetails.accountNumber}
-                        onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.accountNumber ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors.accountNumber && <p className="text-red-500 text-xs mt-1">{errors.accountNumber}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bank Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={bankDetails.bankName}
-                        onChange={(e) => setBankDetails({...bankDetails, bankName: e.target.value})}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.bankName ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors.bankName && <p className="text-red-500 text-xs mt-1">{errors.bankName}</p>}
-                    </div>
-                  </div>
-                )}
-
-                {/* Cash on Delivery Info */}
-                {paymentMethod === 'cod' && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                {/* Error Display */}
+                {errors.payment && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-start space-x-2">
-                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-medium text-blue-900">Cash on Delivery</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          You will pay for your order when it is delivered to your address. 
-                          Please have the exact amount ready.
-                        </p>
+                        <h4 className="font-medium text-red-900">Payment Setup Error</h4>
+                        <p className="text-sm text-red-700 mt-1">{errors.payment}</p>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Stripe Elements Payment Form */}
+                {clientSecret && stripePromise ? (
+                  <Elements 
+                    stripe={stripePromise} 
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: 'stripe',
+                        variables: {
+                          colorPrimary: '#2563eb',
+                          colorBackground: '#ffffff',
+                          colorText: '#374151',
+                          colorDanger: '#dc2626',
+                          fontFamily: 'system-ui, sans-serif',
+                          spacingUnit: '4px',
+                          borderRadius: '6px'
+                        }
+                      }
+                    }}
+                  >
+                    <StripePaymentForm
+                      clientSecret={clientSecret}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                      loading={submitting}
+                      orderTotal={getTotal().toFixed(2)}
+                      merchantName={cartItems[0]?.product?.company?.name || 'Merchant'}
+                    />
+                  </Elements>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Setting up secure payment...</p>
                   </div>
                 )}
 
@@ -851,9 +811,7 @@ export default function Checkout() {
                   <Button onClick={handlePrevStep} variant="outline">
                     Back to Shipping
                   </Button>
-                  <Button onClick={handleNextStep} className="bg-primary-600 hover:bg-primary-700 text-white">
-                    Review Order
-                  </Button>
+                  {/* Payment form handles the submit button */}
                 </div>
               </Card>
             )}
@@ -923,54 +881,43 @@ export default function Checkout() {
                   />
                 </Card>
 
-                {/* Terms and Conditions */}
+                {/* Payment Confirmation Notice */}
                 <Card className="p-6">
                   <div className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={agreeToTerms}
-                      onChange={(e) => setAgreeToTerms(e.target.checked)}
-                      className={`mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500 ${
-                        errors.agreeToTerms ? 'border-red-300' : ''
-                      }`}
-                    />
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-gray-700">
-                        I agree to the{' '}
-                        <Link href="/terms" className="text-primary-600 hover:text-primary-700 underline">
-                          Terms and Conditions
-                        </Link>{' '}
-                        and{' '}
-                        <Link href="/privacy" className="text-primary-600 hover:text-primary-700 underline">
-                          Privacy Policy
-                        </Link>
+                      <h4 className="font-medium text-green-900">Payment Completed</h4>
+                      <p className="text-sm text-green-700 mt-1">
+                        Your payment has been processed successfully. Your order will be confirmed shortly.
                       </p>
-                      {errors.agreeToTerms && <p className="text-red-500 text-xs mt-1">{errors.agreeToTerms}</p>}
                     </div>
                   </div>
                 </Card>
 
-                <div className="flex justify-between">
-                  <Button onClick={handlePrevStep} variant="outline">
-                    Back to Payment
-                  </Button>
-                  <Button
-                    onClick={handlePlaceOrder}
-                    disabled={submitting}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Placing Order...
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 mr-2" />
-                        Place Order
-                      </>
-                    )}
-                  </Button>
+                {/* Error Display */}
+                {errors.order && (
+                  <Card className="p-6">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="w-6 h-6 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-red-900">Order Error</h4>
+                        <p className="text-sm text-red-700 mt-1">{errors.order}</p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                <div className="flex justify-center">
+                  {submitting ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Finalizing your order...</p>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 py-4">
+                      Processing complete. You will be redirected shortly.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -994,11 +941,23 @@ export default function Checkout() {
                   <span>Tax</span>
                   <span>${getTax().toFixed(2)}</span>
                 </div>
+                {currentStep >= 2 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Platform Fee (2.5%)</span>
+                    <span>${(getTotal() * 0.025).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>${getTotal().toFixed(2)}</span>
                   </div>
+                  {currentStep >= 2 && (
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>Merchant receives</span>
+                      <span>${(getTotal() - (getTotal() * 0.025)).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
