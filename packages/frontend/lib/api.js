@@ -1011,6 +1011,49 @@ class ApiService {
     return this.request('/shipping-addresses/default/get');
   }
 
+  // Analytics methods
+  async getDashboardAnalytics(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/dashboard?${queryString}` : '/analytics/dashboard';
+    return this.request(endpoint);
+  }
+
+  async getAllProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/products/all?${queryString}` : '/analytics/products/all';
+    return this.request(endpoint);
+  }
+
+  async exportBuyerEngagement(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/buyer-engagement/export?${queryString}` : '/analytics/buyer-engagement/export';
+    return this.request(endpoint);
+  }
+
+  async getProductOptimizations(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/products/optimizations?${queryString}` : '/analytics/products/optimizations';
+    return this.request(endpoint);
+  }
+
+  async getTopBuyers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/buyers/top?${queryString}` : '/analytics/buyers/top';
+    return this.request(endpoint);
+  }
+
+  async getMarketTrends(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/trends?${queryString}` : '/analytics/trends';
+    return this.request(endpoint);
+  }
+
+  async exportAnalyticsReport(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/analytics/export?${queryString}` : '/analytics/export';
+    return this.request(endpoint);
+  }
+
 }
 
 const apiService = new ApiService();

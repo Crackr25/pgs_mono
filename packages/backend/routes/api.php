@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\StarredSupplierController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ContactInquiryController;
 use App\Http\Controllers\Api\ShippingAddressController;
+use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\StripeConnectController;
@@ -64,6 +65,16 @@ Route::post('/quotes', [QuoteController::class, 'store']);
 Route::get('/quotes', [QuoteController::class, 'index']);
 Route::get('/quotes/stats', [QuoteController::class, 'stats']);
 Route::get('/quotes/{quote}', [QuoteController::class, 'show']);
+
+// Analytics routes (can be public or protected based on requirements)
+Route::get('/analytics/dashboard', [AnalyticsController::class, 'getDashboardAnalytics']);
+Route::get('/analytics/products/all', [AnalyticsController::class, 'getAllProducts']);
+Route::get('/analytics/buyer-engagement/export', [AnalyticsController::class, 'exportBuyerEngagement']);
+Route::get('/analytics/products/optimizations', [AnalyticsController::class, 'getProductOptimizations']);
+Route::get('/analytics/buyers/top', [AnalyticsController::class, 'getTopBuyers']);
+Route::get('/analytics/trends', [AnalyticsController::class, 'getMarketTrends']);
+Route::get('/analytics/export', [AnalyticsController::class, 'exportAnalyticsReport']);
+Route::get('/analytics/export-excel', [AnalyticsController::class, 'exportAnalyticsExcel']);
 
 // Message creation (public - buyers don't need accounts)
 Route::post('/messages', [MessageController::class, 'store']);
