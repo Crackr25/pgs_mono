@@ -8,6 +8,7 @@ export const useStripeOnboardingCheck = () => {
   const router = useRouter();
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
 
   // Fetch company data separately
   useEffect(() => {
@@ -16,14 +17,24 @@ export const useStripeOnboardingCheck = () => {
         try {
           setLoading(true);
           const response = await apiService.getCurrentUserCompany();
+          
           if (response.success && response.data) {
             setCompany(response.data);
+          } else {
+            // No company found for this user
+            setCompany(null);
           }
         } catch (error) {
           console.error('Failed to fetch company data:', error);
+          setCompany(null);
         } finally {
           setLoading(false);
+          setHasChecked(true);
         }
+      } else if (!isAuthenticated || user?.usertype !== 'seller') {
+        // Not a seller or not authenticated, mark as checked
+        setHasChecked(true);
+        setLoading(false);
       }
     };
 
@@ -31,30 +42,54 @@ export const useStripeOnboardingCheck = () => {
   }, [user, isAuthenticated]);
 
   useEffect(() => {
-    // Only check for sellers who are authenticated and have company data
-    if (isAuthenticated && user && user.usertype === 'seller' && company && !loading) {
+    // Only check for sellers who are authenticated and loading is complete
+    if (isAuthenticated && user && user.usertype === 'seller' && !loading && hasChecked) {
       const hasStripeAccount = company?.stripe_account_id;
       const onboardingComplete = company?.stripe_onboarding_status === 'completed';
       
       // Don't redirect if already on onboarding pages
       const isOnOnboardingPage = router.pathname.startsWith('/merchant/onboarding');
       
-      if ((!hasStripeAccount || !onboardingComplete) && !isOnOnboardingPage) {
-        console.log('Seller needs Stripe onboarding - redirecting');
-        router.push('/merchant/onboarding/stripe');
+      console.log('Company:', company);
+      console.log('hasStripeAccount:', hasStripeAccount);
+      console.log('onboardingComplete:', onboardingComplete);
+      console.log('isOnOnboardingPage:', isOnOnboardingPage);
+      
+      // Redirect if:
+      // 1. No company exists, OR
+      // 2. Company exists but no Stripe account, OR  
+      // 3. Company has Stripe account but onboarding not completed
+      const needsRedirect = !company || !hasStripeAccount || !onboardingComplete;
+      
+      if (needsRedirect && !isOnOnboardingPage) {
+        console.log('Seller needs onboarding - redirecting to:', 
+          !company ? 'company setup' : 'Stripe setup');
+        
+        // If no company, redirect to company onboarding first
+        if (!company) {
+          // router.push('//merchant/onboarding/stripe');
+        } else {
+          // If company exists but Stripe not set up, go to Stripe onboarding
+          router.push('/merchant/onboarding/stripe');
+        }
       }
     }
-  }, [user, isAuthenticated, router, company, loading]);
+  }, [user, isAuthenticated, router, company, loading, hasChecked]);
 
   // Return onboarding status for components that need it
-  const needsOnboarding = user?.usertype === 'seller' && company && 
-    (!company?.stripe_account_id || company?.stripe_onboarding_status !== 'completed');
+  const hasCompany = !!company;
+  const hasStripeAccount = !!company?.stripe_account_id;
+  const onboardingComplete = company?.stripe_onboarding_status === 'completed';
+  const needsOnboarding = user?.usertype === 'seller' && 
+    (!hasCompany || !hasStripeAccount || !onboardingComplete);
 
   return {
     needsOnboarding,
-    hasStripeAccount: !!company?.stripe_account_id,
-    onboardingComplete: company?.stripe_onboarding_status === 'completed',
+    hasCompany,
+    hasStripeAccount,
+    onboardingComplete,
     company,
-    loading
+    loading,
+    hasChecked
   };
 };

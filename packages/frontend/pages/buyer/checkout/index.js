@@ -332,26 +332,72 @@ export default function Checkout() {
     try {
       setSubmitting(true);
       
+      // Validate required data
+      if (!cartItems || cartItems.length === 0) {
+        throw new Error('No items in cart');
+      }
+      
+      if (!shippingAddress.firstName || !shippingAddress.lastName) {
+        throw new Error('Buyer name is required');
+      }
+      
+      if (!shippingAddress.email) {
+        throw new Error('Buyer email is required');
+      }
+      
+      if (!shippingAddress.address1 || !shippingAddress.city || !shippingAddress.state) {
+        throw new Error('Complete shipping address is required');
+      }
+      
+      // For now, handle single merchant orders (first item's company)
+      const firstItem = cartItems[0];
+      const companyId = firstItem?.product?.company?.id;
+      
+      if (!companyId) {
+        throw new Error('No company found for order items');
+      }
+      
+      // Format shipping address as string
+      const shippingAddressString = `${shippingAddress.address1}${shippingAddress.address2 ? ', ' + shippingAddress.address2 : ''}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}, ${shippingAddress.country}`;
+      
+      // Calculate total from cart items
+      const totalAmount = getTotal();
+      
       // Create order with payment confirmation
       const orderData = {
-        shipping_address: shippingAddress,
-        billing_address: sameAsShipping ? shippingAddress : billingAddress,
+        company_id: companyId,
+        product_name: cartItems.length === 1 
+          ? firstItem.product.name 
+          : `${cartItems.length} items from ${firstItem.product.company.name}`,
+        quantity: cartItems.reduce((total, item) => total + item.quantity, 0),
+        total_amount: totalAmount,
+        buyer_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+        buyer_email: shippingAddress.email,
+        buyer_company: shippingAddress.company || null,
+        shipping_address: shippingAddressString,
+        notes: orderNotes || null,
         payment_method: 'stripe',
         payment_intent_id: paymentIntent.id,
-        order_notes: orderNotes,
-        items: cartItems.map(item => ({
+        // Additional data for internal use
+        cart_items: cartItems.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,
           unit_price: item.unit_price,
           selected_specifications: item.selected_specifications
-        }))
+        })),
+        billing_address: sameAsShipping ? shippingAddressString : `${billingAddress.address1}${billingAddress.address2 ? ', ' + billingAddress.address2 : ''}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.zipCode}, ${billingAddress.country}`
       };
+      
+      // Debug: Log order data before sending
+      console.log('Order data being sent:', orderData);
       
       // Create order via API
       const response = await apiService.request('/orders', {
         method: 'POST',
         data: orderData
       });
+      
+      console.log('Order creation response:', response);
       
       if (response.success) {
         // Confirm payment on backend

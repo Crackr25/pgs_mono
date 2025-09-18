@@ -103,7 +103,7 @@ class AnalyticsController extends Controller
      */
     private function getTotalRevenue($companyId = null, $startDate = null): string
     {
-        $query = Order::where('payment_status', 'completed');
+        $query = Order::where('payment_status', 'paid');
         
         if ($companyId) {
             $query->where('company_id', $companyId);

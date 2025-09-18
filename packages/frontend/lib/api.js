@@ -114,7 +114,7 @@ class ApiService {
   }
 
   async getCurrentUserCompany() {
-    return this.request('/auth/user/company');
+    return this.request('/companies/current');
   }
 
   // Company methods

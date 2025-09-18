@@ -87,7 +87,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/{product}', [ProductController::class, 'show']);
 
     
-    // Company management
+    // Company management 
+    Route::get('/companies/current', [CompanyController::class, 'getCurrentUserCompany']);
     Route::post('/companies', [CompanyController::class, 'store']);
     Route::put('/companies/{company}', [CompanyController::class, 'update']);
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy']);
@@ -209,6 +210,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/stripe/create-onboarding-link', [StripeConnectController::class, 'createOnboardingLink']);
     Route::get('/stripe/account-status', [StripeConnectController::class, 'getAccountStatus']);
     Route::post('/stripe/create-login-link', [StripeConnectController::class, 'createLoginLink']);
+    Route::put('/stripe/update-account', [StripeConnectController::class, 'updateAccountInformation']);
+    Route::put('/stripe/update-additional-info', [StripeConnectController::class, 'updateAdditionalInfo']);
+    Route::get('/stripe/account-requirements', [StripeConnectController::class, 'getAccountRequirements']);
+    Route::get('/stripe/debug-account', [StripeConnectController::class, 'debugAccountStructure']);
+    Route::post('/stripe/validate-account-data', [StripeConnectController::class, 'validateAccountData']);
 });
 
 // Stripe webhook (public - no authentication)

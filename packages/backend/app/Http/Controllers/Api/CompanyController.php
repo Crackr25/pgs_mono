@@ -264,6 +264,40 @@ class CompanyController extends Controller
     }
 
     /**
+     * Get current authenticated user's company
+     */
+    public function getCurrentUserCompany(): JsonResponse
+    {
+        try {
+            $company = Company::where('user_id', auth()->id())->first();
+            
+            if (!$company) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No company found for the authenticated user',
+                    'data' => null
+                ], 404);
+            }
+
+            // Load relationships that might be needed
+            $company->load(['user', 'products']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Company retrieved successfully',
+                'data' => $company
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve company: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
      * Get marketplace statistics
      */
     public function getMarketplaceStats(): JsonResponse

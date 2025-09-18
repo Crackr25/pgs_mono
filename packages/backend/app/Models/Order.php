@@ -18,6 +18,7 @@ class Order extends Model
         'total_amount',
         'status',
         'payment_status',
+        'payment_method',
         'payment_intent_id',
         'paid_at',
         'estimated_delivery',
@@ -26,6 +27,7 @@ class Order extends Model
         'buyer_email',
         'buyer_company',
         'shipping_address',
+        'billing_address',
         'notes'
     ];
 
