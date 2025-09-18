@@ -3,21 +3,22 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
-  CreditCard, 
-  Building, 
-  Shield, 
-  CheckCircle, 
-  AlertCircle, 
+  CreditCard,
+  CheckCircle,
+  AlertCircle,
+  Shield,
   ArrowLeft,
   ExternalLink,
   Clock,
   DollarSign,
-  Users
+  Users,
+  User
 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import apiService from '../../../lib/api';
+import AdditionalInfoForm from '../../../components/stripe/AdditionalInfoForm';
 
 export default function StripeOnboarding() {
   const router = useRouter();
@@ -25,12 +26,47 @@ export default function StripeOnboarding() {
   const [loading, setLoading] = useState(false);
   const [accountStatus, setAccountStatus] = useState(null);
   const [error, setError] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
   const [companyInfo, setCompanyInfo] = useState({
     email: '',
     country: 'PH'
   });
+  const [businessAddress, setBusinessAddress] = useState({
+    line1: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'US'
+  });
+  const [externalAccount, setExternalAccount] = useState({
+    account_number: '',
+    routing_number: ''
+  });
+  const [businessOwners, setBusinessOwners] = useState([{
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    dob: {
+      day: '',
+      month: '',
+      year: ''
+    },
+    address: {
+      line1: '',
+      city: '',
+      state: '',
+      postal_code: '',
+      country: 'PH'
+    },
+    ownership_percentage: 100
+  }]);
+  const [includeBusinessAddress, setIncludeBusinessAddress] = useState(false);
+  const [includeExternalAccount, setIncludeExternalAccount] = useState(false);
+  const [includeBusinessOwners, setIncludeBusinessOwners] = useState(false);
 
   useEffect(() => {
+    console.log('user', user);
     checkExistingAccount();
     // Pre-populate email from user data
     if (user?.email) {
@@ -47,6 +83,8 @@ export default function StripeOnboarding() {
         method: 'GET'
       });
       if (response.success && response.data) {
+        console.log('Existing Stripe account found:', response.data);
+        
         setAccountStatus(response.data);
       }
     } catch (error) {
@@ -55,9 +93,58 @@ export default function StripeOnboarding() {
     }
   };
 
+  const validateStep = (step) => {
+    switch (step) {
+      case 1:
+        if (!companyInfo.email.trim()) {
+          setError('Email address is required');
+          return false;
+        }
+        break;
+      case 2:
+        if (includeBusinessAddress) {
+          if (!businessAddress.line1.trim() || !businessAddress.city.trim() || 
+              !businessAddress.state.trim() || !businessAddress.postal_code.trim()) {
+            setError('All business address fields are required');
+            return false;
+          }
+        }
+        break;
+      case 3:
+        if (includeExternalAccount) {
+          if (!externalAccount.account_number.trim() || !externalAccount.routing_number.trim()) {
+            setError('Both account number and routing number are required');
+            return false;
+          }
+        }
+        break;
+      case 4:
+        if (includeBusinessOwners) {
+          const owner = businessOwners[0];
+          if (!owner.first_name.trim() || !owner.last_name.trim()) {
+            setError('Owner first name and last name are required');
+            return false;
+          }
+        }
+        break;
+    }
+    setError('');
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep(currentStep - 1);
+    setError('');
+  };
+
   const handleCreateAccount = async () => {
-    if (!companyInfo.email.trim()) {
-      setError('Email address is required');
+    if (!validateStep(currentStep)) {
       return;
     }
 
@@ -65,13 +152,40 @@ export default function StripeOnboarding() {
       setLoading(true);
       setError('');
 
+      // Prepare account data
+      const accountData = {
+        email: companyInfo.email.trim(),
+        country: companyInfo.country
+      };
+
+      // Add optional data if provided
+      if (includeBusinessAddress && businessAddress.line1.trim()) {
+        accountData.business_address = businessAddress;
+      }
+
+      if (includeExternalAccount && externalAccount.account_number.trim()) {
+        accountData.external_account = externalAccount;
+      }
+
+      if (includeBusinessOwners && businessOwners[0].first_name.trim()) {
+        // Filter out empty DOB fields
+        const cleanedOwners = businessOwners.map(owner => {
+          const cleanedOwner = { ...owner };
+          if (!owner.dob.day || !owner.dob.month || !owner.dob.year) {
+            delete cleanedOwner.dob;
+          }
+          if (!owner.address.line1.trim()) {
+            delete cleanedOwner.address;
+          }
+          return cleanedOwner;
+        });
+        accountData.business_owners = cleanedOwners;
+      }
+
       // First create the Express account
       const createResponse = await apiService.request('/stripe/create-express-account', {
         method: 'POST',
-        data: {
-          email: companyInfo.email.trim(),
-          country: companyInfo.country
-        }
+        data: accountData
       });
 
       if (!createResponse.success) {
@@ -253,63 +367,453 @@ export default function StripeOnboarding() {
                 </Card>
               )}
 
-              {/* Onboarding Form */}
+              {/* Multi-Step Onboarding Form */}
               {!accountStatus && (
                 <Card className="p-6">
-                  <h2 className="text-xl font-semibold mb-6">Start Payment Setup</h2>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Business Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        value={companyInfo.email}
-                        onChange={(e) => setCompanyInfo({...companyInfo, email: e.target.value})}
-                        placeholder="business@company.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        This will be used for your Stripe account and payment notifications
-                      </p>
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold mb-2">Complete Payment Setup</h2>
+                    <div className="flex items-center space-x-4">
+                      {[1, 2, 3, 4, 5].map((step) => (
+                        <div key={step} className="flex items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                            currentStep >= step ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            {step}
+                          </div>
+                          {step < 5 && <div className={`w-8 h-0.5 ${currentStep > step ? 'bg-primary-600' : 'bg-gray-200'}`} />}
+                        </div>
+                      ))}
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Country
-                      </label>
-                      <select
-                        value={companyInfo.country}
-                        onChange={(e) => setCompanyInfo({...companyInfo, country: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      >
-                        <option value="PH">Philippines</option>
-                        <option value="US">United States</option>
-                        <option value="SG">Singapore</option>
-                        <option value="MY">Malaysia</option>
-                      </select>
-                    </div>
-
-                    <Button
-                      onClick={handleCreateAccount}
-                      disabled={loading}
-                      className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Setting up account...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-5 h-5 mr-2" />
-                          Start Stripe Setup
-                        </>
-                      )}
-                    </Button>
                   </div>
+
+                  {/* Step 1: Basic Information */}
+                  {currentStep === 1 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Basic Information</h3>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Business Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          value={companyInfo.email}
+                          onChange={(e) => setCompanyInfo({...companyInfo, email: e.target.value})}
+                          placeholder="business@company.com"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          This will be used for your Stripe account and payment notifications
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Country
+                        </label>
+                        <select
+                          value={companyInfo.country}
+                          onChange={(e) => setCompanyInfo({...companyInfo, country: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value="PH">Philippines</option>
+                          <option value="US">United States</option>
+                          <option value="SG">Singapore</option>
+                          <option value="MY">Malaysia</option>
+                        </select>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button onClick={handleNextStep} className="bg-primary-600 hover:bg-primary-700 text-white">
+                          Next Step
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Business Address */}
+                  {currentStep === 2 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Business Address</h3>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <input
+                          type="checkbox"
+                          id="includeAddress"
+                          checked={includeBusinessAddress}
+                          onChange={(e) => setIncludeBusinessAddress(e.target.checked)}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <label htmlFor="includeAddress" className="text-sm text-gray-700">
+                          Provide business address now (recommended to avoid delays)
+                        </label>
+                      </div>
+
+                      {includeBusinessAddress && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Address Line 1 *
+                            </label>
+                            <input
+                              type="text"
+                              value={businessAddress.line1}
+                              onChange={(e) => setBusinessAddress({...businessAddress, line1: e.target.value})}
+                              placeholder="123 Business Street"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                City *
+                              </label>
+                              <input
+                                type="text"
+                                value={businessAddress.city}
+                                onChange={(e) => setBusinessAddress({...businessAddress, city: e.target.value})}
+                                placeholder="Manila"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                State/Province *
+                              </label>
+                              <input
+                                type="text"
+                                value={businessAddress.state}
+                                onChange={(e) => setBusinessAddress({...businessAddress, state: e.target.value})}
+                                placeholder="Metro Manila"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Postal Code *
+                            </label>
+                            <input
+                              type="text"
+                              value={businessAddress.postal_code}
+                              onChange={(e) => setBusinessAddress({...businessAddress, postal_code: e.target.value})}
+                              placeholder="1000"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between">
+                        <Button onClick={handlePrevStep} variant="outline">
+                          Previous
+                        </Button>
+                        <Button onClick={handleNextStep} className="bg-primary-600 hover:bg-primary-700 text-white">
+                          Next Step
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Bank Account */}
+                  {currentStep === 3 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Bank Account</h3>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <input
+                          type="checkbox"
+                          id="includeBank"
+                          checked={includeExternalAccount}
+                          onChange={(e) => setIncludeExternalAccount(e.target.checked)}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <label htmlFor="includeBank" className="text-sm text-gray-700">
+                          Add bank account now (required for payouts)
+                        </label>
+                      </div>
+
+                      {includeExternalAccount && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Account Number *
+                            </label>
+                            <input
+                              type="text"
+                              value={externalAccount.account_number}
+                              onChange={(e) => setExternalAccount({...externalAccount, account_number: e.target.value})}
+                              placeholder="1234567890"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Routing Number *
+                            </label>
+                            <input
+                              type="text"
+                              value={externalAccount.routing_number}
+                              onChange={(e) => setExternalAccount({...externalAccount, routing_number: e.target.value})}
+                              placeholder="021000021"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between">
+                        <Button onClick={handlePrevStep} variant="outline">
+                          Previous
+                        </Button>
+                        <Button onClick={handleNextStep} className="bg-primary-600 hover:bg-primary-700 text-white">
+                          Next Step
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 4: Business Owner */}
+                  {currentStep === 4 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Business Owner Information</h3>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <input
+                          type="checkbox"
+                          id="includeOwner"
+                          checked={includeBusinessOwners}
+                          onChange={(e) => setIncludeBusinessOwners(e.target.checked)}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <label htmlFor="includeOwner" className="text-sm text-gray-700">
+                          Provide business owner information now (required for verification)
+                        </label>
+                      </div>
+
+                      {includeBusinessOwners && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                First Name *
+                              </label>
+                              <input
+                                type="text"
+                                value={businessOwners[0].first_name}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].first_name = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                placeholder="John"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Last Name *
+                              </label>
+                              <input
+                                type="text"
+                                value={businessOwners[0].last_name}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].last_name = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                placeholder="Doe"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Email
+                              </label>
+                              <input
+                                type="email"
+                                value={businessOwners[0].email}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].email = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                placeholder="john@company.com"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Phone
+                              </label>
+                              <input
+                                type="tel"
+                                value={businessOwners[0].phone}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].phone = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                placeholder="+63912345678"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Date of Birth (Optional)
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                              <select
+                                value={businessOwners[0].dob.day}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].dob.day = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              >
+                                <option value="">Day</option>
+                                {Array.from({length: 31}, (_, i) => (
+                                  <option key={i+1} value={i+1}>{i+1}</option>
+                                ))}
+                              </select>
+                              <select
+                                value={businessOwners[0].dob.month}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].dob.month = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              >
+                                <option value="">Month</option>
+                                {Array.from({length: 12}, (_, i) => (
+                                  <option key={i+1} value={i+1}>{i+1}</option>
+                                ))}
+                              </select>
+                              <select
+                                value={businessOwners[0].dob.year}
+                                onChange={(e) => {
+                                  const updated = [...businessOwners];
+                                  updated[0].dob.year = e.target.value;
+                                  setBusinessOwners(updated);
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              >
+                                <option value="">Year</option>
+                                {Array.from({length: 80}, (_, i) => {
+                                  const year = new Date().getFullYear() - 18 - i;
+                                  return <option key={year} value={year}>{year}</option>;
+                                })}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Ownership Percentage
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={businessOwners[0].ownership_percentage}
+                              onChange={(e) => {
+                                const updated = [...businessOwners];
+                                updated[0].ownership_percentage = parseInt(e.target.value) || 0;
+                                setBusinessOwners(updated);
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between">
+                        <Button onClick={handlePrevStep} variant="outline">
+                          Previous
+                        </Button>
+                        <Button onClick={handleNextStep} className="bg-primary-600 hover:bg-primary-700 text-white">
+                          Next Step
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 5: Review & Submit */}
+                  {currentStep === 5 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Review & Submit</h3>
+                      
+                      <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                        <div>
+                          <h4 className="font-medium text-gray-900">Basic Information</h4>
+                          <p className="text-sm text-gray-600">Email: {companyInfo.email}</p>
+                          <p className="text-sm text-gray-600">Country: {companyInfo.country}</p>
+                        </div>
+
+                        {includeBusinessAddress && (
+                          <div>
+                            <h4 className="font-medium text-gray-900">Business Address</h4>
+                            <p className="text-sm text-gray-600">
+                              {businessAddress.line1}, {businessAddress.city}, {businessAddress.state} {businessAddress.postal_code}
+                            </p>
+                          </div>
+                        )}
+
+                        {includeExternalAccount && (
+                          <div>
+                            <h4 className="font-medium text-gray-900">Bank Account</h4>
+                            <p className="text-sm text-gray-600">Account ending in {externalAccount.account_number.slice(-4)}</p>
+                          </div>
+                        )}
+
+                        {includeBusinessOwners && (
+                          <div>
+                            <h4 className="font-medium text-gray-900">Business Owner</h4>
+                            <p className="text-sm text-gray-600">
+                              {businessOwners[0].first_name} {businessOwners[0].last_name} ({businessOwners[0].ownership_percentage}%)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          <strong>Next Steps:</strong> After creating your account, you'll be redirected to Stripe to complete 
+                          any remaining verification steps. The more information you provide now, the faster your account will be approved.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <Button onClick={handlePrevStep} variant="outline">
+                          Previous
+                        </Button>
+                        <Button
+                          onClick={handleCreateAccount}
+                          disabled={loading}
+                          className="bg-primary-600 hover:bg-primary-700 text-white"
+                        >
+                          {loading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                              Creating Account...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="w-5 h-5 mr-2" />
+                              Create Stripe Account
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </Card>
               )}
 
@@ -340,26 +844,51 @@ export default function StripeOnboarding() {
                     )}
 
                     {accountStatus.onboarding_status === 'completed' && (
-                      <Button
-                        onClick={handleAccessDashboard}
-                        disabled={loading}
-                        variant="outline"
-                        className="w-full py-3"
-                      >
-                        {loading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mr-2"></div>
-                            Loading...
-                          </>
-                        ) : (
-                          <>
-                            <ExternalLink className="w-5 h-5 mr-2" />
-                            Access Stripe Dashboard
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          onClick={handleAccessDashboard}
+                          disabled={loading}
+                          variant="outline"
+                          className="w-full py-3"
+                        >
+                          {loading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mr-2"></div>
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="w-5 h-5 mr-2" />
+                              Access Stripe Dashboard
+                            </>
+                          )}
+                        </Button>
+
+                        <Button
+                          onClick={() => router.push('/merchant/stripe/additional-info')}
+                          className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3"
+                        >
+                          <User className="w-5 h-5 mr-2" />
+                          Update Additional Information
+                        </Button>
+                      </>
                     )}
                   </div>
+                </Card>
+              )}
+
+              {/* Additional Information Update Section */}
+              {accountStatus && (
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-6">Update Account Information</h2>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Add or update additional information required by Stripe for verification.
+                  </p>
+                  
+                  <AdditionalInfoForm 
+                    accountStatus={accountStatus}
+                    onUpdate={checkExistingAccount}
+                  />
                 </Card>
               )}
             </div>

@@ -16,7 +16,23 @@ class PaymentController extends Controller
     public function __construct()
     {
         // Set Stripe API key from environment
-        Stripe::setApiKey(env('STRIPE_SECRET'));
+        $stripeSecret = env('STRIPE_SECRET');
+        
+        // Debug: Log what we're getting from env
+        \Log::info('Stripe Secret from env:', [
+            'value' => $stripeSecret ? 'SET (length: ' . strlen($stripeSecret) . ')' : 'NOT SET',
+            'starts_with_sk' => $stripeSecret ? (str_starts_with($stripeSecret, 'sk_') ? 'YES' : 'NO') : 'N/A'
+        ]);
+        
+        if (empty($stripeSecret)) {
+            throw new \Exception('Stripe API key not configured. Please set STRIPE_SECRET in your .env file. Current value: ' . ($stripeSecret ?? 'NULL'));
+        }
+        
+        if (!str_starts_with($stripeSecret, 'sk_')) {
+            throw new \Exception('Invalid Stripe API key format. Key should start with "sk_". Current key starts with: ' . substr($stripeSecret, 0, 3));
+        }
+        
+        Stripe::setApiKey($stripeSecret);
     }
 
     /**
@@ -27,12 +43,12 @@ class PaymentController extends Controller
         try {
             $request->validate([
                 'amount' => 'required|numeric|min:0.50', // Minimum $0.50
-                'currency' => 'string|default:usd',
+                'currency' => 'sometimes|string',
                 'merchant_company_id' => 'required|exists:companies,id',
                 'customer_email' => 'required|email',
-                'description' => 'string|max:500',
-                'metadata' => 'array',
-                'platform_fee_percentage' => 'numeric|min:0|max:30|default:2.5' // Default 2.5% platform fee
+                'description' => 'sometimes|string|max:500',
+                'metadata' => 'sometimes|array',
+                'platform_fee_percentage' => 'sometimes|numeric|min:0|max:30' // Default 2.5% platform fee
             ]);
 
             $company = Company::findOrFail($request->merchant_company_id);
@@ -49,6 +65,32 @@ class PaymentController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Merchant has not completed payment setup'
+                ], 400);
+            }
+
+            // Verify merchant account capabilities
+            try {
+                $account = \Stripe\Account::retrieve($company->stripe_account_id);
+                
+                // Check if transfers capability is active
+                if (!isset($account->capabilities->transfers) || $account->capabilities->transfers !== 'active') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Merchant account does not have transfers capability enabled. Please complete Stripe onboarding.',
+                        'debug_info' => [
+                            'account_id' => $account->id,
+                            'transfers_capability' => $account->capabilities->transfers ?? 'not_set',
+                            'card_payments_capability' => $account->capabilities->card_payments ?? 'not_set',
+                            'details_submitted' => $account->details_submitted,
+                            'charges_enabled' => $account->charges_enabled,
+                            'payouts_enabled' => $account->payouts_enabled
+                        ]
+                    ], 400);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to verify merchant account: ' . $e->getMessage()
                 ], 400);
             }
 
@@ -120,7 +162,7 @@ class PaymentController extends Controller
             $request->validate([
                 'order_id' => 'required|exists:orders,id',
                 'customer_email' => 'required|email',
-                'platform_fee_percentage' => 'numeric|min:0|max:30|default:2.5'
+                'platform_fee_percentage' => 'sometimes|numeric|min:0|max:30'
             ]);
 
             $order = Order::with('company')->findOrFail($request->order_id);
@@ -220,7 +262,7 @@ class PaymentController extends Controller
                 if ($request->has('order_id')) {
                     $order = Order::findOrFail($request->order_id);
                     $order->update([
-                        'payment_status' => 'completed',
+                        'payment_status' => 'paid',
                         'payment_intent_id' => $paymentIntent->id,
                         'paid_at' => now()
                     ]);
@@ -307,7 +349,7 @@ class PaymentController extends Controller
             $order = Order::find($metadata['order_id']);
             if ($order) {
                 $order->update([
-                    'payment_status' => 'completed',
+                    'payment_status' => 'paid',
                     'paid_at' => now()
                 ]);
             }

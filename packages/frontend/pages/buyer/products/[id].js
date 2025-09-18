@@ -746,11 +746,11 @@ Product Link: ${window.location.href}`;
             <div className="flex space-x-4">
               <Button 
                 variant="outline" 
-                className={`flex-1 ${isSaved ? 'bg-red-500 text-white border-red-500' : ''}`}
+                className={`flex-1`}
                 onClick={handleSaveProduct}
                 disabled={savingProduct}
               >
-                <Heart className={`w-4 h-4 mr-2 ${isSaved ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 mr-2 ${isSaved ? 'fill-current text-red-600' : ''}`} />
                 {savingProduct ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
               </Button>
               <Button variant="outline" className="flex-1">

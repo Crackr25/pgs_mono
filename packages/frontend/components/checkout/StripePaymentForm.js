@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useStripe,
   useElements,
@@ -7,6 +7,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { AlertCircle, Lock, CreditCard } from 'lucide-react';
 import Button from '../common/Button';
+import StripeDebugInfo from './StripeDebugInfo';
 
 export default function StripePaymentForm({ 
   clientSecret, 
@@ -20,11 +21,31 @@ export default function StripePaymentForm({
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isElementReady, setIsElementReady] = useState(false);
+
+  // Check if elements are ready
+  useEffect(() => {
+    if (elements) {
+      const paymentElement = elements.getElement(PaymentElement);
+      if (paymentElement) {
+        setIsElementReady(true);
+      }
+    }
+  }, [elements]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // Enhanced validation
     if (!stripe || !elements || !clientSecret) {
+      setErrorMessage('Payment system not ready. Please wait a moment and try again.');
+      return;
+    }
+
+    // Check if PaymentElement is mounted
+    const paymentElement = elements.getElement(PaymentElement);
+    if (!paymentElement) {
+      setErrorMessage('Payment form not ready. Please refresh the page and try again.');
       return;
     }
 
@@ -32,6 +53,15 @@ export default function StripePaymentForm({
     setErrorMessage('');
 
     try {
+      // First, submit the form to collect payment method
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setErrorMessage(submitError.message);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Then confirm the payment
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret,
@@ -48,7 +78,8 @@ export default function StripePaymentForm({
         onSuccess?.(paymentIntent);
       }
     } catch (err) {
-      setErrorMessage('An unexpected error occurred.');
+      console.error('Payment error:', err);
+      setErrorMessage('An unexpected error occurred. Please try again.');
       onError?.(err);
     } finally {
       setIsProcessing(false);
@@ -88,7 +119,21 @@ export default function StripePaymentForm({
         <PaymentElement 
           options={{
             layout: 'tabs',
-            paymentMethodOrder: ['card', 'apple_pay', 'google_pay']
+            paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+            fields: {
+              billingDetails: {
+                name: 'auto',
+                email: 'auto'
+              }
+            }
+          }}
+          onReady={() => {
+            console.log('PaymentElement is ready');
+            setIsElementReady(true);
+          }}
+          onLoadError={(error) => {
+            console.error('PaymentElement failed to load:', error);
+            setErrorMessage('Failed to load payment form. Please refresh the page.');
           }}
         />
       </div>
@@ -104,6 +149,11 @@ export default function StripePaymentForm({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Debug Info (temporary) */}
+      {process.env.NODE_ENV === 'development' && (
+        <StripeDebugInfo clientSecret={clientSecret} />
       )}
 
       {/* Security Notice */}
@@ -122,13 +172,18 @@ export default function StripePaymentForm({
       {/* Submit Button */}
       <Button
         type="submit"
-        disabled={!stripe || !elements || isProcessing || loading}
-        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg font-medium"
+        disabled={!stripe || !elements || !isElementReady || isProcessing || loading}
+        className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isProcessing ? (
           <>
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
             Processing Payment...
+          </>
+        ) : !isElementReady ? (
+          <>
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+            Loading Payment Form...
           </>
         ) : (
           <>
