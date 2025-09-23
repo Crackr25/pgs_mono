@@ -36,7 +36,7 @@ export default function StripeOnboarding() {
     city: '',
     state: '',
     postal_code: '',
-    country: 'US'
+    country: 'PH'
   });
   const [externalAccount, setExternalAccount] = useState({
     account_number: '',
@@ -409,7 +409,7 @@ export default function StripeOnboarding() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Country
+                          Country *
                         </label>
                         <select
                           value={companyInfo.country}
@@ -418,9 +418,45 @@ export default function StripeOnboarding() {
                         >
                           <option value="PH">Philippines</option>
                           <option value="US">United States</option>
-                          <option value="SG">Singapore</option>
-                          <option value="MY">Malaysia</option>
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {companyInfo.country === 'US' 
+                            ? 'US sellers can process payments directly and receive payouts'
+                            : 'Philippines sellers receive payouts only (platform processes payments)'
+                          }
+                        </p>
+                      </div>
+
+                      {/* Country-specific information */}
+                      <div className={`p-4 rounded-lg border ${
+                        companyInfo.country === 'US' 
+                          ? 'bg-blue-50 border-blue-200' 
+                          : 'bg-green-50 border-green-200'
+                      }`}>
+                        <h4 className={`font-medium ${
+                          companyInfo.country === 'US' ? 'text-blue-900' : 'text-green-900'
+                        }`}>
+                          {companyInfo.country === 'US' ? 'US Seller Benefits' : 'Philippines Seller Setup'}
+                        </h4>
+                        <ul className={`text-sm mt-2 space-y-1 ${
+                          companyInfo.country === 'US' ? 'text-blue-700' : 'text-green-700'
+                        }`}>
+                          {companyInfo.country === 'US' ? (
+                            <>
+                              <li>• Process customer payments directly</li>
+                              <li>• Receive automatic payouts to your bank account</li>
+                              <li>• Full payment processing capabilities</li>
+                              <li>• Platform commission deducted automatically</li>
+                            </>
+                          ) : (
+                            <>
+                              <li>• Platform processes all customer payments</li>
+                              <li>• Receive payouts via bank transfers</li>
+                              <li>• Simplified setup with recipient service agreement</li>
+                              <li>• Platform handles payment compliance</li>
+                            </>
+                          )}
+                        </ul>
                       </div>
 
                       <div className="flex justify-end">
@@ -897,27 +933,48 @@ export default function StripeOnboarding() {
             <div className="space-y-6">
               {/* Benefits */}
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Why Stripe?</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  {companyInfo.country === 'US' ? 'US Seller Benefits' : 'PH Seller Benefits'}
+                </h3>
                 <div className="space-y-4">
                   <div className="flex items-start space-x-3">
                     <Shield className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-gray-900">Secure Payments</h4>
-                      <p className="text-sm text-gray-600">Bank-level security and PCI compliance</p>
+                      <p className="text-sm text-gray-600">
+                        {companyInfo.country === 'US' 
+                          ? 'Direct payment processing with bank-level security'
+                          : 'Platform handles all payment security and compliance'
+                        }
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
                     <DollarSign className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-gray-900">Fast Payouts</h4>
-                      <p className="text-sm text-gray-600">Get paid quickly with automatic transfers</p>
+                      <h4 className="font-medium text-gray-900">
+                        {companyInfo.country === 'US' ? 'Direct Payouts' : 'Bank Transfers'}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {companyInfo.country === 'US' 
+                          ? 'Automatic payouts directly to your bank account'
+                          : 'Receive transfers after platform processes payments'
+                        }
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
                     <Users className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-gray-900">Global Reach</h4>
-                      <p className="text-sm text-gray-600">Accept payments from customers worldwide</p>
+                      <h4 className="font-medium text-gray-900">
+                        {companyInfo.country === 'US' ? 'Full Control' : 'Simplified Setup'}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {companyInfo.country === 'US' 
+                          ? 'Complete payment processing control and capabilities'
+                          : 'Easy setup with recipient service agreement for payouts'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>

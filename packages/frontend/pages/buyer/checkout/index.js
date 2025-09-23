@@ -31,7 +31,8 @@ import apiService from '../../../lib/api';
 
 export default function Checkout() {
   const router = useRouter();
-  const { cartItems, fetchCartItems } = useCart();
+  const { fetchCartItems } = useCart();
+  const [cartItems, setCartItems] = useState([]); // Use local state for selected items
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -88,7 +89,19 @@ export default function Checkout() {
   useEffect(() => {
     const initializeCheckout = async () => {
       try {
-        await fetchCartItems();
+        // Get selected items from sessionStorage
+        const checkoutItemsData = sessionStorage.getItem('checkoutItems');
+        if (checkoutItemsData) {
+          const selectedItems = JSON.parse(checkoutItemsData);
+          setCartItems(selectedItems);
+          console.log('Loaded selected items for checkout:', selectedItems);
+        } else {
+          // Fallback: redirect back to cart if no selected items
+          console.warn('No selected items found, redirecting to cart');
+          router.push('/buyer/cart');
+          return;
+        }
+        
         await fetchSavedAddresses();
       } finally {
         setLoading(false);
@@ -255,10 +268,14 @@ export default function Checkout() {
   const createPaymentIntent = async () => {
     try {
       setLoading(true);
+      console.log('Creating payment intent...');
+      console.log('Selected cart items for checkout:', cartItems);
       
       // Group cart items by merchant (company)
       const merchantGroups = cartItems.reduce((groups, item) => {
         const companyId = item.product.company?.id;
+        console.log(`Processing item: ${item.product.name}, Company ID: ${companyId}, Company:`, item.product.company);
+        
         if (!companyId) {
           throw new Error(`Product "${item.product.name}" has no associated company`);
         }
@@ -274,9 +291,13 @@ export default function Checkout() {
         return groups;
       }, {});
 
+      console.log('Merchant groups:', merchantGroups);
+      
       // For now, we'll handle single merchant orders
       // In a multi-merchant scenario, you'd need to create separate payment intents
       const merchantIds = Object.keys(merchantGroups).filter(id => id !== 'undefined' && id !== 'null');
+      console.log('Valid merchant IDs:', merchantIds);
+      console.log('Number of merchants:', merchantIds.length);
       if (merchantIds.length === 0) {
         throw new Error('No valid merchant found for cart items');
       }
@@ -408,6 +429,9 @@ export default function Checkout() {
             order_id: response.data.id
           }
         });
+        
+        // Clear selected items from sessionStorage
+        sessionStorage.removeItem('checkoutItems');
         
         // Clear cart and redirect
         // await clearCart(); // Implement this in CartContext if needed
@@ -817,6 +841,38 @@ export default function Checkout() {
                   </div>
                 )}
 
+                {/* Payment Processing Information */}
+                {cartItems.length > 0 && (
+                  <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">How Payment Works</h4>
+                    <div className="text-sm text-gray-600 space-y-2">
+                      <div className="flex items-start space-x-2">
+                        <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <span className="font-medium">Your payment:</span> ${getTotal().toFixed(2)} processed securely via Stripe
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <span className="font-medium">Platform fee:</span> ${(getTotal() * 0.025).toFixed(2)} (2.5%) for secure processing
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <span className="font-medium">Seller receives:</span> ${(getTotal() - (getTotal() * 0.025)).toFixed(2)} 
+                          {cartItems[0]?.product?.company?.preferred_payout_method === 'stripe' ? (
+                            <span className="text-blue-600 ml-1">(automatic payout via Stripe)</span>
+                          ) : (
+                            <span className="text-green-600 ml-1">(manual payout by platform)</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Stripe Elements Payment Form */}
                 {clientSecret && stripePromise ? (
                   <Elements 
@@ -936,6 +992,42 @@ export default function Checkout() {
                       <p className="text-sm text-green-700 mt-1">
                         Your payment has been processed successfully. Your order will be confirmed shortly.
                       </p>
+                      
+                      {/* Payout Information */}
+                      {cartItems.length > 0 && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="text-xs text-green-800">
+                            <div className="font-medium mb-1">Payment Distribution:</div>
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <span>Total Paid:</span>
+                                <span>${getTotal().toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Platform Fee:</span>
+                                <span>-${(getTotal() * 0.025).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between font-medium border-t border-green-300 pt-1">
+                                <span>Seller Payout:</span>
+                                <span>${(getTotal() - (getTotal() * 0.025)).toFixed(2)}</span>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs">
+                              {cartItems[0]?.product?.company?.preferred_payout_method === 'stripe' ? (
+                                <div className="flex items-center space-x-1">
+                                  <span>💳</span>
+                                  <span>Seller will receive automatic payout via Stripe</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-1">
+                                  <span>🏦</span>
+                                  <span>Seller payout will be processed by platform team</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -987,24 +1079,40 @@ export default function Checkout() {
                   <span>Tax</span>
                   <span>${getTax().toFixed(2)}</span>
                 </div>
-                {currentStep >= 2 && (
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Platform Fee (2.5%)</span>
-                    <span>${(getTotal() * 0.025).toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>${getTotal().toFixed(2)}</span>
                   </div>
-                  {currentStep >= 2 && (
-                    <div className="flex justify-between text-sm text-gray-600 mt-1">
-                      <span>Merchant receives</span>
-                      <span>${(getTotal() - (getTotal() * 0.025)).toFixed(2)}</span>
-                    </div>
-                  )}
                 </div>
+                
+                {/* Payout Information - Show after payment step */}
+                {currentStep >= 2 && cartItems.length > 0 && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-xs text-blue-800 mb-2">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <span className="font-medium">Payment Processing:</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between">
+                          <span>Platform Fee (2.5%):</span>
+                          <span>-${(getTotal() * 0.025).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-medium">
+                          <span>Seller Receives:</span>
+                          <span>${(getTotal() - (getTotal() * 0.025)).toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-blue-600">
+                        {cartItems[0]?.product?.company?.preferred_payout_method === 'stripe' ? (
+                          <span>💳 Stripe Payout - Automatic transfer to seller</span>
+                        ) : (
+                          <span>🏦 Manual Payout - Platform processes transfer</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Security Features */}

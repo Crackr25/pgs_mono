@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Company;
 use App\Models\Product;
 use App\Models\Order;
+use App\Models\SellerPayout;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
@@ -68,11 +69,11 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Verify merchant account capabilities
+            // Verify merchant account capabilities based on country
             try {
                 $account = \Stripe\Account::retrieve($company->stripe_account_id);
                 
-                // Check if transfers capability is active
+                // Check if transfers capability is active (required for all sellers)
                 if (!isset($account->capabilities->transfers) || $account->capabilities->transfers !== 'active') {
                     return response()->json([
                         'success' => false,
@@ -83,9 +84,25 @@ class PaymentController extends Controller
                             'card_payments_capability' => $account->capabilities->card_payments ?? 'not_set',
                             'details_submitted' => $account->details_submitted,
                             'charges_enabled' => $account->charges_enabled,
-                            'payouts_enabled' => $account->payouts_enabled
+                            'payouts_enabled' => $account->payouts_enabled,
+                            'country' => $account->country
                         ]
                     ], 400);
+                }
+
+                // For US sellers, also check card_payments capability
+                if ($company->country === 'US') {
+                    if (!isset($account->capabilities->card_payments) || $account->capabilities->card_payments !== 'active') {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'US merchant account requires card payments capability. Please complete Stripe onboarding.',
+                            'debug_info' => [
+                                'account_id' => $account->id,
+                                'card_payments_capability' => $account->capabilities->card_payments ?? 'not_set',
+                                'country' => $account->country
+                            ]
+                        ], 400);
+                    }
                 }
             } catch (\Exception $e) {
                 return response()->json([
@@ -100,14 +117,10 @@ class PaymentController extends Controller
             $applicationFeeAmount = (int) round($totalAmount * ($platformFeePercentage / 100));
             $merchantAmount = $totalAmount - $applicationFeeAmount;
 
-            // Create PaymentIntent with transfer to merchant
-            $paymentIntent = PaymentIntent::create([
+            // Create PaymentIntent based on seller country
+            $paymentIntentData = [
                 'amount' => $totalAmount,
                 'currency' => $request->get('currency', 'usd'),
-                'application_fee_amount' => $applicationFeeAmount,
-                'transfer_data' => [
-                    'destination' => $company->stripe_account_id,
-                ],
                 'metadata' => array_merge([
                     'merchant_company_id' => $company->id,
                     'merchant_name' => $company->name,
@@ -115,13 +128,28 @@ class PaymentController extends Controller
                     'platform_fee_percentage' => $platformFeePercentage,
                     'merchant_amount_cents' => $merchantAmount,
                     'platform_fee_cents' => $applicationFeeAmount,
+                    'merchant_country' => $company->country,
                 ], $request->get('metadata', [])),
                 'description' => $request->get('description', "Payment to {$company->name}"),
                 'receipt_email' => $request->customer_email,
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
-            ]);
+            ];
+
+            if ($company->country === 'US') {
+                // US sellers: Direct payment with application fee
+                $paymentIntentData['application_fee_amount'] = $applicationFeeAmount;
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $company->stripe_account_id,
+                ];
+            } else {
+                // PH sellers: Platform receives full payment, then transfers to seller
+                // No transfer_data here - we'll handle the transfer separately after payment succeeds
+                $paymentIntentData['metadata']['requires_manual_transfer'] = 'true';
+            }
+
+            $paymentIntent = PaymentIntent::create($paymentIntentData);
 
             return response()->json([
                 'success' => true,
@@ -182,14 +210,10 @@ class PaymentController extends Controller
             $applicationFeeAmount = (int) round($totalAmount * ($platformFeePercentage / 100));
             $merchantAmount = $totalAmount - $applicationFeeAmount;
 
-            // Create PaymentIntent
-            $paymentIntent = PaymentIntent::create([
+            // Create PaymentIntent based on seller country
+            $paymentIntentData = [
                 'amount' => $totalAmount,
                 'currency' => 'usd',
-                'application_fee_amount' => $applicationFeeAmount,
-                'transfer_data' => [
-                    'destination' => $company->stripe_account_id,
-                ],
                 'metadata' => [
                     'order_id' => $order->id,
                     'merchant_company_id' => $company->id,
@@ -198,13 +222,27 @@ class PaymentController extends Controller
                     'platform_fee_percentage' => $platformFeePercentage,
                     'merchant_amount_cents' => $merchantAmount,
                     'platform_fee_cents' => $applicationFeeAmount,
+                    'merchant_country' => $company->country,
                 ],
                 'description' => "Order #{$order->id} - {$company->name}",
                 'receipt_email' => $request->customer_email,
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
-            ]);
+            ];
+
+            if ($company->country === 'US') {
+                // US sellers: Direct payment with application fee
+                $paymentIntentData['application_fee_amount'] = $applicationFeeAmount;
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $company->stripe_account_id,
+                ];
+            } else {
+                // PH sellers: Platform receives full payment, then transfers to seller
+                $paymentIntentData['metadata']['requires_manual_transfer'] = 'true';
+            }
+
+            $paymentIntent = PaymentIntent::create($paymentIntentData);
 
             // Update order with payment intent ID
             $order->update([
@@ -346,13 +384,173 @@ class PaymentController extends Controller
         $metadata = $paymentIntent['metadata'];
         
         if (isset($metadata['order_id'])) {
-            $order = Order::find($metadata['order_id']);
+            $order = Order::with('company')->find($metadata['order_id']);
             if ($order) {
+                // Update order payment status
                 $order->update([
                     'payment_status' => 'paid',
                     'paid_at' => now()
                 ]);
+
+                // Create seller payout record
+                $this->createSellerPayoutFromOrder($order, $metadata);
             }
+        }
+
+        // Handle manual transfer for PH sellers (legacy support)
+        if (isset($metadata['requires_manual_transfer']) && $metadata['requires_manual_transfer'] === 'true') {
+            $this->processManualTransfer($paymentIntent);
+        }
+    }
+
+    /**
+     * Create seller payout from completed order
+     */
+    private function createSellerPayoutFromOrder(Order $order, array $metadata): void
+    {
+        try {
+            // Check if payout already exists
+            if ($order->hasSellerPayout()) {
+                \Log::info('Seller payout already exists for order', ['order_id' => $order->id]);
+                return;
+            }
+
+            // Get platform fee percentage from metadata or use default
+            $platformFeePercentage = isset($metadata['platform_fee_percentage']) 
+                ? floatval($metadata['platform_fee_percentage']) 
+                : 2.5;
+
+            // Determine payout method based on company country
+            $payoutMethod = $order->company->getDefaultPayoutMethod();
+
+            // Create the payout record
+            $payout = $order->createSellerPayout($platformFeePercentage, $payoutMethod);
+
+            \Log::info('Seller payout created successfully', [
+                'payout_id' => $payout->id,
+                'order_id' => $order->id,
+                'company_id' => $order->company_id,
+                'net_amount' => $payout->net_amount,
+                'payout_method' => $payoutMethod
+            ]);
+
+            // For US sellers with Stripe method, process payout immediately
+            if ($payout->isStripeMethod() && $order->company->country === 'US') {
+                $this->processStripePayoutFromWebhook($payout);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to create seller payout from order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'metadata' => $metadata
+            ]);
+        }
+    }
+
+    /**
+     * Process Stripe payout from webhook (for US sellers)
+     */
+    private function processStripePayoutFromWebhook(SellerPayout $payout): void
+    {
+        try {
+            $company = $payout->company;
+            
+            if (!$company->stripe_account_id) {
+                \Log::error('Cannot process Stripe payout: No Stripe account', [
+                    'payout_id' => $payout->id,
+                    'company_id' => $company->id
+                ]);
+                return;
+            }
+
+            $payout->markAsProcessing();
+
+            // Create Stripe transfer
+            $transfer = \Stripe\Transfer::create([
+                'amount' => (int) round($payout->net_amount * 100), // Convert to cents
+                'currency' => strtolower($payout->currency),
+                'destination' => $company->stripe_account_id,
+                'description' => "Payout for order #{$payout->order->order_number}",
+                'metadata' => [
+                    'payout_id' => $payout->id,
+                    'order_id' => $payout->order_id,
+                    'company_id' => $company->id,
+                    'auto_processed' => 'true'
+                ]
+            ]);
+
+            // Update payout with success
+            $payout->update([
+                'stripe_transfer_id' => $transfer->id,
+                'stripe_response' => $transfer->toArray(),
+                'status' => 'completed',
+                'processed_at' => now()
+            ]);
+
+            \Log::info('Stripe payout processed successfully from webhook', [
+                'payout_id' => $payout->id,
+                'transfer_id' => $transfer->id,
+                'amount' => $payout->net_amount
+            ]);
+
+        } catch (\Exception $e) {
+            $payout->markAsFailed('Auto-processing failed: ' . $e->getMessage());
+            
+            \Log::error('Failed to process Stripe payout from webhook', [
+                'payout_id' => $payout->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Process manual transfer for PH sellers
+     */
+    private function processManualTransfer($paymentIntent): void
+    {
+        try {
+            $metadata = $paymentIntent['metadata'];
+            $merchantCompanyId = $metadata['merchant_company_id'];
+            $merchantAmountCents = $metadata['merchant_amount_cents'];
+            
+            $company = Company::find($merchantCompanyId);
+            if (!$company || !$company->stripe_account_id) {
+                \Log::error('Cannot process transfer: Company not found or no Stripe account', [
+                    'company_id' => $merchantCompanyId,
+                    'payment_intent_id' => $paymentIntent['id']
+                ]);
+                return;
+            }
+
+            // Create transfer to PH seller
+            $transfer = \Stripe\Transfer::create([
+                'amount' => $merchantAmountCents,
+                'currency' => strtolower($paymentIntent['currency']),
+                'destination' => $company->stripe_account_id,
+                'description' => "Transfer for payment {$paymentIntent['id']} to {$company->name}",
+                'metadata' => [
+                    'payment_intent_id' => $paymentIntent['id'],
+                    'merchant_company_id' => $company->id,
+                    'merchant_name' => $company->name,
+                    'original_amount_cents' => $paymentIntent['amount'],
+                    'platform_fee_cents' => $metadata['platform_fee_cents'],
+                ]
+            ]);
+
+            \Log::info('Transfer created successfully for PH seller', [
+                'transfer_id' => $transfer->id,
+                'company_id' => $company->id,
+                'amount_cents' => $merchantAmountCents,
+                'payment_intent_id' => $paymentIntent['id']
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to process manual transfer for PH seller', [
+                'error' => $e->getMessage(),
+                'payment_intent_id' => $paymentIntent['id'],
+                'metadata' => $metadata ?? null
+            ]);
         }
     }
 
@@ -370,6 +568,92 @@ class PaymentController extends Controller
                     'payment_status' => 'failed'
                 ]);
             }
+        }
+    }
+
+    /**
+     * Manually create transfer for PH sellers (admin/testing endpoint)
+     */
+    public function createManualTransfer(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'payment_intent_id' => 'required|string',
+                'company_id' => 'required|exists:companies,id'
+            ]);
+
+            // Retrieve PaymentIntent from Stripe
+            $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
+            
+            if ($paymentIntent->status !== 'succeeded') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment must be succeeded before creating transfer',
+                    'payment_status' => $paymentIntent->status
+                ], 400);
+            }
+
+            $company = Company::findOrFail($request->company_id);
+            
+            if ($company->country === 'US') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'US sellers receive payments directly, no manual transfer needed'
+                ], 400);
+            }
+
+            if (!$company->stripe_account_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Company does not have a Stripe account'
+                ], 400);
+            }
+
+            // Calculate transfer amount (total - platform fee)
+            $totalAmount = $paymentIntent->amount;
+            $platformFeePercentage = 2.5; // Default platform fee
+            if (isset($paymentIntent->metadata['platform_fee_percentage'])) {
+                $platformFeePercentage = floatval($paymentIntent->metadata['platform_fee_percentage']);
+            }
+            
+            $applicationFeeAmount = (int) round($totalAmount * ($platformFeePercentage / 100));
+            $merchantAmount = $totalAmount - $applicationFeeAmount;
+
+            // Create transfer
+            $transfer = \Stripe\Transfer::create([
+                'amount' => $merchantAmount,
+                'currency' => strtolower($paymentIntent->currency),
+                'destination' => $company->stripe_account_id,
+                'description' => "Manual transfer for payment {$paymentIntent->id} to {$company->name}",
+                'metadata' => [
+                    'payment_intent_id' => $paymentIntent->id,
+                    'merchant_company_id' => $company->id,
+                    'merchant_name' => $company->name,
+                    'original_amount_cents' => $totalAmount,
+                    'platform_fee_cents' => $applicationFeeAmount,
+                    'manual_transfer' => 'true'
+                ]
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transfer created successfully',
+                'transfer_id' => $transfer->id,
+                'amount_transferred' => $merchantAmount / 100,
+                'platform_fee_retained' => $applicationFeeAmount / 100
+            ]);
+
+        } catch (ApiErrorException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stripe API error: ' . $e->getMessage(),
+                'error_code' => $e->getStripeCode()
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create transfer: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

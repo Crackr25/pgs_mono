@@ -15,6 +15,9 @@ class Company extends Model
         'registration',
         'peza_id',
         'location',
+        'country',
+        'preferred_payout_method',
+        'payout_settings',
         'year_established',
         'factory_size',
         'product_lines',
@@ -48,6 +51,7 @@ class Company extends Model
 
     protected $casts = [
         'product_lines' => 'array',
+        'payout_settings' => 'array',
         'verified' => 'boolean',
         'year_established' => 'integer',
         'employees' => 'integer',
@@ -86,5 +90,58 @@ class Company extends Model
     public function reviews()
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function sellerPayouts()
+    {
+        return $this->hasMany(SellerPayout::class);
+    }
+
+    public function pendingPayouts()
+    {
+        return $this->hasMany(SellerPayout::class)->where('status', 'pending');
+    }
+
+    public function completedPayouts()
+    {
+        return $this->hasMany(SellerPayout::class)->where('status', 'completed');
+    }
+
+    // Helper methods for payout management
+    public function getTotalPendingPayouts()
+    {
+        return $this->pendingPayouts()->sum('net_amount');
+    }
+
+    public function getTotalCompletedPayouts()
+    {
+        return $this->completedPayouts()->sum('net_amount');
+    }
+
+    public function getDefaultPayoutMethod()
+    {
+        // If preferred method is set, use it
+        if ($this->preferred_payout_method) {
+            return $this->preferred_payout_method;
+        }
+        
+        // Otherwise, use country-based default
+        return $this->country === 'US' ? 'stripe' : 'manual';
+    }
+
+    public function canUseStripePayouts()
+    {
+        return $this->stripe_account_id && $this->stripe_onboarding_status === 'completed';
+    }
+
+    public function getAvailablePayoutMethods()
+    {
+        $methods = ['manual']; // Manual is always available
+        
+        if ($this->canUseStripePayouts()) {
+            $methods[] = 'stripe';
+        }
+        
+        return $methods;
     }
 }

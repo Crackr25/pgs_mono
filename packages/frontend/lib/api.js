@@ -1054,6 +1054,52 @@ class ApiService {
     return this.request(endpoint);
   }
 
+  // ===== PAYOUT MANAGEMENT METHODS =====
+
+  // Admin payout methods
+  async getAdminPayouts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/admin/payouts?${queryString}` : '/admin/payouts';
+    return this.request(endpoint);
+  }
+
+  async getPayoutStatistics() {
+    return this.request('/admin/payouts/statistics');
+  }
+
+  async createPayoutFromOrder(orderData) {
+    return this.request('/admin/payouts/create-from-order', {
+      method: 'POST',
+      data: orderData
+    });
+  }
+
+  async processStripePayout(payoutId) {
+    return this.request(`/admin/payouts/${payoutId}/process-stripe`, {
+      method: 'POST'
+    });
+  }
+
+  async completeManualPayout(payoutId, data) {
+    return this.request(`/admin/payouts/${payoutId}/complete-manual`, {
+      method: 'POST',
+      data
+    });
+  }
+
+  async retryPayout(payoutId) {
+    return this.request(`/admin/payouts/${payoutId}/retry`, {
+      method: 'POST'
+    });
+  }
+
+  // Seller payout methods
+  async getSellerPayouts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/seller/payouts?${queryString}` : '/seller/payouts';
+    return this.request(endpoint);
+  }
+
 }
 
 const apiService = new ApiService();

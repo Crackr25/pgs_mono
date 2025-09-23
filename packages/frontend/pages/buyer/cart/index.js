@@ -132,6 +132,9 @@ export default function Cart() {
       return;
     }
     
+    // Store selected items in sessionStorage for checkout page
+    sessionStorage.setItem('checkoutItems', JSON.stringify(selectedCartItems));
+    
     // Navigate to checkout with selected items
     router.push('/buyer/checkout');
   };

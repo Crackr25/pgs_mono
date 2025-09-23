@@ -65,7 +65,7 @@ class StripeConnectController extends Controller
             ]);
 
             // Set defaults for optional fields
-            $country = $request->input('country', 'USA');
+            $country = $request->input('country', 'PH');
             $type = $request->input('type', 'express');
 
             // Get the authenticated user's company
@@ -87,29 +87,45 @@ class StripeConnectController extends Controller
                 ], 400);
             }
 
-            // Prepare account data
+            // Prepare account data with country-specific capabilities
+            $capabilities = [];
             $accountData = [
                 'type' => $type,
                 'country' => $country,
                 'email' => $request->email,
-                'capabilities' => [
+            ];
+
+            if ($country === 'US') {
+                // US sellers can process payments directly (card_payments + transfers)
+                $capabilities = [
                     'card_payments' => ['requested' => true],
                     'transfers' => ['requested' => true],
-                ],
-                'business_type' => 'company',
-                'company' => [
-                    'name' => $company->name,
-                    'phone' => $company->phone,
-                ],
-                'metadata' => [
-                    'company_id' => $company->id,
-                    'platform' => 'pgs_marketplace'
-                ],
-                'settings' => [
-                    'payouts' => [
-                        'schedule' => [
-                            'interval' => 'daily'
-                        ]
+                ];
+            } else {
+                // PH and other countries: payout-only accounts (transfers only with recipient service agreement)
+                $capabilities = [
+                    'transfers' => ['requested' => true],
+                ];
+                // For PH accounts requesting only transfers, we need to specify the recipient service agreement
+                $accountData['tos_acceptance'] = [
+                    'service_agreement' => 'recipient'
+                ];
+            }
+
+            $accountData['capabilities'] = $capabilities;
+            $accountData['business_type'] = 'company';
+            $accountData['company'] = [
+                'name' => $company->name,
+                'phone' => $company->phone,
+            ];
+            $accountData['metadata'] = [
+                'company_id' => $company->id,
+                'platform' => 'pgs_marketplace'
+            ];
+            $accountData['settings'] = [
+                'payouts' => [
+                    'schedule' => [
+                        'interval' => 'daily'
                     ]
                 ]
             ];
@@ -236,11 +252,12 @@ class StripeConnectController extends Controller
                 }
             }
 
-            // Update company with Stripe account ID
+            // Update company with Stripe account ID and country
             $company->update([
                 'stripe_account_id' => $account->id,
                 'stripe_onboarding_status' => 'pending',
-                'stripe_account_created_at' => now()
+                'stripe_account_created_at' => now(),
+                'country' => $country
             ]);
 
             return response()->json([

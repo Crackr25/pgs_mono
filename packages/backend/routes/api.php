@@ -22,6 +22,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SellerPayoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -225,7 +226,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments/create-intent', [PaymentController::class, 'createPaymentIntent']);
     Route::post('/payments/create-order-intent', [PaymentController::class, 'createOrderPaymentIntent']);
     Route::post('/payments/confirm', [PaymentController::class, 'confirmPayment']);
+    Route::post('/payments/create-manual-transfer', [PaymentController::class, 'createManualTransfer']);
 });
 
 // Payment webhook (public - no authentication)
 Route::post('/payments/webhook', [PaymentController::class, 'handlePaymentWebhook']);
+
+// Seller Payout routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Seller routes - get their own payouts
+    Route::get('/seller/payouts', [SellerPayoutController::class, 'getSellerPayouts']);
+    
+    // Admin routes - manage all payouts
+    Route::get('/admin/payouts', [SellerPayoutController::class, 'index']);
+    Route::get('/admin/payouts/statistics', [SellerPayoutController::class, 'getStatistics']);
+    Route::post('/admin/payouts/create-from-order', [SellerPayoutController::class, 'createFromOrder']);
+    Route::post('/admin/payouts/{payout}/process-stripe', [SellerPayoutController::class, 'processStripePayout']);
+    Route::post('/admin/payouts/{payout}/complete-manual', [SellerPayoutController::class, 'completeManualPayout']);
+    Route::post('/admin/payouts/{payout}/retry', [SellerPayoutController::class, 'retryPayout']);
+});

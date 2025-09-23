@@ -59,4 +59,29 @@ class Order extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
+    public function sellerPayout()
+    {
+        return $this->hasOne(SellerPayout::class);
+    }
+
+    // Helper methods for payout management
+    public function hasSellerPayout()
+    {
+        return $this->sellerPayout()->exists();
+    }
+
+    public function createSellerPayout($platformFeePercentage = 2.5, $payoutMethod = null)
+    {
+        if ($this->hasSellerPayout()) {
+            return $this->sellerPayout;
+        }
+
+        return SellerPayout::createFromOrder($this, $platformFeePercentage, $payoutMethod);
+    }
+
+    public function isPayoutEligible()
+    {
+        return $this->payment_status === 'paid' && !$this->hasSellerPayout();
+    }
 }
