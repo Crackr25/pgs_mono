@@ -3,35 +3,30 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Elements } from '@stripe/react-stripe-js';
 import { 
   ArrowLeft,
   Lock,
   Truck,
   CreditCard,
-  MapPin,
-  User,
-  Phone,
-  Mail,
-  Building,
-  Shield,
   CheckCircle,
   AlertCircle,
-  Package,
   Edit,
-  Plus
+  Plus,
+  Package,
+  Shield
 } from 'lucide-react';
-import { Elements } from '@stripe/react-stripe-js';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
+import apiService from '../../../lib/api';
 import { useCart } from '../../../contexts/CartContext';
 import ShippingAddressModal from '../../../components/checkout/ShippingAddressModal';
 import StripePaymentForm from '../../../components/checkout/StripePaymentForm';
 import getStripe from '../../../lib/stripe';
-import apiService from '../../../lib/api';
 
 export default function Checkout() {
   const router = useRouter();
-  const { fetchCartItems } = useCart();
+  const { fetchCartItems, removeCartItems } = useCart();
   const [cartItems, setCartItems] = useState([]); // Use local state for selected items
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -261,14 +256,19 @@ export default function Checkout() {
     return getSubtotal() * 0.12;
   };
 
+  const getPlatformFee = () => {
+    const subtotal = getSubtotal();
+    return subtotal * 0.025; // 2.5% platform fee for secure processing
+  };
+
   const getTotal = () => {
-    return getSubtotal() + getShipping() + getTax();
+    return getSubtotal() + getShipping() + getTax() + getPlatformFee();
   };
 
   const createPaymentIntent = async () => {
     try {
       setLoading(true);
-      console.log('Creating payment intent...');
+      console.log('Creating order and payment intent...');
       console.log('Selected cart items for checkout:', cartItems);
       
       // Group cart items by merchant (company)
@@ -294,10 +294,7 @@ export default function Checkout() {
       console.log('Merchant groups:', merchantGroups);
       
       // For now, we'll handle single merchant orders
-      // In a multi-merchant scenario, you'd need to create separate payment intents
       const merchantIds = Object.keys(merchantGroups).filter(id => id !== 'undefined' && id !== 'null');
-      console.log('Valid merchant IDs:', merchantIds);
-      console.log('Number of merchants:', merchantIds.length);
       if (merchantIds.length === 0) {
         throw new Error('No valid merchant found for cart items');
       }
@@ -307,42 +304,81 @@ export default function Checkout() {
 
       const merchantId = parseInt(merchantIds[0]);
       const orderTotal = getTotal();
+      const firstItem = cartItems[0];
 
-      // Validate required data before sending
+      // Validate required data
       if (!merchantId || isNaN(merchantId)) {
         throw new Error('Invalid merchant ID');
       }
-      if (!shippingAddress.email) {
-        throw new Error('Customer email is required');
+      if (!shippingAddress.email || !shippingAddress.firstName || !shippingAddress.lastName) {
+        throw new Error('Complete customer information is required');
       }
       if (orderTotal < 0.50) {
         throw new Error('Order total must be at least $0.50');
       }
 
-      const response = await apiService.request('/payments/create-intent', {
+      // Step 1: Create order first
+      const shippingAddressString = `${shippingAddress.address1}${shippingAddress.address2 ? ', ' + shippingAddress.address2 : ''}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}, ${shippingAddress.country}`;
+      
+      const orderData = {
+        company_id: merchantId,
+        product_name: cartItems.length === 1 
+          ? firstItem.product.name 
+          : `${cartItems.length} items from ${firstItem.product.company.name}`,
+        quantity: cartItems.reduce((total, item) => total + item.quantity, 0),
+        total_amount: orderTotal,
+        buyer_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+        buyer_email: shippingAddress.email,
+        buyer_company: shippingAddress.company || null,
+        shipping_address: shippingAddressString,
+        notes: orderNotes || null,
+        payment_method: 'stripe',
+        status: 'pending', // Order starts as pending until payment succeeds
+        payment_status: 'pending',
+        // Store cart items as JSON in notes for now
+        cart_items: cartItems.map(item => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          selected_specifications: item.selected_specifications
+        })),
+        billing_address: sameAsShipping ? shippingAddressString : `${billingAddress.address1}${billingAddress.address2 ? ', ' + billingAddress.address2 : ''}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.zipCode}, ${billingAddress.country}`
+      };
+
+      console.log('Creating order with data:', orderData);
+      
+      const orderResponse = await apiService.request('/orders', {
         method: 'POST',
-        data: {
-          amount: parseFloat(orderTotal.toFixed(2)),
-          currency: 'usd',
-          merchant_company_id: merchantId,
-          customer_email: shippingAddress.email,
-          description: `Order from ${merchantGroups[merchantId].company?.name || 'Merchant'}`,
-          metadata: {
-            cart_items: cartItems.length,
-            shipping_city: shippingAddress.city,
-            shipping_state: shippingAddress.state
-          }
-        }
+        data: orderData
       });
 
-      if (response.success) {
-        setClientSecret(response.client_secret);
-        setPaymentIntentId(response.payment_intent_id);
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.message || 'Failed to create order');
+      }
+
+      const createdOrder = orderResponse.data;
+      console.log('Order created successfully:', createdOrder);
+
+      // Step 2: Create payment intent with order ID
+      const paymentResponse = await apiService.createOrderPaymentIntent({
+        order_id: createdOrder.id,
+        customer_email: shippingAddress.email,
+        platform_fee_percentage: 2.5
+      });
+
+      if (paymentResponse.success) {
+        setClientSecret(paymentResponse.client_secret);
+        setPaymentIntentId(paymentResponse.payment_intent_id);
+        
+        // Store order ID for later use
+        sessionStorage.setItem('pendingOrderId', createdOrder.id);
+        
+        console.log('Payment intent created successfully for order:', createdOrder.id);
       } else {
-        throw new Error(response.message || 'Failed to create payment intent');
+        throw new Error(paymentResponse.message || 'Failed to create payment intent');
       }
     } catch (error) {
-      console.error('Error creating payment intent:', error);
+      console.error('Error creating order and payment intent:', error);
       setErrors({ payment: error.message });
     } finally {
       setLoading(false);
@@ -353,91 +389,44 @@ export default function Checkout() {
     try {
       setSubmitting(true);
       
-      // Validate required data
-      if (!cartItems || cartItems.length === 0) {
-        throw new Error('No items in cart');
+      // Get the order ID that was created during payment intent creation
+      const orderId = sessionStorage.getItem('pendingOrderId');
+      
+      if (!orderId) {
+        throw new Error('Order ID not found. Please try again.');
       }
       
-      if (!shippingAddress.firstName || !shippingAddress.lastName) {
-        throw new Error('Buyer name is required');
-      }
+      console.log('Payment succeeded for order:', orderId);
+      console.log('Payment Intent:', paymentIntent);
       
-      if (!shippingAddress.email) {
-        throw new Error('Buyer email is required');
-      }
-      
-      if (!shippingAddress.address1 || !shippingAddress.city || !shippingAddress.state) {
-        throw new Error('Complete shipping address is required');
-      }
-      
-      // For now, handle single merchant orders (first item's company)
-      const firstItem = cartItems[0];
-      const companyId = firstItem?.product?.company?.id;
-      
-      if (!companyId) {
-        throw new Error('No company found for order items');
-      }
-      
-      // Format shipping address as string
-      const shippingAddressString = `${shippingAddress.address1}${shippingAddress.address2 ? ', ' + shippingAddress.address2 : ''}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}, ${shippingAddress.country}`;
-      
-      // Calculate total from cart items
-      const totalAmount = getTotal();
-      
-      // Create order with payment confirmation
-      const orderData = {
-        company_id: companyId,
-        product_name: cartItems.length === 1 
-          ? firstItem.product.name 
-          : `${cartItems.length} items from ${firstItem.product.company.name}`,
-        quantity: cartItems.reduce((total, item) => total + item.quantity, 0),
-        total_amount: totalAmount,
-        buyer_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
-        buyer_email: shippingAddress.email,
-        buyer_company: shippingAddress.company || null,
-        shipping_address: shippingAddressString,
-        notes: orderNotes || null,
-        payment_method: 'stripe',
+      // Confirm payment on backend (order already exists, just confirm payment)
+      const confirmResponse = await apiService.confirmPayment({
         payment_intent_id: paymentIntent.id,
-        // Additional data for internal use
-        cart_items: cartItems.map(item => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          selected_specifications: item.selected_specifications
-        })),
-        billing_address: sameAsShipping ? shippingAddressString : `${billingAddress.address1}${billingAddress.address2 ? ', ' + billingAddress.address2 : ''}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.zipCode}, ${billingAddress.country}`
-      };
-      
-      // Debug: Log order data before sending
-      console.log('Order data being sent:', orderData);
-      
-      // Create order via API
-      const response = await apiService.request('/orders', {
-        method: 'POST',
-        data: orderData
+        order_id: orderId
       });
       
-      console.log('Order creation response:', response);
+      console.log('Payment confirmation response:', confirmResponse);
       
-      if (response.success) {
-        // Confirm payment on backend
-        await apiService.request('/payments/confirm', {
-          method: 'POST',
-          data: {
-            payment_intent_id: paymentIntent.id,
-            order_id: response.data.id
-          }
-        });
-        
+      if (confirmResponse.success) {
         // Clear selected items from sessionStorage
         sessionStorage.removeItem('checkoutItems');
+        sessionStorage.removeItem('pendingOrderId');
         
-        // Clear cart and redirect
-        // await clearCart(); // Implement this in CartContext if needed
-        router.push(`/buyer/orders/success?order_id=${response.data.id}`);
+        // Remove ordered items from cart
+        try {
+          const cartItemIds = cartItems.map(item => item.id);
+          console.log('Removing cart items:', cartItemIds);
+          await removeCartItems(cartItemIds);
+          console.log('Cart items removed successfully');
+        } catch (cartError) {
+          console.error('Error removing cart items:', cartError);
+          // Don't fail the order if cart removal fails
+        }
+        
+        // Redirect to success page
+        router.push(`/buyer/orders/success?order_id=${orderId}`);
       } else {
-        throw new Error(response.message || 'Failed to create order');
+        throw new Error(confirmResponse.message || 'Failed to confirm payment');
       }
       
     } catch (error) {
@@ -1078,6 +1067,19 @@ export default function Checkout() {
                 <div className="flex justify-between text-sm">
                   <span>Tax</span>
                   <span>${getTax().toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="flex items-center">
+                    Platform Fee (Secure Processing)
+                    <Shield className="w-3 h-3 ml-1 text-green-600" />
+                  </span>
+                  <span>${getPlatformFee().toFixed(2)}</span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1 mb-2">
+                  <div className="flex items-center">
+                    <Shield className="w-3 h-3 mr-1 text-green-600" />
+                    2.5% fee for secure payment processing, fraud protection & buyer guarantee
+                  </div>
                 </div>
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between font-bold text-lg">

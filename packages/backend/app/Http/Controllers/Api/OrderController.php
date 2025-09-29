@@ -12,8 +12,10 @@ class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-
-        $query = Order::with(['quote', 'company', 'payments']);
+        $query = Order::with(['quote', 'company', 'payments', 'user']);
+        
+        // Filter by authenticated user (buyers see only their orders)
+        $query->where('user_id', auth()->id());
         
         // Filter by status
         if ($request->has('status')) {
@@ -53,7 +55,11 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         // Debug: Log incoming request data
-        \Log::info('Order creation request:', $request->all());
+        \Log::info('Order creation request:', [
+            'request_data' => $request->all(),
+            'has_payment_intent_id' => $request->has('payment_intent_id'),
+            'payment_intent_id_value' => $request->get('payment_intent_id')
+        ]);
         
         $validated = $request->validate([
             'quote_id' => 'nullable|exists:quotes,id',
@@ -77,12 +83,15 @@ class OrderController extends Controller
             'cart_items.*.selected_specifications' => 'nullable'
         ]);
 
+        // Set the user_id from the authenticated user
+        $validated['user_id'] = auth()->id();
+
         // Generate unique order number
         $validated['order_number'] = 'ORD-' . date('Y') . '-' . str_pad(Order::count() + 1, 6, '0', STR_PAD_LEFT);
         
         // Set default status
         $validated['status'] = 'pending';
-        $validated['payment_status'] = $validated['payment_intent_id'] ? 'paid' : 'pending';
+        $validated['payment_status'] = ($validated['payment_intent_id'] ?? null) ? 'paid' : 'pending';
         
         // Extract cart_items before creating order (if we need to store them separately)
         $cartItems = $validated['cart_items'] ?? null;
@@ -101,7 +110,10 @@ class OrderController extends Controller
         
         // If created from quote, update quote status
         if (isset($validated['quote_id']) && $validated['quote_id']) {
-            Quote::find($validated['quote_id'])->update(['status' => 'accepted']);
+            $quote = Quote::find($validated['quote_id']);
+            if ($quote) {
+                $quote->update(['status' => 'accepted']);
+            }
         }
         
         return response()->json([

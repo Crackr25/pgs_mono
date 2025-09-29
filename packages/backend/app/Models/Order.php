@@ -10,6 +10,7 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'quote_id',
         'company_id',
         'order_number',
@@ -40,6 +41,11 @@ class Order extends Model
     ];
 
     // Relationships
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function quote()
     {
         return $this->belongsTo(Quote::class);
