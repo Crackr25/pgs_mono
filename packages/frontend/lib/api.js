@@ -413,6 +413,12 @@ class ApiService {
     return this.request(`/orders${queryString ? `?${queryString}` : ''}`);
   }
 
+  // Buyer-specific order methods
+  async getBuyerOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/orders${queryString ? `?${queryString}` : ''}`);
+  }
+
   async getOrder(id) {
     return this.request(`/orders/${id}`);
   }
@@ -829,7 +835,16 @@ class ApiService {
 
   async clearCart() {
     return this.request('/cart', {
-      method: 'DELETE',
+      method: 'DELETE'
+    });
+  }
+
+  async removeCartItems(cartItemIds) {
+    return this.request('/cart/remove-items', {
+      method: 'POST',
+      data: {
+        cart_item_ids: cartItemIds
+      }
     });
   }
 
@@ -1052,6 +1067,32 @@ class ApiService {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = queryString ? `/analytics/export?${queryString}` : '/analytics/export';
     return this.request(endpoint);
+  }
+
+  // ===== PAYMENT METHODS =====
+
+  // Create payment intent for general payments
+  async createPaymentIntent(paymentData) {
+    return this.request('/payments/create-intent', {
+      method: 'POST',
+      data: paymentData
+    });
+  }
+
+  // Create payment intent for existing orders
+  async createOrderPaymentIntent(orderData) {
+    return this.request('/payments/create-order-intent', {
+      method: 'POST',
+      data: orderData
+    });
+  }
+
+  // Confirm payment
+  async confirmPayment(paymentData) {
+    return this.request('/payments/confirm', {
+      method: 'POST',
+      data: paymentData
+    });
   }
 
   // ===== PAYOUT MANAGEMENT METHODS =====

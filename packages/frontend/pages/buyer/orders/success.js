@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import apiService from '../../../lib/api';
 import { 
   CheckCircle, 
   Package, 
@@ -20,71 +21,158 @@ import {
 
 export default function OrderSuccess() {
   const router = useRouter();
-  const { orderId } = router.query;
+  const { order_id } = router.query;
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock order data - replace with actual API call
+  // Fetch real order data from API
   useEffect(() => {
-    if (router.isReady) {
-      // Simulate API call
-      setTimeout(() => {
-        const currentOrderId = orderId || 'ORD-2024-001';
-        setOrderData({
-          id: currentOrderId,
-          orderNumber: `#${currentOrderId}`,
-          status: 'confirmed',
-          total: 15750.00,
-          currency: 'PHP',
-          paymentMethod: 'Credit Card',
-          estimatedDelivery: '3-5 business days',
-          trackingNumber: null,
-          createdAt: new Date().toISOString(),
-          items: [
-            {
-              id: 1,
-              name: 'Premium Rice - Jasmine',
-              image: '/api/placeholder/80/80',
-              quantity: 50,
-              unit: 'kg',
-              unitPrice: 85.00,
-              total: 4250.00,
-              supplier: 'Golden Harvest Co.',
-              specifications: { Grade: 'Premium', Origin: 'Thailand' }
-            },
-            {
-              id: 2,
-              name: 'Organic Coconut Oil',
-              image: '/api/placeholder/80/80',
-              quantity: 24,
-              unit: 'bottles',
-              unitPrice: 125.00,
-              total: 3000.00,
-              supplier: 'Pure Coconut Ltd.',
-              specifications: { Volume: '500ml', Type: 'Extra Virgin' }
-            }
-          ],
-          shippingAddress: {
-            name: 'John Doe',
-            company: 'ABC Trading Corp',
-            address: '123 Business Street',
-            city: 'Manila',
-            province: 'Metro Manila',
-            postalCode: '1000',
-            phone: '+63 912 345 6789'
-          },
-          billing: {
-            subtotal: 7250.00,
-            shipping: 500.00,
-            tax: 725.00,
-            discount: 0.00,
-            total: 8475.00
-          }
-        });
+    const fetchOrderData = async () => {
+      if (!router.isReady || !order_id) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log('Fetching order data for ID:', order_id);
+        
+        // Fetch order details from API
+        const response = await apiService.getOrder(order_id);
+        console.log('Order API response:', response);
+
+        if (response && response.id) {
+          // Transform backend data to match frontend expectations
+          const transformedOrder = {
+            id: response.id,
+            orderNumber: response.order_number || `#${response.id}`,
+            status: response.status || 'pending',
+            total: parseFloat(response.total_amount || 0),
+            currency: 'USD',
+            paymentMethod: response.payment_method === 'stripe' ? 'Credit Card' : response.payment_method || 'Unknown',
+            estimatedDelivery: response.estimated_delivery ? 
+              new Date(response.estimated_delivery).toLocaleDateString() : 
+              '3-5 business days',
+            trackingNumber: response.tracking_number || null,
+            createdAt: response.created_at,
+            paymentStatus: response.payment_status,
+            
+            // Parse cart items from notes or create single item
+            items: (() => {
+              try {
+                // Try to parse cart items from notes
+                if (response.notes && response.notes.includes('Cart Items:')) {
+                  const cartItemsMatch = response.notes.match(/Cart Items: (.+)/);
+                  if (cartItemsMatch) {
+                    const cartItems = JSON.parse(cartItemsMatch[1]);
+                    console.log('Parsed cart items:', cartItems);
+                    
+                    // For single item orders, use the main product_name from the order
+                    if (cartItems.length === 1) {
+                      return [{
+                        id: cartItems[0].product_id || 1,
+                        name: response.product_name || 'Product',
+                        image: '/api/placeholder/80/80',
+                        quantity: cartItems[0].quantity || 1,
+                        unit: 'pieces',
+                        unitPrice: parseFloat(cartItems[0].unit_price || 0),
+                        total: parseFloat(cartItems[0].unit_price || 0) * (cartItems[0].quantity || 1),
+                        supplier: response.company?.name || 'Supplier',
+                        specifications: cartItems[0].selected_specifications || {}
+                      }];
+                    }
+                    
+                    // For multiple items, we'd need to fetch product details
+                    // For now, use generic names with product IDs
+                    return cartItems.map((item, index) => ({
+                      id: item.product_id || index + 1,
+                      name: `Product #${item.product_id}` || 'Product',
+                      image: '/api/placeholder/80/80',
+                      quantity: item.quantity || 1,
+                      unit: 'pieces',
+                      unitPrice: parseFloat(item.unit_price || 0),
+                      total: parseFloat(item.unit_price || 0) * (item.quantity || 1),
+                      supplier: response.company?.name || 'Supplier',
+                      specifications: item.selected_specifications || {}
+                    }));
+                  }
+                }
+                
+                // Fallback to single item from order data
+                return [{
+                  id: 1,
+                  name: response.product_name || 'Order Items',
+                  image: '/api/placeholder/80/80',
+                  quantity: response.quantity || 1,
+                  unit: 'pieces',
+                  unitPrice: parseFloat(response.total_amount || 0) / (response.quantity || 1),
+                  total: parseFloat(response.total_amount || 0),
+                  supplier: response.company?.name || 'Supplier',
+                  specifications: {}
+                }];
+              } catch (e) {
+                console.error('Error parsing cart items:', e);
+                return [{
+                  id: 1,
+                  name: response.product_name || 'Order Items',
+                  image: '/api/placeholder/80/80',
+                  quantity: response.quantity || 1,
+                  unit: 'pieces',
+                  unitPrice: parseFloat(response.total_amount || 0) / (response.quantity || 1),
+                  total: parseFloat(response.total_amount || 0),
+                  supplier: response.company?.name || 'Supplier',
+                  specifications: {}
+                }];
+              }
+            })(),
+            
+            // Parse shipping address
+            shippingAddress: (() => {
+              const address = response.shipping_address || '';
+              const parts = address.split(', ');
+              return {
+                name: response.buyer_name || 'Customer',
+                company: response.buyer_company || '',
+                address: parts[0] || address,
+                city: parts[1] || '',
+                province: parts[2] || '',
+                postalCode: parts[3] || '',
+                phone: 'N/A'
+              };
+            })(),
+            
+            // Calculate billing breakdown
+            billing: (() => {
+              const total = parseFloat(response.total_amount || 0);
+              const subtotal = total * 0.85; // Approximate subtotal (85% of total)
+              const shipping = total * 0.05;  // Approximate shipping (5% of total)
+              const tax = total * 0.10;       // Approximate tax (10% of total)
+              
+              return {
+                subtotal: subtotal,
+                shipping: shipping,
+                tax: tax,
+                discount: 0.00,
+                total: total
+              };
+            })()
+          };
+
+        
+          setOrderData(transformedOrder);
+        } else {
+          setError('Order not found');
+        }
+      } catch (err) {
+        console.error('Error fetching order:', err);
+        setError(err.message || 'Failed to load order details');
+      } finally {
         setLoading(false);
-      }, 1000);
-    }
-  }, [router.isReady, orderId]);
+      }
+    };
+
+    fetchOrderData();
+  }, [router.isReady, order_id]);
 
   if (loading) {
     return (
@@ -97,18 +185,30 @@ export default function OrderSuccess() {
     );
   }
 
-  if (!orderData) {
+  if (error || (!loading && !orderData)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 mb-4">
             <Package size={48} className="mx-auto" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Not Found</h2>
-          <p className="text-gray-600 mb-4">We couldn't find the order you're looking for.</p>
-          <Link href="/buyer/orders" className="text-red-600 hover:text-red-700 font-medium">
-            View All Orders →
-          </Link>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {error ? 'Error Loading Order' : 'Order Not Found'}
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {error || "We couldn't find the order you're looking for."}
+          </p>
+          <div className="space-y-2">
+            <Link href="/buyer/orders" className="block text-red-600 hover:text-red-700 font-medium">
+              View All Orders →
+            </Link>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="block mx-auto text-gray-600 hover:text-gray-800 text-sm"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -205,7 +305,7 @@ export default function OrderSuccess() {
                           Qty: {item.quantity} {item.unit}
                         </span>
                         <span className="text-sm font-medium text-gray-900">
-                          ₱{item.total.toLocaleString()}
+                          ${item.total.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -275,26 +375,26 @@ export default function OrderSuccess() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-900">₱{orderData.billing.subtotal.toLocaleString()}</span>
+                  <span className="text-gray-900">${orderData.billing.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
-                  <span className="text-gray-900">₱{orderData.billing.shipping.toLocaleString()}</span>
+                  <span className="text-gray-900">${orderData.billing.shipping.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax</span>
-                  <span className="text-gray-900">₱{orderData.billing.tax.toLocaleString()}</span>
+                  <span className="text-gray-900">${orderData.billing.tax.toFixed(2)}</span>
                 </div>
                 {orderData.billing.discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>-₱{orderData.billing.discount.toLocaleString()}</span>
+                    <span>-${orderData.billing.discount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="border-t pt-3">
                   <div className="flex justify-between font-semibold text-lg">
                     <span className="text-gray-900">Total</span>
-                    <span className="text-gray-900">₱{orderData.billing.total.toLocaleString()}</span>
+                    <span className="text-gray-900">${orderData.billing.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

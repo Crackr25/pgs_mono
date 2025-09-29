@@ -42,216 +42,100 @@ export default function Orders() {
   });
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.email) {
       fetchOrders();
     }
-  }, [isAuthenticated, currentPage, searchTerm, statusFilter, dateFilter]);
+  }, [isAuthenticated, user?.email, currentPage, searchTerm, statusFilter, dateFilter]);
 
   const fetchOrders = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Mock data for now - replace with actual API calls
-      const mockOrders = [
-        {
-          id: 'ORD-2024-001',
-          supplier: {
-            id: 1,
-            name: 'Manila Manufacturing Corp',
-            contact_person: 'Juan Dela Cruz',
-            phone: '+63 2 8123 4567',
-            email: 'sales@manilamfg.com'
-          },
-          items: [
-            {
-              id: 1,
-              name: 'LED Light Fixtures',
-              quantity: 1000,
-              unit: 'pieces',
-              unit_price: 25.00,
-              total_price: 25000.00
-            }
-          ],
-          total_amount: 25000.00,
-          status: 'in_production',
-          order_date: '2024-01-10T10:00:00Z',
-          expected_delivery: '2024-02-15T10:00:00Z',
-          delivery_address: 'Makati City, Metro Manila',
-          payment_status: 'paid',
-          payment_terms: '30% advance, 70% on delivery',
-          tracking_number: 'TRK123456789',
-          notes: 'Rush order for new office building project'
-        },
-        {
-          id: 'ORD-2024-002',
-          supplier: {
-            id: 2,
-            name: 'Cebu Industrial Solutions',
-            contact_person: 'Maria Santos',
-            phone: '+63 32 234 5678',
-            email: 'info@cebuindustrial.com'
-          },
-          items: [
-            {
-              id: 2,
-              name: 'Industrial Water Pumps',
-              quantity: 50,
-              unit: 'pieces',
-              unit_price: 850.00,
-              total_price: 42500.00
-            }
-          ],
-          total_amount: 42500.00,
-          status: 'shipped',
-          order_date: '2024-01-08T14:30:00Z',
-          expected_delivery: '2024-01-25T14:30:00Z',
-          delivery_address: 'Cebu City, Cebu',
-          payment_status: 'paid',
-          payment_terms: '50% advance, 50% on delivery',
-          tracking_number: 'TRK987654321',
-          notes: 'Include installation manual and warranty certificate'
-        },
-        {
-          id: 'ORD-2024-003',
-          supplier: {
-            id: 3,
-            name: 'Davao Steel Works',
-            contact_person: 'Roberto Garcia',
-            phone: '+63 82 345 6789',
-            email: 'sales@davaosteel.com'
-          },
-          items: [
-            {
-              id: 3,
-              name: 'Galvanized Steel Pipes',
-              quantity: 200,
-              unit: 'meters',
-              unit_price: 45.00,
-              total_price: 9000.00
-            }
-          ],
-          total_amount: 9000.00,
-          status: 'pending_payment',
-          order_date: '2024-01-12T09:15:00Z',
-          expected_delivery: '2024-02-10T09:15:00Z',
-          delivery_address: 'Davao City, Davao del Sur',
-          payment_status: 'pending',
-          payment_terms: '100% advance payment',
-          tracking_number: null,
-          notes: 'Quality inspection required before delivery'
-        },
-        {
-          id: 'ORD-2024-004',
-          supplier: {
-            id: 4,
-            name: 'Iloilo Textile Mills',
-            contact_person: 'Ana Reyes',
-            phone: '+63 33 456 7890',
-            email: 'orders@iloilotextile.com'
-          },
-          items: [
-            {
-              id: 4,
-              name: 'Cotton T-Shirts',
-              quantity: 5000,
-              unit: 'pieces',
-              unit_price: 8.50,
-              total_price: 42500.00
-            }
-          ],
-          total_amount: 42500.00,
-          status: 'delivered',
-          order_date: '2024-01-05T11:20:00Z',
-          expected_delivery: '2024-01-20T11:20:00Z',
-          delivery_address: 'Quezon City, Metro Manila',
-          payment_status: 'paid',
-          payment_terms: '30% advance, 70% on delivery',
-          tracking_number: 'TRK456789123',
-          notes: 'Custom branding and packaging required'
-        },
-        {
-          id: 'ORD-2024-005',
-          supplier: {
-            id: 1,
-            name: 'Manila Manufacturing Corp',
-            contact_person: 'Juan Dela Cruz',
-            phone: '+63 2 8123 4567',
-            email: 'sales@manilamfg.com'
-          },
-          items: [
-            {
-              id: 5,
-              name: 'Electronic Components',
-              quantity: 2000,
-              unit: 'pieces',
-              unit_price: 15.75,
-              total_price: 31500.00
-            }
-          ],
-          total_amount: 31500.00,
-          status: 'cancelled',
-          order_date: '2024-01-03T16:45:00Z',
-          expected_delivery: '2024-01-18T16:45:00Z',
-          delivery_address: 'Pasig City, Metro Manila',
-          payment_status: 'refunded',
-          payment_terms: '50% advance, 50% on delivery',
-          tracking_number: null,
-          notes: 'Cancelled due to specification changes'
-        }
-      ];
+      // Ensure user email is available
+      if (!user?.email) {
+        setError('User email not available. Please log in again.');
+        return;
+      }
 
-      // Apply filters
-      let filteredOrders = mockOrders;
+      // Build API parameters
+      const params = {
+        page: page,
+        per_page: itemsPerPage
+      };
 
+      // Add filters
       if (searchTerm) {
-        filteredOrders = filteredOrders.filter(order =>
-          order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
+        params.search = searchTerm;
       }
 
       if (statusFilter !== 'all') {
-        filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
+        params.status = statusFilter;
       }
 
       if (dateFilter !== 'all') {
-        const now = new Date();
-        const filterDate = new Date();
-        
-        switch (dateFilter) {
-          case 'today':
-            filterDate.setHours(0, 0, 0, 0);
-            filteredOrders = filteredOrders.filter(order => 
-              new Date(order.order_date) >= filterDate
-            );
-            break;
-          case 'week':
-            filterDate.setDate(now.getDate() - 7);
-            filteredOrders = filteredOrders.filter(order => 
-              new Date(order.order_date) >= filterDate
-            );
-            break;
-          case 'month':
-            filterDate.setMonth(now.getMonth() - 1);
-            filteredOrders = filteredOrders.filter(order => 
-              new Date(order.order_date) >= filterDate
-            );
-            break;
-        }
+        // Backend doesn't support date filtering yet, so we'll handle this client-side for now
+        // TODO: Add date filtering to backend API
       }
 
-      setOrders(filteredOrders);
-      setTotalPages(1);
+      // Fetch orders from API
+      const response = await apiService.getBuyerOrders(params);
+      
+      // Handle Laravel pagination response
+      const ordersData = response.data || [];
+      const paginationData = {
+        current_page: response.current_page || 1,
+        last_page: response.last_page || 1,
+        per_page: response.per_page || itemsPerPage,
+        total: response.total || 0,
+        from: response.from || 0,
+        to: response.to || 0
+      };
+
+      // Transform backend data to match frontend expectations
+      const transformedOrders = ordersData.map(order => ({
+        id: order.order_number || order.id,
+        supplier: {
+          id: order.company?.id || order.company_id,
+          name: order.company?.name || 'Unknown Supplier',
+          contact_person: order.company?.contact_person || 'N/A',
+          phone: order.company?.phone || 'N/A',
+          email: order.company?.email || 'N/A'
+        },
+        items: [
+          {
+            id: order.id,
+            name: order.product_name,
+            quantity: order.quantity,
+            unit: 'pieces', // Default unit since backend doesn't store this
+            unit_price: order.total_amount / order.quantity,
+            total_price: order.total_amount
+          }
+        ],
+        total_amount: parseFloat(order.total_amount),
+        status: order.status,
+        order_date: order.created_at,
+        expected_delivery: order.estimated_delivery,
+        delivery_address: order.shipping_address,
+        payment_status: order.payment_status,
+        payment_terms: 'Standard Terms', // Default since backend doesn't store this
+        tracking_number: null, // Backend doesn't store tracking numbers yet
+        notes: order.notes
+      }));
+
+      setOrders(transformedOrders);
+      setCurrentPage(paginationData.current_page);
+      setTotalPages(paginationData.last_page);
+      setItemsPerPage(paginationData.per_page);
       setPaginationInfo({
-        from: filteredOrders.length > 0 ? 1 : 0,
-        to: filteredOrders.length,
-        total: filteredOrders.length
+        from: paginationData.from,
+        to: paginationData.to,
+        total: paginationData.total
       });
+
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setError('Failed to load orders. Please try again.');
+      setError(error.message || 'Failed to load orders. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -283,8 +167,9 @@ export default function Orders() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending_payment': return 'bg-yellow-100 text-yellow-800';
-      case 'in_production': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed': return 'bg-blue-100 text-blue-800';
+      case 'in_production': return 'bg-indigo-100 text-indigo-800';
       case 'shipped': return 'bg-purple-100 text-purple-800';
       case 'delivered': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
@@ -294,7 +179,8 @@ export default function Orders() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending_payment': return <Clock className="w-4 h-4" />;
+      case 'pending': return <Clock className="w-4 h-4" />;
+      case 'confirmed': return <CheckCircle className="w-4 h-4" />;
       case 'in_production': return <Package className="w-4 h-4" />;
       case 'shipped': return <Truck className="w-4 h-4" />;
       case 'delivered': return <CheckCircle className="w-4 h-4" />;
@@ -307,8 +193,8 @@ export default function Orders() {
     switch (status) {
       case 'paid': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'partial': return 'bg-orange-100 text-orange-800';
       case 'refunded': return 'bg-gray-100 text-gray-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -372,14 +258,24 @@ export default function Orders() {
                   All
                 </button>
                 <button
-                  onClick={() => handleStatusFilter('pending_payment')}
+                  onClick={() => handleStatusFilter('pending')}
                   className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                    statusFilter === 'pending_payment'
+                    statusFilter === 'pending'
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-secondary-600 hover:bg-secondary-100'
                   }`}
                 >
-                  Pending Payment
+                  Pending
+                </button>
+                <button
+                  onClick={() => handleStatusFilter('confirmed')}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                    statusFilter === 'confirmed'
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-secondary-600 hover:bg-secondary-100'
+                  }`}
+                >
+                  Confirmed
                 </button>
                 <button
                   onClick={() => handleStatusFilter('in_production')}
@@ -460,14 +356,21 @@ export default function Orders() {
             <p className="text-secondary-600">
               {searchTerm || statusFilter !== 'all' || dateFilter !== 'all'
                 ? 'No orders found matching your criteria.' 
-                : 'No orders found. Start by creating an RFQ to get quotes from suppliers.'}
+                : 'No orders found. Start by browsing products or creating an RFQ to get quotes from suppliers.'}
             </p>
             {!searchTerm && statusFilter === 'all' && dateFilter === 'all' && (
-              <Link href="/buyer/rfqs/create">
-                <Button className="mt-4">
-                  Create Your First RFQ
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                <Link href="/buyer">
+                  <Button variant="outline">
+                    Browse Products
+                  </Button>
+                </Link>
+                <Link href="/buyer/rfqs/create">
+                  <Button>
+                    Create RFQ
+                  </Button>
+                </Link>
+              </div>
             )}
           </Card>
         )}
@@ -577,7 +480,7 @@ export default function Orders() {
                           </Button>
                         )}
                         
-                        <Link href={`/chat?supplier=${order.supplier.id}&order=${order.id}`}>
+                        <Link href={`/chat?company=${order.supplier.id}&order=${order.id}`}>
                           <Button variant="outline" size="sm" className="w-full">
                             <MessageSquare className="w-4 h-4 mr-2" />
                             Contact Supplier

@@ -381,7 +381,12 @@ class PaymentController extends Controller
      */
     private function handlePaymentSucceeded($paymentIntent): void
     {
-        $metadata = $paymentIntent['metadata'];
+        $metadata = $paymentIntent['metadata'] ?? [];
+        
+        \Log::info('Processing payment success webhook', [
+            'payment_intent_id' => $paymentIntent['id'] ?? 'unknown',
+            'metadata_keys' => array_keys($metadata)
+        ]);
         
         if (isset($metadata['order_id'])) {
             $order = Order::with('company')->find($metadata['order_id']);
@@ -392,8 +397,18 @@ class PaymentController extends Controller
                     'paid_at' => now()
                 ]);
 
+                \Log::info('Order payment status updated', [
+                    'order_id' => $order->id,
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown'
+                ]);
+
                 // Create seller payout record
                 $this->createSellerPayoutFromOrder($order, $metadata);
+            } else {
+                \Log::warning('Order not found for payment success', [
+                    'order_id' => $metadata['order_id'],
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown'
+                ]);
             }
         }
 
@@ -510,7 +525,17 @@ class PaymentController extends Controller
     private function processManualTransfer($paymentIntent): void
     {
         try {
-            $metadata = $paymentIntent['metadata'];
+            $metadata = $paymentIntent['metadata'] ?? [];
+            
+            // Check if required metadata exists
+            if (!isset($metadata['merchant_company_id']) || !isset($metadata['merchant_amount_cents'])) {
+                \Log::error('Cannot process transfer: Missing required metadata', [
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown',
+                    'available_metadata' => array_keys($metadata)
+                ]);
+                return;
+            }
+            
             $merchantCompanyId = $metadata['merchant_company_id'];
             $merchantAmountCents = $metadata['merchant_amount_cents'];
             
@@ -518,7 +543,7 @@ class PaymentController extends Controller
             if (!$company || !$company->stripe_account_id) {
                 \Log::error('Cannot process transfer: Company not found or no Stripe account', [
                     'company_id' => $merchantCompanyId,
-                    'payment_intent_id' => $paymentIntent['id']
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown'
                 ]);
                 return;
             }
@@ -526,15 +551,15 @@ class PaymentController extends Controller
             // Create transfer to PH seller
             $transfer = \Stripe\Transfer::create([
                 'amount' => $merchantAmountCents,
-                'currency' => strtolower($paymentIntent['currency']),
+                'currency' => strtolower($paymentIntent['currency'] ?? 'usd'),
                 'destination' => $company->stripe_account_id,
                 'description' => "Transfer for payment {$paymentIntent['id']} to {$company->name}",
                 'metadata' => [
-                    'payment_intent_id' => $paymentIntent['id'],
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown',
                     'merchant_company_id' => $company->id,
                     'merchant_name' => $company->name,
-                    'original_amount_cents' => $paymentIntent['amount'],
-                    'platform_fee_cents' => $metadata['platform_fee_cents'],
+                    'original_amount_cents' => $paymentIntent['amount'] ?? 0,
+                    'platform_fee_cents' => $metadata['platform_fee_cents'] ?? 0,
                 ]
             ]);
 
@@ -548,7 +573,7 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             \Log::error('Failed to process manual transfer for PH seller', [
                 'error' => $e->getMessage(),
-                'payment_intent_id' => $paymentIntent['id'],
+                'payment_intent_id' => $paymentIntent['id'] ?? 'unknown',
                 'metadata' => $metadata ?? null
             ]);
         }
@@ -559,13 +584,28 @@ class PaymentController extends Controller
      */
     private function handlePaymentFailed($paymentIntent): void
     {
-        $metadata = $paymentIntent['metadata'];
+        $metadata = $paymentIntent['metadata'] ?? [];
+        
+        \Log::info('Processing payment failed webhook', [
+            'payment_intent_id' => $paymentIntent['id'] ?? 'unknown',
+            'metadata_keys' => array_keys($metadata)
+        ]);
         
         if (isset($metadata['order_id'])) {
             $order = Order::find($metadata['order_id']);
             if ($order) {
                 $order->update([
                     'payment_status' => 'failed'
+                ]);
+                
+                \Log::info('Order payment status updated to failed', [
+                    'order_id' => $order->id,
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown'
+                ]);
+            } else {
+                \Log::warning('Order not found for payment failure', [
+                    'order_id' => $metadata['order_id'],
+                    'payment_intent_id' => $paymentIntent['id'] ?? 'unknown'
                 ]);
             }
         }

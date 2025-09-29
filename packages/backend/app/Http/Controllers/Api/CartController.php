@@ -167,4 +167,24 @@ class CartController extends Controller
             'count' => $count
         ]);
     }
+
+    /**
+     * Remove specific cart items by their IDs (used after successful checkout).
+     */
+    public function removeItems(Request $request)
+    {
+        $request->validate([
+            'cart_item_ids' => 'required|array',
+            'cart_item_ids.*' => 'integer|exists:cart_items,id'
+        ]);
+
+        $removedCount = CartItem::where('user_id', Auth::id())
+            ->whereIn('id', $request->cart_item_ids)
+            ->delete();
+
+        return response()->json([
+            'message' => "Removed {$removedCount} items from cart successfully",
+            'removed_count' => $removedCount
+        ]);
+    }
 }

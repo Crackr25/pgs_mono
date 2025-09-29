@@ -181,6 +181,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/{id}', [CartController::class, 'update']);
     Route::delete('/cart/{id}', [CartController::class, 'destroy']);
     Route::delete('/cart', [CartController::class, 'clear']);
+    Route::post('/cart/remove-items', [CartController::class, 'removeItems']);
     Route::get('/cart/count', [CartController::class, 'count']);
 
     // Shipping Address routes

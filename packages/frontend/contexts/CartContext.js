@@ -79,6 +79,17 @@ export function CartProvider({ children }) {
     }
   };
 
+  const removeCartItems = async (cartItemIds) => {
+    try {
+      const response = await apiService.removeCartItems(cartItemIds);
+      await fetchCartCount(); // Refresh cart count
+      await fetchCartItems(); // Refresh cart items
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = {
     cartCount,
     cartItems,
@@ -88,6 +99,7 @@ export function CartProvider({ children }) {
     addToCart,
     updateCartItem,
     removeFromCart,
+    removeCartItems,
     clearCart
   };
 
