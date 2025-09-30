@@ -26,11 +26,21 @@ class AnalyticsController extends Controller
             // Calculate date range
             $startDate = $this->getStartDate($dateRange);
             
+            // Get current period data
+            $currentProducts = $this->getTotalProducts($companyId);
+            $currentQuotes = $this->getTotalQuotes($companyId, $startDate);
+            $currentOrders = $this->getTotalOrders($companyId, $startDate);
+            $currentRevenue = $this->getTotalRevenue($companyId, $startDate);
+            
+            // Calculate growth percentages
+            $growthData = $this->calculateGrowthPercentages($companyId, $startDate);
+            
             $analytics = [
-                'totalProducts' => $this->getTotalProducts($companyId),
-                'totalQuotes' => $this->getTotalQuotes($companyId, $startDate),
-                'totalOrders' => $this->getTotalOrders($companyId, $startDate),
-                'totalRevenue' => $this->getTotalRevenue($companyId, $startDate),
+                'totalProducts' => $currentProducts,
+                'totalQuotes' => $currentQuotes,
+                'totalOrders' => $currentOrders,
+                'totalRevenue' => $currentRevenue,
+                'growthPercentages' => $growthData,
                 'monthlyData' => $this->getMonthlyData($companyId),
                 'categoryData' => $this->getCategoryData($companyId),
                 'topProductsData' => $this->getTopProductsData($companyId),
@@ -46,6 +56,70 @@ class AnalyticsController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+    
+    /**
+     * Calculate growth percentages compared to previous period
+     */
+    private function calculateGrowthPercentages($companyId = null, $startDate = null): array
+    {
+        // Calculate previous period (double the current period)
+        $daysDiff = Carbon::now()->diffInDays(Carbon::parse($startDate));
+        $previousStartDate = Carbon::parse($startDate)->subDays($daysDiff);
+        $previousEndDate = $startDate;
+        
+        // Get previous period data
+        $prevProducts = $this->getTotalProducts($companyId); // Products don't change much in short periods
+        $prevQuotes = $this->getTotalQuotes($companyId, $previousStartDate, $previousEndDate);
+        $prevOrders = $this->getTotalOrders($companyId, $previousStartDate, $previousEndDate);
+        $prevRevenue = $this->getTotalRevenue($companyId, $previousStartDate, $previousEndDate);
+        
+        // Get current period data
+        $currentProducts = $this->getTotalProducts($companyId);
+        $currentQuotes = $this->getTotalQuotes($companyId, $startDate);
+        $currentOrders = $this->getTotalOrders($companyId, $startDate);
+        $currentRevenue = $this->parseRevenue($this->getTotalRevenue($companyId, $startDate));
+        $prevRevenueNum = $this->parseRevenue($this->getTotalRevenue($companyId, $previousStartDate, $previousEndDate));
+        
+        return [
+            'products' => $this->calculatePercentage($prevProducts, $currentProducts),
+            'quotes' => $this->calculatePercentage($prevQuotes, $currentQuotes),
+            'orders' => $this->calculatePercentage($prevOrders, $currentOrders),
+            'revenue' => $this->calculatePercentage($prevRevenueNum, $currentRevenue)
+        ];
+    }
+    
+    /**
+     * Calculate percentage change between two values
+     */
+    private function calculatePercentage($previous, $current): array
+    {
+        if ($previous == 0) {
+            return [
+                'value' => $current > 0 ? '+100%' : '0%',
+                'type' => $current > 0 ? 'increase' : 'neutral',
+                'isPositive' => $current > 0
+            ];
+        }
+        
+        $percentage = round((($current - $previous) / $previous) * 100);
+        $isPositive = $percentage >= 0;
+        
+        return [
+            'value' => ($isPositive ? '+' : '') . $percentage . '%',
+            'type' => $isPositive ? 'increase' : 'decrease',
+            'isPositive' => $isPositive
+        ];
+    }
+    
+    /**
+     * Parse revenue string to number
+     */
+    private function parseRevenue($revenueString): float
+    {
+        // Remove currency symbols and commas, then convert to float
+        $cleaned = preg_replace('/[^\d.]/', '', $revenueString);
+        return floatval($cleaned);
     }
 
     /**
@@ -65,7 +139,7 @@ class AnalyticsController extends Controller
     /**
      * Get total quotes count
      */
-    private function getTotalQuotes($companyId = null, $startDate = null): int
+    private function getTotalQuotes($companyId = null, $startDate = null, $endDate = null): int
     {
         $query = Quote::query();
         
@@ -77,13 +151,17 @@ class AnalyticsController extends Controller
             $query->where('created_at', '>=', $startDate);
         }
         
+        if ($endDate) {
+            $query->where('created_at', '<=', $endDate);
+        }
+        
         return $query->count();
     }
 
     /**
      * Get total orders count
      */
-    private function getTotalOrders($companyId = null, $startDate = null): int
+    private function getTotalOrders($companyId = null, $startDate = null, $endDate = null): int
     {
         $query = Order::query();
         
@@ -95,13 +173,17 @@ class AnalyticsController extends Controller
             $query->where('created_at', '>=', $startDate);
         }
         
+        if ($endDate) {
+            $query->where('created_at', '<=', $endDate);
+        }
+        
         return $query->count();
     }
 
     /**
      * Get total revenue
      */
-    private function getTotalRevenue($companyId = null, $startDate = null): string
+    private function getTotalRevenue($companyId = null, $startDate = null, $endDate = null): string
     {
         $query = Order::where('payment_status', 'paid');
         
@@ -111,6 +193,10 @@ class AnalyticsController extends Controller
         
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->where('created_at', '<=', $endDate);
         }
         
         $revenue = $query->sum('total_amount');
