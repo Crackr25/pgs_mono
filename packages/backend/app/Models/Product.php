@@ -17,7 +17,12 @@ class Product extends Model
         'moq',
         'lead_time',
         'hs_code',
+        'origin_country',
+        'brand_name',
+        'model_number',
+        'warranty',
         'variants',
+        'videos',
         'price',
         'category',
         'description',
@@ -28,6 +33,7 @@ class Product extends Model
 
     protected $casts = [
         'variants' => 'array',
+        'videos' => 'array',
         'price' => 'decimal:2',
         'active' => 'boolean',
         'moq' => 'integer',

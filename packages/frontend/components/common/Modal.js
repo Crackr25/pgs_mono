@@ -7,7 +7,8 @@ export default function Modal({
   title, 
   children, 
   size = 'md',
-  showCloseButton = true 
+  showCloseButton = true,
+  className = ''
 }) {
   if (!isOpen) return null;
 
@@ -15,7 +16,8 @@ export default function Modal({
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
-    xl: 'max-w-4xl'
+    xl: 'max-w-4xl',
+    full: 'max-w-screen-xl'
   };
 
   return (
@@ -26,7 +28,7 @@ export default function Modal({
           onClick={onClose}
         />
         
-        <div className={`inline-block w-full ${sizes[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg`}>
+        <div className={`inline-block w-full ${sizes[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg ${className}`}>
           {title && (
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-secondary-900">

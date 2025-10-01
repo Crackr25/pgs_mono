@@ -41,12 +41,13 @@ export default function EditProduct() {
     setError(null);
     
     try {
-      // Separate images from other form data
-      const { images, ...productData } = formData;
+      // Separate images and videos from other form data
+      const { images, videos, ...productData } = formData;
       
       console.log('Form data received:', formData);
       console.log('Images:', images);
-      console.log('Product data (without images):', productData);
+      console.log('Videos:', videos);
+      console.log('Product data (without media):', productData);
       
       // Update product data first
       const response = await apiService.updateProduct(id, productData);
@@ -66,6 +67,28 @@ export default function EditProduct() {
           } catch (imageError) {
             console.error('Error uploading new images:', imageError);
             setError('Product updated but some new images failed to upload. You can add them later.');
+          }
+        }
+      }
+
+      // Handle new videos if any were added
+      if (videos && videos.length > 0) {
+        const newVideoFiles = videos
+          .filter(vid => vid.file instanceof File)
+          .map(vid => vid.file);
+        
+        if (newVideoFiles.length > 0) {
+          console.log('Uploading new videos for product ID:', id);
+          try {
+            await apiService.uploadProductVideos(id, newVideoFiles);
+            console.log('New videos uploaded successfully');
+          } catch (videoError) {
+            console.error('Error uploading new videos:', videoError);
+            if (error) {
+              setError(error + ' Also, some videos failed to upload.');
+            } else {
+              setError('Product updated but some new videos failed to upload. You can add them later.');
+            }
           }
         }
       }

@@ -360,6 +360,15 @@ class ApiService {
     return this.uploadFormData(`/products/${productId}/upload-images`, formData, onProgress);
   }
 
+  async uploadProductVideos(productId, files, onProgress) {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append('videos[]', file);
+    });
+    
+    return this.uploadFormData(`/products/${productId}/upload-videos`, formData, onProgress);
+  }
+
   async updateImageOrder(productId, imageOrders) {
     return this.request(`/products/${productId}/images/order`, {
       method: 'PUT',

@@ -104,8 +104,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::post('/products/{product}/upload-images', [ProductController::class, 'uploadImages']);
+    Route::post('/products/{product}/upload-videos', [ProductController::class, 'uploadVideos']);
     Route::put('/products/{product}/image-order', [ProductController::class, 'updateImageOrder']);
     Route::delete('/products/{product}/images/{image}', [ProductController::class, 'deleteImage']);
+    Route::delete('/products/{product}/videos/{video}', [ProductController::class, 'deleteVideo']);
     
     // Quote management
     Route::put('/quotes/{quote}', [QuoteController::class, 'update']);

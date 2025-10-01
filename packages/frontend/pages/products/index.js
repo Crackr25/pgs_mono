@@ -2,14 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Plus, Search, Filter, Upload, Grid, List, Trash2, AlertTriangle, Download, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Filter, Upload, Grid, List, Trash2, AlertTriangle, Download, FileText, CheckCircle, XCircle, Package2 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Pagination from '../../components/common/Pagination';
 import ProductCard from '../../components/products/ProductCard';
+import ProductDetailModal from '../../components/products/ProductDetailModal';
+import BulkOperations from '../../components/products/BulkOperations';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../lib/api';
+import { formatProductForImport } from '../../lib/csvUtils';
 
 export default function Products() {
   const router = useRouter();
@@ -20,11 +23,18 @@ export default function Products() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const [productList, setProductList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user, isAuthenticated } = useAuth();
   const [userCompany, setUserCompany] = useState(null);
+  
+  // Bulk operations state
+  const [showBulkOperations, setShowBulkOperations] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectAllMode, setSelectAllMode] = useState(false);
   
   // Pagination state - using the same structure as quotes
   const [paginationInfo, setPaginationInfo] = useState({
@@ -182,6 +192,21 @@ export default function Products() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleViewProduct = (productId) => {
+    setSelectedProductId(productId);
+    setShowProductDetail(true);
+  };
+
+  const handleEditFromModal = (productId) => {
+    setShowProductDetail(false);
+    router.push(`/products/edit/${productId}`);
+  };
+
+  const handleDeleteFromModal = (productId) => {
+    setShowProductDetail(false);
+    handleDeleteProduct(productId);
   };
 
   const handlePageChange = (page) => {
@@ -499,6 +524,7 @@ export default function Products() {
                   <ProductCard
                     key={product.id}
                     product={product}
+                    onView={handleViewProduct}
                     onDelete={handleDeleteProduct}
                   />
                 ))}
@@ -531,7 +557,11 @@ export default function Products() {
                     </thead>
                     <tbody className="bg-white divide-y divide-secondary-200">
                       {filteredProducts.map((product) => (
-                        <tr key={product.id} className="hover:bg-secondary-50">
+                        <tr 
+                          key={product.id} 
+                          className="hover:bg-secondary-50 cursor-pointer"
+                          onClick={() => handleViewProduct(product.id)}
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
@@ -574,6 +604,16 @@ export default function Products() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewProduct(product.id);
+                              }}
+                            >
+                              View
+                            </Button>
                             <Link href={`/products/edit/${product.id}`}>
                               <Button variant="outline" size="sm">
                                 Edit
@@ -582,7 +622,10 @@ export default function Products() {
                             <Button
                               variant="danger"
                               size="sm"
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteProduct(product.id);
+                              }}
                             >
                               Delete
                             </Button>
@@ -923,6 +966,18 @@ export default function Products() {
           </div>
         </div>
       </Modal>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        isOpen={showProductDetail}
+        onClose={() => {
+          setShowProductDetail(false);
+          setSelectedProductId(null);
+        }}
+        productId={selectedProductId}
+        onEdit={handleEditFromModal}
+        onDelete={handleDeleteFromModal}
+      />
     </>
   );
 }

@@ -41,12 +41,13 @@ export default function AddProduct() {
     setError(null);
     
     try {
-      // Separate images from other form data
-      const { images, ...productData } = formData;
+      // Separate images and videos from other form data
+      const { images, videos, ...productData } = formData;
       
       console.log('Form data received:', formData);
       console.log('Images:', images);
-      console.log('Product data (without images):', productData);
+      console.log('Videos:', videos);
+      console.log('Product data (without media):', productData);
       
       const productPayload = {
         ...productData,
@@ -73,6 +74,28 @@ export default function AddProduct() {
         }
       } else {
         console.log('No images to upload');
+      }
+
+      // Upload videos if any were selected
+      if (videos && videos.length > 0) {
+        const videoFiles = videos.filter(vid => vid.file instanceof File).map(vid => vid.file);
+        if (videoFiles.length > 0) {
+          console.log('Uploading videos for product ID:', response.id);
+          try {
+            await apiService.uploadProductVideos(response.id, videoFiles);
+            console.log('Videos uploaded successfully');
+          } catch (videoError) {
+            console.error('Error uploading videos:', videoError);
+            // Don't fail the whole process if video upload fails
+            if (error) {
+              setError(error + ' Also, some videos failed to upload.');
+            } else {
+              setError('Product created but some videos failed to upload. You can add them later.');
+            }
+          }
+        }
+      } else {
+        console.log('No videos to upload');
       }
       
       // Redirect to products list

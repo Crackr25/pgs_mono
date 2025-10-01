@@ -269,6 +269,79 @@ class ProductController extends Controller
         ]);
     }
 
+    public function uploadVideos(Request $request, Product $product): JsonResponse
+    {
+        // Check if user owns the company that owns this product
+        if ($product->company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Debug logging
+        \Log::info('Video upload request received', [
+            'has_files' => $request->hasFile('videos'),
+            'all_files' => $request->allFiles(),
+            'all_input' => $request->all()
+        ]);
+
+        try {
+            $request->validate([
+                'videos' => 'required|array|max:3', // Max 3 videos
+                'videos.*' => 'mimes:mp4,mov,avi,webm|max:51200', // 50MB max per video
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Video validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            throw $e;
+        }
+
+        $uploadedVideos = [];
+
+        if ($request->hasFile('videos')) {
+            foreach ($request->file('videos') as $index => $video) {
+                $filename = time() . '_' . uniqid() . '.' . $video->getClientOriginalExtension();
+                $path = $video->storeAs('products/videos', $filename, 'public');
+                
+                \Log::info('Video stored', [
+                    'filename' => $filename,
+                    'path' => $path,
+                    'full_path' => storage_path('app/public/' . $path)
+                ]);
+                
+                // For now, we'll store video info in the product's videos JSON field
+                // until we create the ProductVideo model
+                $videoData = [
+                    'name' => $video->getClientOriginalName(),
+                    'path' => $path,
+                    'size' => $video->getSize(),
+                    'type' => $video->getMimeType(),
+                    'sort_order' => $index,
+                    'created_at' => now()->toISOString()
+                ];
+                
+                $uploadedVideos[] = $videoData;
+            }
+            
+            // Get existing videos and merge with new ones
+            $existingVideos = $product->videos ? json_decode($product->videos, true) : [];
+            $allVideos = array_merge($existingVideos, $uploadedVideos);
+            
+            // Update product with videos
+            $product->update(['videos' => json_encode($allVideos)]);
+        } else {
+            \Log::warning('No videos found in request');
+        }
+
+        return response()->json([
+            'message' => 'Videos uploaded successfully',
+            'data' => [
+                'product' => $product->fresh(),
+                'uploaded_videos' => $uploadedVideos
+            ]
+        ]);
+    }
+
     public function updateImageOrder(Request $request, Product $product): JsonResponse
     {
         // Check if user owns the company that owns this product
@@ -341,6 +414,39 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Image deleted successfully',
             'data' => $product->fresh()->load(['images', 'mainImage', 'additionalImages'])
+        ]);
+    }
+
+    public function deleteVideo(Request $request, Product $product, $videoIndex): JsonResponse
+    {
+        // Check if user owns the company that owns this product
+        if ($product->company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $videos = $product->videos ? json_decode($product->videos, true) : [];
+        
+        if (!isset($videos[$videoIndex])) {
+            return response()->json(['message' => 'Video not found'], 404);
+        }
+
+        $videoToDelete = $videos[$videoIndex];
+        
+        // Delete file from storage
+        if (isset($videoToDelete['path']) && \Storage::disk('public')->exists($videoToDelete['path'])) {
+            \Storage::disk('public')->delete($videoToDelete['path']);
+        }
+
+        // Remove from array and reindex
+        unset($videos[$videoIndex]);
+        $videos = array_values($videos); // Reindex array
+        
+        // Update product
+        $product->update(['videos' => json_encode($videos)]);
+
+        return response()->json([
+            'message' => 'Video deleted successfully',
+            'data' => $product->fresh()
         ]);
     }
 }

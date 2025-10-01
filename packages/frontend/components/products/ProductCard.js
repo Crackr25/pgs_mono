@@ -4,9 +4,22 @@ import Button from '../common/Button';
 import Badge from '../common/Badge';
 import ImageSwiper from '../common/ImageSwiper';
 
-export default function ProductCard({ product, onEdit, onDelete }) {
+export default function ProductCard({ product, onEdit, onDelete, onView }) {
+  const handleCardClick = (e) => {
+    // Don't trigger if clicking on action buttons
+    if (e.target.closest('button') || e.target.closest('a')) {
+      return;
+    }
+    if (onView) {
+      onView(product.id);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+    <div 
+      className="bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="aspect-w-16 aspect-h-9 bg-secondary-100">
         {product.images && product.images.length > 0 ? (
           <ImageSwiper 
@@ -78,6 +91,17 @@ export default function ProductCard({ product, onEdit, onDelete }) {
           </div>
           
           <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView && onView(product.id);
+              }}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              View
+            </Button>
             <Link href={`/products/edit/${product.id}`}>
               <Button variant="outline" size="sm">
                 <Edit className="w-4 h-4 mr-1" />
@@ -87,7 +111,10 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             <Button 
               variant="danger" 
               size="sm"
-              onClick={() => onDelete && onDelete(product.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete && onDelete(product.id);
+              }}
             >
               <Trash2 className="w-4 h-4 mr-1" />
               Delete
