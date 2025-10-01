@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Video, Package } from 'lucide-react';
 import Form, { FormField } from '../common/Form';
 import FileUpload from '../common/FileUpload';
 import Button from '../common/Button';
 import MultiImageUpload from './MultiImageUpload';
+import VideoUpload from './VideoUpload';
 
 export default function ProductForm({ product = null, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -18,7 +19,13 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
     variants: product?.variants || [],
     stock_quantity: product?.stock_quantity || '',
     unit: product?.unit || '',
-    images: product?.images || []
+    images: product?.images || [],
+    videos: product?.videos || [],
+    origin_country: product?.origin_country || '',
+    brand_name: product?.brand_name || '',
+    model_number: product?.model_number || '',
+    warranty: product?.warranty || '',
+    certifications: product?.certifications || []
   });
   
   const [newVariant, setNewVariant] = useState('');
@@ -61,6 +68,20 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
       images: images
     }));
   };
+
+  const handleVideosChange = (videos) => {
+    console.log('Videos changed:', videos);
+    setFormData(prev => ({
+      ...prev,
+      videos: videos
+    }));
+  };
+
+  // Debug logging
+  console.log('ProductForm render:', {
+    imagesLength: formData.images?.length || 0,
+    videosLength: formData.videos?.length || 0
+  });
 
   const categoryOptions = [
     { value: 'electronics', label: 'Electronics' },
@@ -185,8 +206,9 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
         </div>
 
         {/* Product Images */}
-        <div className="bg-white p-6 rounded-lg border border-secondary-200">
-          <h3 className="text-lg font-medium text-secondary-900 mb-4">
+        <div className="bg-white p-6 rounded-lg border border-secondary-200 mb-6">
+          <h3 className="text-lg font-medium text-secondary-900 mb-4 flex items-center">
+            <Package className="w-5 h-5 mr-2 text-green-600" />
             Product Images
           </h3>
           <MultiImageUpload
@@ -198,6 +220,71 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
             Upload high-quality images showing your product from different angles. 
             Set one image as main - it will be displayed first in product listings.
           </p>
+          <div className="mt-2 text-xs text-gray-500">
+            Debug: Images array length = {formData.images?.length || 0}
+          </div>
+        </div>
+
+        {/* Product Videos */}
+        <div className="bg-white p-6 rounded-lg border border-secondary-200 mb-6">
+          <h3 className="text-lg font-medium text-secondary-900 mb-4 flex items-center">
+            <Video className="w-5 h-5 mr-2 text-blue-600" />
+            Product Videos (Optional)
+          </h3>
+          <VideoUpload
+            videos={formData.videos}
+            onVideosChange={handleVideosChange}
+            maxVideos={3}
+            maxSizeMB={50}
+          />
+          <p className="mt-2 text-sm text-secondary-600">
+            Upload demonstration videos, manufacturing process, or product usage. 
+            Videos help buyers better understand your product capabilities.
+          </p>
+          <div className="mt-2 text-xs text-gray-500">
+            Debug: Videos array length = {formData.videos?.length || 0}
+          </div>
+        </div>
+
+        {/* Additional Product Information */}
+        <div className="bg-white p-6 rounded-lg border border-secondary-200">
+          <h3 className="text-lg font-medium text-secondary-900 mb-4">
+            Additional Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              label="Country of Origin"
+              name="origin_country"
+              type="text"
+              value={formData.origin_country}
+              onChange={handleInputChange}
+              placeholder="e.g., Philippines, China, USA"
+            />
+            <FormField
+              label="Brand Name"
+              name="brand_name"
+              type="text"
+              value={formData.brand_name}
+              onChange={handleInputChange}
+              placeholder="Your brand name"
+            />
+            <FormField
+              label="Model Number"
+              name="model_number"
+              type="text"
+              value={formData.model_number}
+              onChange={handleInputChange}
+              placeholder="Product model/part number"
+            />
+            <FormField
+              label="Warranty Period"
+              name="warranty"
+              type="text"
+              value={formData.warranty}
+              onChange={handleInputChange}
+              placeholder="e.g., 1 year, 6 months"
+            />
+          </div>
         </div>
 
         {/* Product Variants */}
