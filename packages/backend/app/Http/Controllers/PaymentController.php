@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Company;
 use App\Models\Product;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\SellerPayout;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
@@ -49,7 +50,7 @@ class PaymentController extends Controller
                 'customer_email' => 'required|email',
                 'description' => 'sometimes|string|max:500',
                 'metadata' => 'sometimes|array',
-                'platform_fee_percentage' => 'sometimes|numeric|min:0|max:30' // Default 2.5% platform fee
+                'platform_fee_percentage' => 'sometimes|numeric|min:0|max:30' // Default 7.9% platform fee
             ]);
 
             $company = Company::findOrFail($request->merchant_company_id);
@@ -111,11 +112,19 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Calculate amounts
-            $totalAmount = (int) round($request->amount * 100); // Convert to cents
-            $platformFeePercentage = $request->get('platform_fee_percentage', 2.5);
-            $applicationFeeAmount = (int) round($totalAmount * ($platformFeePercentage / 100));
-            $merchantAmount = $totalAmount - $applicationFeeAmount;
+            // Calculate amounts - NEW ADDITIVE APPROACH
+            // Request amount is what seller should receive
+            $orderAmount = (int) round($request->amount * 100); // Convert to cents
+            $platformFeePercentage = $request->get('platform_fee_percentage', 7.9);
+            
+            // Platform fee is calculated as percentage of order amount
+            $applicationFeeAmount = (int) round($orderAmount * ($platformFeePercentage / 100));
+            
+            // Customer pays order amount + platform fee
+            $totalAmount = $orderAmount + $applicationFeeAmount;
+            
+            // Seller gets the full order amount
+            $merchantAmount = $orderAmount;
 
             // Create PaymentIntent based on seller country
             $paymentIntentData = [
@@ -150,6 +159,9 @@ class PaymentController extends Controller
             }
 
             $paymentIntent = PaymentIntent::create($paymentIntentData);
+
+            // Create initial payment record with pending status
+            $this->createInitialPaymentRecord($paymentIntent, $company, $metadata);
 
             return response()->json([
                 'success' => true,
@@ -204,11 +216,19 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Calculate amounts from order
-            $totalAmount = (int) round($order->total_amount * 100); // Convert to cents
-            $platformFeePercentage = $request->get('platform_fee_percentage', 2.5);
-            $applicationFeeAmount = (int) round($totalAmount * ($platformFeePercentage / 100));
-            $merchantAmount = $totalAmount - $applicationFeeAmount;
+            // Calculate amounts from order - NEW ADDITIVE APPROACH
+            // Order total is what seller should receive (product + shipping + tax)
+            $orderAmount = (int) round($order->total_amount * 100); // Convert to cents
+            $platformFeePercentage = $request->get('platform_fee_percentage', 7.9);
+            
+            // Platform fee is calculated as percentage of order amount
+            $applicationFeeAmount = (int) round($orderAmount * ($platformFeePercentage / 100));
+            
+            // Customer pays order amount + platform fee
+            $totalAmount = $orderAmount + $applicationFeeAmount;
+            
+            // Seller gets the full order amount
+            $merchantAmount = $orderAmount;
 
             // Create PaymentIntent based on seller country
             $paymentIntentData = [
@@ -397,6 +417,9 @@ class PaymentController extends Controller
                     'paid_at' => now()
                 ]);
 
+                // Create payment ledger record
+                $this->createPaymentRecord($order, $paymentIntent, $metadata);
+
                 \Log::info('Order payment status updated', [
                     'order_id' => $order->id,
                     'payment_intent_id' => $paymentIntent['id'] ?? 'unknown'
@@ -433,7 +456,7 @@ class PaymentController extends Controller
             // Get platform fee percentage from metadata or use default
             $platformFeePercentage = isset($metadata['platform_fee_percentage']) 
                 ? floatval($metadata['platform_fee_percentage']) 
-                : 2.5;
+                : 7.9;
 
             // Determine payout method based on company country
             $payoutMethod = $order->company->getDefaultPayoutMethod();
@@ -649,15 +672,20 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Calculate transfer amount (total - platform fee)
+            // Calculate transfer amount - NEW ADDITIVE APPROACH
+            // Total amount includes both order amount and platform fee
             $totalAmount = $paymentIntent->amount;
-            $platformFeePercentage = 2.5; // Default platform fee
+            $platformFeePercentage = 7.9; // Default platform fee
             if (isset($paymentIntent->metadata['platform_fee_percentage'])) {
                 $platformFeePercentage = floatval($paymentIntent->metadata['platform_fee_percentage']);
             }
             
-            $applicationFeeAmount = (int) round($totalAmount * ($platformFeePercentage / 100));
-            $merchantAmount = $totalAmount - $applicationFeeAmount;
+            // Calculate order amount (what seller should receive)
+            // totalAmount = orderAmount + (orderAmount * platformFeePercentage / 100)
+            // totalAmount = orderAmount * (1 + platformFeePercentage / 100)
+            // orderAmount = totalAmount / (1 + platformFeePercentage / 100)
+            $orderAmount = (int) round($totalAmount / (1 + $platformFeePercentage / 100));
+            $merchantAmount = $orderAmount;
 
             // Create transfer
             $transfer = \Stripe\Transfer::create([
@@ -694,6 +722,142 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => 'Failed to create transfer: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Create payment ledger record for admin tracking
+     */
+    private function createPaymentRecord(Order $order, array $paymentIntent, array $metadata): void
+    {
+        try {
+            // Extract payment details from Stripe PaymentIntent
+            $amount = ($paymentIntent['amount'] ?? 0) / 100; // Convert from cents
+            $currency = strtoupper($paymentIntent['currency'] ?? 'USD');
+            $paymentIntentId = $paymentIntent['id'] ?? null;
+            
+            // Calculate platform fee and merchant amount
+            $platformFeePercentage = floatval($metadata['platform_fee_percentage'] ?? 7.9);
+            $totalAmount = $amount;
+            $orderAmount = $totalAmount / (1 + $platformFeePercentage / 100);
+            $platformFee = $totalAmount - $orderAmount;
+
+            // Update existing payment record or create new one
+            $payment = Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                'order_id' => $order->id,
+                'payment_method' => 'stripe',
+                'amount' => $totalAmount,
+                'currency' => $currency,
+                'status' => 'completed',
+                'transaction_id' => $paymentIntentId,
+                'gateway_response' => [
+                    'payment_intent_id' => $paymentIntentId,
+                    'stripe_response' => $paymentIntent,
+                    'platform_fee_percentage' => $platformFeePercentage,
+                    'platform_fee_amount' => round($platformFee, 2),
+                    'merchant_amount' => round($orderAmount, 2),
+                    'customer_paid' => $totalAmount,
+                    'merchant_country' => $metadata['merchant_country'] ?? 'US',
+                    'payment_flow' => $metadata['merchant_country'] === 'PH' ? 'platform_then_transfer' : 'direct_with_fee',
+                    'processed_at' => now()->toISOString(),
+                    'webhook_received_at' => now()->toISOString()
+                ],
+                'processed_at' => now()
+                ]
+            );
+
+            \Log::info('Payment ledger record updated/created', [
+                'payment_id' => $payment->id,
+                'order_id' => $order->id,
+                'amount' => $totalAmount,
+                'platform_fee' => round($platformFee, 2),
+                'merchant_amount' => round($orderAmount, 2),
+                'payment_intent_id' => $paymentIntentId
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to create payment ledger record', [
+                'order_id' => $order->id,
+                'payment_intent_id' => $paymentIntent['id'] ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Don't throw exception as this shouldn't block the payment process
+            // Payment processing should continue even if ledger creation fails
+        }
+    }
+
+    /**
+     * Create initial payment record when PaymentIntent is created (pending status)
+     */
+    private function createInitialPaymentRecord($paymentIntent, Company $company, array $metadata): void
+    {
+        try {
+            // Only create if there's an order_id in metadata
+            if (!isset($metadata['order_id'])) {
+                return;
+            }
+
+            $order = Order::find($metadata['order_id']);
+            if (!$order) {
+                return;
+            }
+
+            // Check if payment record already exists for this order
+            $existingPayment = Payment::where('order_id', $order->id)->first();
+            if ($existingPayment) {
+                return; // Don't create duplicate
+            }
+
+            // Extract payment details
+            $amount = ($paymentIntent->amount ?? 0) / 100; // Convert from cents
+            $currency = strtoupper($paymentIntent->currency ?? 'USD');
+            $paymentIntentId = $paymentIntent->id ?? null;
+            
+            // Calculate platform fee and merchant amount
+            $platformFeePercentage = floatval($metadata['platform_fee_percentage'] ?? 7.9);
+            $totalAmount = $amount;
+            $orderAmount = $totalAmount / (1 + $platformFeePercentage / 100);
+            $platformFee = $totalAmount - $orderAmount;
+
+            // Create initial payment record with pending status
+            Payment::create([
+                'order_id' => $order->id,
+                'payment_method' => 'stripe',
+                'amount' => $totalAmount,
+                'currency' => $currency,
+                'status' => 'pending',
+                'transaction_id' => $paymentIntentId,
+                'gateway_response' => [
+                    'payment_intent_id' => $paymentIntentId,
+                    'platform_fee_percentage' => $platformFeePercentage,
+                    'platform_fee_amount' => round($platformFee, 2),
+                    'merchant_amount' => round($orderAmount, 2),
+                    'customer_paid' => $totalAmount,
+                    'merchant_country' => $metadata['merchant_country'] ?? $company->country ?? 'US',
+                    'payment_flow' => ($metadata['merchant_country'] ?? $company->country) === 'PH' ? 'platform_then_transfer' : 'direct_with_fee',
+                    'created_at' => now()->toISOString(),
+                    'status' => 'pending'
+                ],
+                'processed_at' => null // Will be set when payment completes
+            ]);
+
+            \Log::info('Initial payment record created', [
+                'order_id' => $order->id,
+                'payment_intent_id' => $paymentIntentId,
+                'amount' => $totalAmount,
+                'status' => 'pending'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to create initial payment record', [
+                'order_id' => $metadata['order_id'] ?? 'unknown',
+                'payment_intent_id' => $paymentIntent->id ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

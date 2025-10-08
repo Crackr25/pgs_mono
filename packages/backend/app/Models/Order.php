@@ -77,7 +77,7 @@ class Order extends Model
         return $this->sellerPayout()->exists();
     }
 
-    public function createSellerPayout($platformFeePercentage = 2.5, $payoutMethod = null)
+    public function createSellerPayout($platformFeePercentage = 7.9, $payoutMethod = null)
     {
         if ($this->hasSellerPayout()) {
             return $this->sellerPayout;

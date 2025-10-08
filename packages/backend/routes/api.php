@@ -22,6 +22,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\SellerPayoutController;
 
 /*
@@ -245,4 +246,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/payouts/{payout}/process-stripe', [SellerPayoutController::class, 'processStripePayout']);
     Route::post('/admin/payouts/{payout}/complete-manual', [SellerPayoutController::class, 'completeManualPayout']);
     Route::post('/admin/payouts/{payout}/retry', [SellerPayoutController::class, 'retryPayout']);
+    
+    // Admin Payment Ledger routes - comprehensive transaction tracking
+    Route::get('/admin/payments', [AdminPaymentController::class, 'index']);
+    Route::get('/admin/payments/statistics', [AdminPaymentController::class, 'statistics']);
+    Route::get('/admin/payments/{payment}', [AdminPaymentController::class, 'show']);
 });

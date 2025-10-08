@@ -1141,6 +1141,26 @@ class ApiService {
     return this.request(endpoint);
   }
 
+  // ===== ADMIN PAYMENT LEDGER METHODS =====
+
+  // Get payment ledger for admin
+  async getAdminPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/admin/payments?${queryString}` : '/admin/payments';
+    return this.request(endpoint);
+  }
+
+  // Get payment statistics for admin
+  async getPaymentStatistics(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/admin/payments/statistics?${queryString}` : '/admin/payments/statistics';
+    return this.request(endpoint);
+  }
+
+  // Get detailed payment information
+  async getPaymentDetails(paymentId) {
+    return this.request(`/admin/payments/${paymentId}`);
+  }
 }
 
 const apiService = new ApiService();

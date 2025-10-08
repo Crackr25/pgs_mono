@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   Filter, 
@@ -76,7 +76,7 @@ export default function ProductGrid({ hideFilters = false }) {
     fetchProducts();
     fetchCategories();
     fetchLocations();
-  }, []);
+  }, [fetchProducts]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -84,14 +84,14 @@ export default function ProductGrid({ hideFilters = false }) {
       return;
     }
     fetchProducts();
-  }, [filters.category, filters.priceRange, filters.location, filters.search, filters.sortBy, pagination.currentPage]);
+  }, [fetchProducts]);
 
   const showToastNotification = (type, title, message, duration = 5000) => {
     setToastConfig({ type, title, message, duration });
     setShowToast(true);
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -108,22 +108,43 @@ export default function ProductGrid({ hideFilters = false }) {
       
       const response = await apiService.getMarketplaceProducts(params);
       
-      setProducts(response.data);
-      setPagination({
-        currentPage: response.current_page,
-        totalPages: response.last_page,
-        totalItems: response.total,
-        itemsPerPage: response.per_page,
-        from: response.from || 0,
-        to: response.to || 0
-      });
+      if (response && response.data) {
+        setProducts(response.data);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: response.current_page || 1,
+          totalPages: response.last_page || 1,
+          totalItems: response.total || 0,
+          itemsPerPage: response.per_page || 12,
+          from: response.from || 0,
+          to: response.to || 0
+        }));
+      } else {
+        setProducts([]);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          from: 0,
+          to: 0
+        }));
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       setProducts([]);
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        from: 0,
+        to: 0
+      }));
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.currentPage, filters]);
 
   const handleQuoteRequest = async () => {
     if (submittingQuote) return;
@@ -251,18 +272,28 @@ export default function ProductGrid({ hideFilters = false }) {
   const fetchCategories = async () => {
     try {
       const response = await apiService.getMarketplaceCategories();
-      setCategories(response.data || []);
+      if (response && response.data) {
+        setCategories(response.data);
+      } else {
+        setCategories([]);
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]);
     }
   };
 
   const fetchLocations = async () => {
     try {
       const response = await apiService.getMarketplaceLocations();
-      setLocations(response.data || []);
+      if (response && response.data) {
+        setLocations(response.data);
+      } else {
+        setLocations([]);
+      }
     } catch (error) {
       console.error('Error fetching locations:', error);
+      setLocations([]);
     }
   };
 
@@ -271,7 +302,10 @@ export default function ProductGrid({ hideFilters = false }) {
       ...prev,
       [key]: value
     }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    // Reset to page 1 when filters change
+    if (pagination.currentPage !== 1) {
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }
   };
 
   const handlePageChange = (page) => {
@@ -280,17 +314,20 @@ export default function ProductGrid({ hideFilters = false }) {
 
   const handleSearch = (searchTerm) => {
     setFilters(prev => ({ ...prev, search: searchTerm }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    if (pagination.currentPage !== 1) {
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }
   };
 
   const clearFilters = () => {
-    setFilters({
+    const newFilters = {
       category: '',
       priceRange: '',
       location: '',
       search: '',
       sortBy: 'relevance'
-    });
+    };
+    setFilters(newFilters);
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
@@ -565,16 +602,20 @@ export default function ProductGrid({ hideFilters = false }) {
           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'
       }`}>
-        {loading && products.length > 0 ? (
-          // Show existing products with skeleton for new ones during pagination
-          [...products.map(product => (
-            <ProductCard key={product.id} product={product} />
-          )), ...Array.from({ length: 6 }).map((_, index) => (
-            <ProductCardSkeleton key={`skeleton-${index}`} />
-          ))]
+        {products.length === 0 && !loading ? (
+          <div className="col-span-full text-center py-12">
+            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+            <p className="text-gray-500">Try adjusting your filters or search terms.</p>
+          </div>
         ) : (
           products.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={`product-${product.id}`} product={product} />
+          ))
+        )}
+        {loading && (
+          Array.from({ length: 8 }).map((_, index) => (
+            <ProductCardSkeleton key={`loading-skeleton-${index}`} />
           ))
         )}
       </div>
