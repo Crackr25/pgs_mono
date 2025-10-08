@@ -143,7 +143,7 @@ class SellerPayout extends Model
     }
 
     // Static Methods
-    public static function createFromOrder(Order $order, $platformFeePercentage = 2.5, $payoutMethod = null)
+    public static function createFromOrder(Order $order, $platformFeePercentage = 7.9, $payoutMethod = null)
     {
         $company = $order->company;
         
@@ -152,9 +152,16 @@ class SellerPayout extends Model
             $payoutMethod = $company->country === 'US' ? 'stripe' : 'manual';
         }
 
-        $grossAmount = $order->total_amount;
-        $platformFee = $grossAmount * ($platformFeePercentage / 100);
-        $netAmount = $grossAmount - $platformFee;
+        // NEW ADDITIVE APPROACH: order total includes platform fee
+        // Customer paid: total_amount = base_amount + (base_amount * platform_fee_percentage / 100)
+        // Solve for base_amount: base_amount = total_amount / (1 + platform_fee_percentage / 100)
+        $totalPaid = $order->total_amount;
+        $baseAmount = $totalPaid / (1 + $platformFeePercentage / 100);
+        $platformFee = $totalPaid - $baseAmount;
+        
+        // Seller gets the base amount (what they should receive)
+        $grossAmount = $baseAmount; // What seller should receive
+        $netAmount = $baseAmount;   // Same as gross since platform fee is additive
 
         return self::create([
             'company_id' => $company->id,

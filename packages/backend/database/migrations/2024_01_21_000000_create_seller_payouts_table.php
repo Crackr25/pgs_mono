@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('platform_fee', 10, 2); // Platform commission
             $table->decimal('net_amount', 10, 2); // Amount to pay seller
             $table->string('currency', 3)->default('USD');
-            $table->decimal('platform_fee_percentage', 5, 2)->default(2.50); // Store fee percentage used
+            $table->decimal('platform_fee_percentage', 5, 2)->default(7.90); // Store fee percentage used
             
             // Payout Method & Status
             $table->enum('payout_method', ['stripe', 'manual'])->default('stripe');

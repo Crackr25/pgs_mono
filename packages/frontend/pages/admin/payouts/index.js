@@ -17,7 +17,10 @@ import {
   Eye,
   Play,
   Check,
-  RotateCcw
+  RotateCcw,
+  Receipt,
+  Activity,
+  FileText
 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
@@ -27,12 +30,23 @@ import Pagination from '../../../components/common/Pagination';
 import apiService from '../../../lib/api';
 
 export default function AdminPayouts() {
+  // Tab management
+  const [activeTab, setActiveTab] = useState('payouts');
+  
+  // Payouts data
   const [payouts, setPayouts] = useState([]);
   const [statistics, setStatistics] = useState({});
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState({});
   
-  // Filters and pagination
+  // Payments data
+  const [payments, setPayments] = useState([]);
+  const [paymentStatistics, setPaymentStatistics] = useState({});
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Filters and pagination for payouts
   const [filters, setFilters] = useState({
     status: '',
     payout_method: '',
@@ -47,6 +61,20 @@ export default function AdminPayouts() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   
+  // Filters and pagination for payments
+  const [paymentFilters, setPaymentFilters] = useState({
+    status: '',
+    payment_method: '',
+    search: '',
+    date_from: '',
+    date_to: '',
+    amount_min: '',
+    amount_max: ''
+  });
+  const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
+  const [paymentTotalPages, setPaymentTotalPages] = useState(1);
+  const [paymentTotalItems, setPaymentTotalItems] = useState(0);
+  
   // Modals
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
@@ -56,9 +84,14 @@ export default function AdminPayouts() {
   });
 
   useEffect(() => {
-    fetchPayouts();
-    fetchStatistics();
-  }, [currentPage, filters]);
+    if (activeTab === 'payouts') {
+      fetchPayouts();
+      fetchStatistics();
+    } else if (activeTab === 'payments') {
+      fetchPayments();
+      fetchPaymentStatistics();
+    }
+  }, [activeTab, currentPage, filters, paymentCurrentPage, paymentFilters]);
 
   const fetchPayouts = async () => {
     try {
@@ -99,9 +132,66 @@ export default function AdminPayouts() {
     }
   };
 
+  const fetchPayments = async () => {
+    try {
+      setPaymentLoading(true);
+      const params = {
+        page: paymentCurrentPage,
+        per_page: 15,
+        ...paymentFilters
+      };
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '') delete params[key];
+      });
+
+      const response = await apiService.getAdminPayments(params);
+      if (response.success) {
+        setPayments(response.data || []);
+        setPaymentCurrentPage(response.pagination?.current_page || 1);
+        setPaymentTotalPages(response.pagination?.last_page || 1);
+        setPaymentTotalItems(response.pagination?.total || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const fetchPaymentStatistics = async () => {
+    try {
+      const response = await apiService.getPaymentStatistics();
+      if (response.success) {
+        setPaymentStatistics(response.data || {});
+      }
+    } catch (error) {
+      console.error('Error fetching payment statistics:', error);
+    }
+  };
+
+  const handleViewPaymentDetails = async (paymentId) => {
+    try {
+      const response = await apiService.getPaymentDetails(paymentId);
+      if (response.success) {
+        setSelectedPayment(response.data);
+        setShowPaymentModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching payment details:', error);
+      alert('Error fetching payment details: ' + error.message);
+    }
+  };
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1);
+  };
+
+  const handlePaymentFilterChange = (key, value) => {
+    setPaymentFilters(prev => ({ ...prev, [key]: value }));
+    setPaymentCurrentPage(1);
   };
 
   const handleProcessStripePayout = async (payoutId) => {
@@ -208,73 +298,168 @@ export default function AdminPayouts() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Payout Management</h1>
-            <p className="text-gray-600">Manage seller payouts and process transactions</p>
+            <h1 className="text-2xl font-bold text-gray-900">Financial Management</h1>
+            <p className="text-gray-600">Manage seller payouts and track payment transactions</p>
           </div>
-          <Button onClick={fetchPayouts} className="flex items-center space-x-2">
+          <Button 
+            onClick={activeTab === 'payouts' ? fetchPayouts : fetchPayments} 
+            className="flex items-center space-x-2"
+          >
             <RefreshCw className="w-4 h-4" />
             <span>Refresh</span>
           </Button>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-green-600" />
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('payouts')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'payouts'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <DollarSign className="w-4 h-4" />
+                <span>Seller Payouts</span>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Payouts</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${statistics.total_payouts?.toFixed(2) || '0.00'}
-                </p>
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'payments'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Receipt className="w-4 h-4" />
+                <span>Payment Ledger</span>
               </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Pending Payouts</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${statistics.pending_payouts?.toFixed(2) || '0.00'}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Platform Fees</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${statistics.total_platform_fees?.toFixed(2) || '0.00'}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Active Sellers</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {statistics.active_sellers || 0}
-                </p>
-              </div>
-            </div>
-          </Card>
+            </button>
+          </nav>
         </div>
+
+        {/* Statistics Cards */}
+        {activeTab === 'payouts' ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total Payouts</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${statistics.total_payouts?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <Clock className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Pending Payouts</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${statistics.pending_payouts?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Platform Fees</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${statistics.total_platform_fees?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Users className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Active Sellers</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {statistics.active_sellers || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Receipt className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${paymentStatistics.total_revenue?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Successful Payments</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {paymentStatistics.successful_payments || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Platform Fees Collected</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${paymentStatistics.platform_fees_collected?.total_platform_fees?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-red-100 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Failed Payments</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {paymentStatistics.failed_payments || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Filters */}
         <Card className="p-6">

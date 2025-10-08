@@ -258,7 +258,10 @@ export default function Checkout() {
 
   const getPlatformFee = () => {
     const subtotal = getSubtotal();
-    return subtotal * 0.025; // 2.5% platform fee for secure processing
+    const shipping = getShipping();
+    const tax = getTax();
+    const productTotal = subtotal + shipping + tax;
+    return productTotal * 0.079; // 7.9% platform fee added on top of product total
   };
 
   const getTotal = () => {
@@ -363,7 +366,7 @@ export default function Checkout() {
       const paymentResponse = await apiService.createOrderPaymentIntent({
         order_id: createdOrder.id,
         customer_email: shippingAddress.email,
-        platform_fee_percentage: 2.5
+        platform_fee_percentage: 7.9
       });
 
       if (paymentResponse.success) {

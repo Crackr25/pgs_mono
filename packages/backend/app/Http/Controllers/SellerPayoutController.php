@@ -151,7 +151,7 @@ class SellerPayoutController extends Controller
                 ], 400);
             }
 
-            $platformFeePercentage = $request->get('platform_fee_percentage', 2.5);
+            $platformFeePercentage = $request->get('platform_fee_percentage', 7.9);
             $payoutMethod = $request->get('payout_method');
 
             $payout = $order->createSellerPayout($platformFeePercentage, $payoutMethod);
