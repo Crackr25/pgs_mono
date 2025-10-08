@@ -1,61 +1,93 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { 
   Package, 
   FileText, 
   ShoppingCart, 
   DollarSign, 
   TrendingUp, 
+  TrendingDown,
   Users, 
   Eye,
-  Plus
+  Plus,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import { useLanguage } from '../hooks/useLanguage';
 import { useStripeOnboardingCheck } from '../hooks/useStripeOnboardingCheck';
-import { analyticsData, products, orders, quotes } from '../lib/dummyData';
+import { useDashboard } from '../hooks/useDashboard';
 
 export default function Dashboard() {
   const { translate } = useLanguage();
+  const { dashboardData, loading, refreshing, error, refreshDashboard } = useDashboard();
+  const router = useRouter();
   
   // Check if seller needs Stripe onboarding and redirect if necessary
   useStripeOnboardingCheck();
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+          <span className="text-secondary-600">Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={refreshDashboard}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const stats = [
     {
       name: 'Total Products',
-      value: analyticsData.totalProducts,
-      change: '+12%',
-      changeType: 'increase',
+      value: dashboardData.analytics.totalProducts || 0,
+      change: dashboardData.analytics.growthPercentages?.products?.value || '0%',
+      changeType: dashboardData.analytics.growthPercentages?.products?.type || 'neutral',
       icon: Package,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
       name: 'Active Quotes',
-      value: analyticsData.totalQuotes,
-      change: '+8%',
-      changeType: 'increase',
+      value: dashboardData.analytics.totalQuotes || 0,
+      change: dashboardData.analytics.growthPercentages?.quotes?.value || '0%',
+      changeType: dashboardData.analytics.growthPercentages?.quotes?.type || 'neutral',
       icon: FileText,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
       name: 'Total Orders',
-      value: analyticsData.totalOrders,
-      change: '+23%',
-      changeType: 'increase',
+      value: dashboardData.analytics.totalOrders || 0,
+      change: dashboardData.analytics.growthPercentages?.orders?.value || '0%',
+      changeType: dashboardData.analytics.growthPercentages?.orders?.type || 'neutral',
       icon: ShoppingCart,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     },
     {
       name: 'Revenue',
-      value: analyticsData.totalRevenue,
-      change: '+15%',
-      changeType: 'increase',
+      value: dashboardData.analytics.totalRevenue || '$0',
+      change: dashboardData.analytics.growthPercentages?.revenue?.value || '0%',
+      changeType: dashboardData.analytics.growthPercentages?.revenue?.type || 'neutral',
       icon: DollarSign,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100'
@@ -79,10 +111,22 @@ export default function Dashboard() {
               Here's what's happening with your business today.
             </p>
           </div>
-          <Button className="mt-4 sm:mt-0">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
+          <div className="flex items-center space-x-2 mt-4 sm:mt-0">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={refreshDashboard}
+              disabled={refreshing}
+              className="flex items-center"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button onClick={() => router.push('/products/add')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -105,8 +149,18 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center">
-                  <TrendingUp className="w-4 h-4 text-green-500" />
-                  <span className="ml-1 text-sm font-medium text-green-600">
+                  {stat.changeType === 'increase' ? (
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                  ) : stat.changeType === 'decrease' ? (
+                    <TrendingDown className="w-4 h-4 text-red-500" />
+                  ) : (
+                    <TrendingUp className="w-4 h-4 text-gray-500" />
+                  )}
+                  <span className={`ml-1 text-sm font-medium ${
+                    stat.changeType === 'increase' ? 'text-green-600' : 
+                    stat.changeType === 'decrease' ? 'text-red-600' : 
+                    'text-gray-600'
+                  }`}>
                     {stat.change}
                   </span>
                   <span className="ml-1 text-sm text-secondary-500">
@@ -123,30 +177,46 @@ export default function Dashboard() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-secondary-900">Recent Products</h3>
-              <Button variant="outline" size="sm">View All</Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/products')}
+              >
+                View All
+              </Button>
             </div>
             <div className="space-y-4">
-              {products.slice(0, 3).map((product) => (
-                <div key={product.id} className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center">
-                    <Package className="w-6 h-6 text-secondary-600" />
+              {dashboardData.recentProducts.length > 0 ? (
+                dashboardData.recentProducts.map((product) => (
+                  <div key={product.id} className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center">
+                      <Package className="w-6 h-6 text-secondary-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-secondary-900 truncate">
+                        {product.name || product.title}
+                      </p>
+                      <p className="text-sm text-secondary-500">
+                        MOQ: {product.moq || product.minimum_order_quantity || 'N/A'} units
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-secondary-900">
+                        {product.price || product.unit_price || 'N/A'}
+                      </p>
+                      <Badge variant="success" size="xs">
+                        {product.status === 'active' ? 'Active' : 'Active'}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-secondary-900 truncate">
-                      {product.name}
-                    </p>
-                    <p className="text-sm text-secondary-500">
-                      MOQ: {product.moq} units
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-secondary-900">
-                      {product.price}
-                    </p>
-                    <Badge variant="success" size="xs">Active</Badge>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-secondary-300 mx-auto mb-4" />
+                  <p className="text-secondary-500">No products found</p>
+                  <Button className="mt-2" size="sm">Add Your First Product</Button>
                 </div>
-              ))}
+              )}
             </div>
           </Card>
 
@@ -154,35 +224,48 @@ export default function Dashboard() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-secondary-900">Recent Orders</h3>
-              <Button variant="outline" size="sm">View All</Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/orders')}
+              >
+                View All
+              </Button>
             </div>
             <div className="space-y-4">
-              {orders.slice(0, 3).map((order) => (
-                <div key={order.id} className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center">
-                    <ShoppingCart className="w-6 h-6 text-secondary-600" />
+              {dashboardData.recentOrders.length > 0 ? (
+                dashboardData.recentOrders.map((order) => (
+                  <div key={order.id} className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center">
+                      <ShoppingCart className="w-6 h-6 text-secondary-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-secondary-900 truncate">
+                        {order.order_number || order.orderNumber || `Order #${order.id}`}
+                      </p>
+                      <p className="text-sm text-secondary-500">
+                        {order.quantity} units
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-secondary-900">
+                        {order.total_amount || order.totalAmount || 'N/A'}
+                      </p>
+                      <Badge 
+                        variant={order.status === 'shipped' || order.status === 'completed' ? 'success' : 'info'} 
+                        size="xs"
+                      >
+                        {(order.status || 'pending').replace('_', ' ')}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-secondary-900 truncate">
-                      {order.orderNumber}
-                    </p>
-                    <p className="text-sm text-secondary-500">
-                      {order.quantity} units
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-secondary-900">
-                      {order.totalAmount}
-                    </p>
-                    <Badge 
-                      variant={order.status === 'shipped' ? 'success' : 'info'} 
-                      size="xs"
-                    >
-                      {order.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <ShoppingCart className="w-12 h-12 text-secondary-300 mx-auto mb-4" />
+                  <p className="text-secondary-500">No orders found</p>
                 </div>
-              ))}
+              )}
             </div>
           </Card>
         </div>
@@ -190,25 +273,38 @@ export default function Dashboard() {
         {/* Most Viewed Products */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-secondary-900">Most Viewed Products</h3>
-            <Button variant="outline" size="sm">View Analytics</Button>
+            <h3 className="text-lg font-medium text-secondary-900">Top Products by Inquiries</h3>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => router.push('/analytics')}
+            >
+              View Analytics
+            </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {analyticsData.mostViewedProducts.map((product, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-secondary-50 rounded-lg">
-                <div className="flex-shrink-0">
-                  <Eye className="w-5 h-5 text-secondary-600" />
+            {dashboardData.analytics.mostViewedProducts && dashboardData.analytics.mostViewedProducts.length > 0 ? (
+              dashboardData.analytics.mostViewedProducts.map((product, index) => (
+                <div key={index} className="flex items-center space-x-3 p-3 bg-secondary-50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <Eye className="w-5 h-5 text-secondary-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-secondary-900 truncate">
+                      {product.label || product.name}
+                    </p>
+                    <p className="text-sm text-secondary-500">
+                      {product.value || product.views} {product.views ? 'views' : 'inquiries'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-secondary-900 truncate">
-                    {product.name}
-                  </p>
-                  <p className="text-sm text-secondary-500">
-                    {product.views} views
-                  </p>
-                </div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8">
+                <Eye className="w-12 h-12 text-secondary-300 mx-auto mb-4" />
+                <p className="text-secondary-500">No product views data available</p>
               </div>
-            ))}
+            )}
           </div>
         </Card>
 
@@ -216,19 +312,35 @@ export default function Dashboard() {
         <Card>
           <h3 className="text-lg font-medium text-secondary-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col"
+              onClick={() => router.push('/products/add')}
+            >
               <Package className="w-6 h-6 mb-2" />
               Add Product
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col"
+              onClick={() => router.push('/quotes')}
+            >
               <FileText className="w-6 h-6 mb-2" />
               View Quotes
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col"
+              onClick={() => router.push('/messages')}
+            >
               <Users className="w-6 h-6 mb-2" />
               Message Buyers
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col"
+              onClick={() => router.push('/analytics')}
+            >
               <TrendingUp className="w-6 h-6 mb-2" />
               View Analytics
             </Button>

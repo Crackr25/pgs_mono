@@ -117,6 +117,24 @@ class ApiService {
     return this.request('/companies/current');
   }
 
+  // Get current user's company with graceful 404 handling
+  async getCurrentUserCompanySafe() {
+    try {
+      return await this.request('/companies/current');
+    } catch (error) {
+      // If it's a 404, return a standardized "no company" response
+      if (error.response?.status === 404) {
+        return {
+          success: false,
+          message: 'No company found for user',
+          data: null
+        };
+      }
+      // Re-throw other errors
+      throw error;
+    }
+  }
+
   // Company methods
   async getCompanies(params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -340,6 +358,15 @@ class ApiService {
     });
     
     return this.uploadFormData(`/products/${productId}/upload-images`, formData, onProgress);
+  }
+
+  async uploadProductVideos(productId, files, onProgress) {
+    const formData = new FormData();
+    files.forEach((file, index) => {
+      formData.append('videos[]', file);
+    });
+    
+    return this.uploadFormData(`/products/${productId}/upload-videos`, formData, onProgress);
   }
 
   async updateImageOrder(productId, imageOrders) {

@@ -2,47 +2,54 @@
 
 This guide will help you run the complete trading platform with Laravel backend and Next.js frontend.
 
+**⚠️ Important: This is a pnpm workspace monorepo. Do NOT use `npm` - use `pnpm` instead!**
+
 ## Prerequisites
 
 Make sure you have installed:
 - **PHP 8.1+** with extensions (mbstring, openssl, pdo, tokenizer, xml, ctype, json, bcmath)
 - **Composer** (PHP package manager)
-- **Node.js 16+** and **npm**
+- **Node.js 18+** and **pnpm** (not npm - this is a pnpm workspace)
 - **MySQL** or **SQLite** database
 
-## 🔧 Backend Setup (Laravel API)
-
-### 1. Navigate to backend directory
+### Installing pnpm (if not already installed):
 ```bash
-cd backend
+npm install -g pnpm
 ```
 
-### 2. Install PHP dependencies
+## 🔧 Monorepo Setup (Both Backend & Frontend)
+
+### 1. Install all dependencies from root directory
 ```bash
-composer install
+# From the root directory (pgs_mono/)
+pnpm install
 ```
 
-### 3. Set up environment configuration
+This will install both frontend (Node.js) and backend (Composer) dependencies automatically.
+
+### 2. Set up backend environment configuration
 ```bash
+# Navigate to backend
+cd packages/backend
+
+# Copy environment file
 copy .env.example .env
-```
 
-### 4. Generate application key
-```bash
+# Generate Laravel application key
 php artisan key:generate
 ```
 
-### 5. Configure database in `.env` file
-Open `backend/.env` and update these settings:
+### 3. Configure database in `packages/backend/.env`
+Open `packages/backend/.env` and update these settings:
 
 **For MySQL:**
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=pgs_trading
+DB_DATABASE=pgs
 DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_PASSWORD=
 ```
 
 **For SQLite (easier setup):**
@@ -51,42 +58,27 @@ DB_CONNECTION=sqlite
 DB_DATABASE=database/database.sqlite
 ```
 
-### 6. Create database
-**For MySQL:** Create a database named `pgs_trading` in your MySQL server
+### 4. Create database
+**For MySQL:** Create a database named `pgs` in your MySQL server
 
 **For SQLite:** Create the database file:
 ```bash
+cd packages/backend
 touch database/database.sqlite
 ```
 
-### 7. Run database migrations
+### 5. Run database migrations
 ```bash
+cd packages/backend
 php artisan migrate
 ```
 
-### 8. Start Laravel development server
+### 6. Set up frontend environment
 ```bash
-php artisan serve
-```
+# Navigate to frontend
+cd packages/frontend
 
-✅ **Backend will be running at: http://localhost:8000**
-
----
-
-## 🎨 Frontend Setup (Next.js)
-
-### 1. Open a new terminal and navigate to frontend
-```bash
-cd frontend
-```
-
-### 2. Install Node.js dependencies
-```bash
-npm install
-```
-
-### 3. Create environment configuration
-```bash
+# Copy environment file
 copy .env.example .env.local
 ```
 
@@ -95,18 +87,33 @@ The `.env.local` file should contain:
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ```
 
-### 4. Start Next.js development server
+### 7. Start both servers (from root directory)
 ```bash
-npm run dev
+# Go back to root directory
+cd ../..
+
+# Start both backend and frontend together
+pnpm run dev
 ```
 
-✅ **Frontend will be running at: http://localhost:3000**
+This will start:
+- ✅ **Backend** at: http://localhost:8000
+- ✅ **Frontend** at: http://localhost:3000
+
+### Alternative: Start servers individually
+```bash
+# Terminal 1 - Backend only
+pnpm run dev:backend
+
+# Terminal 2 - Frontend only  
+pnpm run dev:frontend
+```
 
 ---
 
 ## 🎯 Testing Your Setup
 
-### 1. Open your browser and go to: http://localhost:3000
+### 1. Open your browser and go to: http://localhost:3000 (or http://localhost:3001 if 3000 is in use)
 
 ### 2. Test the features:
 - **Browse Products** (works without login)
@@ -132,8 +139,9 @@ npm run dev
 
 ### Frontend Issues:
 - **API connection errors:** Ensure backend is running on port 8000
-- **Module not found:** Run `npm install` again
-- **Environment variables:** Make sure `.env.local` exists with correct API URL
+- **Module not found:** Run `pnpm install` again from root directory
+- **Environment variables:** Make sure `packages/frontend/.env.local` exists with correct API URL
+- **Port conflicts:** If port 3000 is in use, start with `pnpm run dev:frontend -- --port 3001`
 
 ### CORS Issues:
 - The backend is already configured to allow all origins for development
@@ -171,18 +179,26 @@ For production deployment:
 
 ## 🛠 Development Commands
 
-### Backend:
+### Root Level Commands (from pgs_mono/):
 ```bash
-php artisan migrate:fresh    # Reset database
-php artisan tinker          # Laravel console
-php artisan route:list      # List all API routes
+pnpm run dev               # Start both servers
+pnpm run dev:backend       # Backend only
+pnpm run dev:frontend      # Frontend only  
+pnpm run build             # Build both applications
+pnpm install               # Install all dependencies
 ```
 
-### Frontend:
+### Backend Commands (from packages/backend/):
 ```bash
-npm run build              # Build for production
-npm run lint              # Check code quality
-npm run dev               # Development server
+php artisan migrate:fresh  # Reset database
+php artisan tinker         # Laravel console
+php artisan route:list     # List all API routes
+```
+
+### Frontend Commands (from packages/frontend/):
+```bash
+pnpm run build            # Build for production
+pnpm run lint             # Check code quality
 ```
 
 ---

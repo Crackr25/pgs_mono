@@ -4,10 +4,15 @@ import { Bell, Search, User, Menu, X, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
+import apiService from '../../lib/api';
 
 
 export default function NavBar({ onMenuToggle, isSidebarOpen }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [searchTimeout, setSearchTimeout] = useState(null);
   const { user, logout, isAuthenticated } = useAuth();
   const { translate } = useLanguage();
   const router = useRouter();
@@ -16,6 +21,72 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
     await logout();
     setIsProfileOpen(false);
     router.push('/login');
+  };
+
+  // Fetch search suggestions
+  const fetchSearchSuggestions = async (query) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    try {
+      // Use marketplace endpoint for global search suggestions
+      const products = await apiService.request(`/marketplace/products?search=${encodeURIComponent(query)}&per_page=5`);
+
+      const suggestions = (products.data || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        type: 'product'
+      }));
+
+      setSearchSuggestions(suggestions);
+      setShowSearchSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('Error fetching search suggestions:', error);
+    }
+  };
+
+  // Debounced search suggestions
+  const debouncedSuggestions = (query) => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      fetchSearchSuggestions(query);
+    }, 300);
+
+    setSearchTimeout(timeout);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setShowSearchSuggestions(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    debouncedSuggestions(value);
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion.name);
+    setShowSearchSuggestions(false);
+    router.push(`/search?q=${encodeURIComponent(suggestion.name)}`);
+  };
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    } else if (e.key === 'Escape') {
+      setShowSearchSuggestions(false);
+    }
   };
 
   return (
@@ -36,16 +107,39 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
           </div>
 
           <div className="hidden md:flex items-center flex-1 max-w-lg mx-8">
-            <div className="relative w-full">
+            <form onSubmit={handleSearch} className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-secondary-400" />
               </div>
               <input
                 type="text"
-                placeholder="Search products, orders, buyers..."
-                className="block w-full pl-10 pr-3 py-2 border border-secondary-300 rounded-lg leading-5 bg-white placeholder-secondary-500 focus:outline-none focus:placeholder-secondary-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                onKeyPress={handleSearchKeyPress}
+                onFocus={() => searchSuggestions.length > 0 && setShowSearchSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
+                placeholder="Search products, orders, buyers... (auto-complete)"
+                className="block w-full pl-10 pr-3 py-2 border border-secondary-300 rounded-lg leading-5 bg-white placeholder-secondary-500 focus:outline-none focus:placeholder-secondary-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 text-secondary-900"
               />
-            </div>
+              
+              {/* Search Suggestions Dropdown */}
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-secondary-200 rounded-lg shadow-lg">
+                  {searchSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full px-4 py-2 text-left hover:bg-secondary-50 flex items-center space-x-2"
+                    >
+                      <Search className="w-4 h-4 text-secondary-400" />
+                      <span className="text-secondary-900">{suggestion.name}</span>
+                      <span className="text-xs text-secondary-500 ml-auto">Product</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </form>
           </div>
 
           <div className="flex items-center space-x-4">

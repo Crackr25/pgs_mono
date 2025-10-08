@@ -87,10 +87,10 @@ export default function BuyerSideBar({ isOpen, onClose }) {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen lg:inset-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-screen">
           {/* Logo area */}
           <div className="flex items-center justify-center h-16 px-4 bg-white border-b border-secondary-200">
             <div className="flex items-center space-x-2">
@@ -102,7 +102,7 @@ export default function BuyerSideBar({ isOpen, onClose }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto min-h-0">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
@@ -130,7 +130,7 @@ export default function BuyerSideBar({ isOpen, onClose }) {
           </nav>
 
           {/* Bottom section */}
-          <div className="p-4 border-t border-secondary-200">
+          <div className="p-4 border-t border-secondary-200 mt-auto flex-shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium text-blue-600">
