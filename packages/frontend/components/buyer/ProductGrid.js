@@ -77,6 +77,34 @@ export default function ProductGrid({ hideFilters = false }) {
     setShowToast(true);
   };
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await apiService.getMarketplaceCategories();
+      if (response && response.data) {
+        setCategories(response.data);
+      } else {
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
+  }, []);
+
+  const fetchLocations = useCallback(async () => {
+    try {
+      const response = await apiService.getMarketplaceLocations();
+      if (response && response.data) {
+        setLocations(response.data);
+      } else {
+        setLocations([]);
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      setLocations([]);
+    }
+  }, []);
+
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -135,7 +163,7 @@ export default function ProductGrid({ hideFilters = false }) {
   useEffect(() => {
     fetchCategories();
     fetchLocations();
-  }, []);
+  }, [fetchCategories, fetchLocations]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -267,33 +295,6 @@ export default function ProductGrid({ hideFilters = false }) {
     setShowQuoteModal(true);
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await apiService.getMarketplaceCategories();
-      if (response && response.data) {
-        setCategories(response.data);
-      } else {
-        setCategories([]);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      setCategories([]);
-    }
-  };
-
-  const fetchLocations = async () => {
-    try {
-      const response = await apiService.getMarketplaceLocations();
-      if (response && response.data) {
-        setLocations(response.data);
-      } else {
-        setLocations([]);
-      }
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-      setLocations([]);
-    }
-  };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
