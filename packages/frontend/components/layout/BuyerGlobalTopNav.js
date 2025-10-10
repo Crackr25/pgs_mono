@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { api } from '../../lib/api';
+import apiService from '../../lib/api';
 
 export default function BuyerGlobalTopNav() {
   const router = useRouter();
@@ -58,7 +58,7 @@ export default function BuyerGlobalTopNav() {
     if (!user) return;
     
     try {
-      const response = await api.getBuyerUnreadCount();
+      const response = await apiService.getBuyerUnreadCount();
       if (response.success) {
         setMessageCount(response.unread_count);
       }
