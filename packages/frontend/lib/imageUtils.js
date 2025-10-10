@@ -18,8 +18,8 @@ export const getImageUrl = (imagePath, folder = '') => {
   
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.pinoyglobalsupply.com/api';
   
-  // Remove /api from the end to get the base URL
-  const baseUrl = apiUrl.replace('/api', '');
+  // Remove /api from the end only, not from the middle
+  const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
   
   // Ensure imagePath starts with /
   let cleanImagePath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
