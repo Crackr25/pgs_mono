@@ -72,20 +72,6 @@ export default function ProductGrid({ hideFilters = false }) {
     { label: 'Newest', value: 'newest' }
   ];
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchLocations();
-  }, [fetchProducts]);
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    fetchProducts();
-  }, [fetchProducts]);
-
   const showToastNotification = (type, title, message, duration = 5000) => {
     setToastConfig({ type, title, message, duration });
     setShowToast(true);
@@ -145,6 +131,18 @@ export default function ProductGrid({ hideFilters = false }) {
       setLoading(false);
     }
   }, [pagination.currentPage, filters]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchLocations();
+  }, []);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    }
+    fetchProducts();
+  }, [pagination.currentPage, filters, fetchProducts]);
 
   const handleQuoteRequest = async () => {
     if (submittingQuote) return;
