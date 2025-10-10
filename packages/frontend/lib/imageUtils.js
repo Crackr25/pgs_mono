@@ -16,7 +16,7 @@ export const getImageUrl = (imagePath, folder = '') => {
     return imagePath;
   }
   
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.pinoyglobalsupply.com/api';
+  const apiUrl = 'https://api.pinoyglobalsupply.com/';
   
   // Remove /api from the end only, not from the middle
   const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
