@@ -20,6 +20,7 @@ import QuickMessageModal from '../common/QuickMessageModal';
 import ToastNotification from '../common/ToastNotification';
 import apiService from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { getImageUrl } from '../../lib/imageUtils';
 
 export default function ProductGrid({ hideFilters = false }) {
   const [viewMode, setViewMode] = useState('grid');
@@ -355,7 +356,7 @@ export default function ProductGrid({ hideFilters = false }) {
           <div className="relative">
             {product.has_image ? (
               <img
-                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${product.image}`}
+                src={getImageUrl(product.image)}
                 alt={product.name}
                 className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
               />
