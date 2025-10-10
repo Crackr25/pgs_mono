@@ -18,8 +18,6 @@ export const getImageUrl = (imagePath, folder = '') => {
   
   const apiUrl = 'https://api.pinoyglobalsupply.com/';
   
-  // Remove /api from the end only, not from the middle
-  const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
   
   // Ensure imagePath starts with /
   let cleanImagePath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
@@ -30,7 +28,7 @@ export const getImageUrl = (imagePath, folder = '') => {
     cleanImagePath = `${cleanFolder}${cleanImagePath}`;
   }
   
-  return `${baseUrl}${cleanImagePath}`;
+  return `${apiUrl}${cleanImagePath}`;
 };
 
 /**
