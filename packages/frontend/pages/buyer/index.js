@@ -60,7 +60,7 @@ export default function BuyerDashboard() {
           <div>
               <h1 className="text-3xl font-bold text-white mb-2">Welcome to the Marketplace</h1>
               <p className="text-lg text-blue-100 font-medium">
-                Discover quality products from verified Philippine suppliers
+                Discover quality products from verified Philippine supplier
               </p>
             </div>
             <div className="flex space-x-3 mt-4 sm:mt-0">
