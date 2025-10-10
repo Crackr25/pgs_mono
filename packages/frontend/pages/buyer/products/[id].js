@@ -35,6 +35,7 @@ import ToastNotification from '../../../components/common/ToastNotification';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import apiService from '../../../lib/api';
+import { getImageUrl } from '../../../lib/imageUtils';
 
 export default function ProductDetail() {
   const router = useRouter();
@@ -496,7 +497,7 @@ Product Link: ${window.location.href}`;
               {product.images && product.images.length > 0 ? (
                 <>
                   <Image
-                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${product.images[currentImageIndex]}`}
+                    src={getImageUrl(product.images[currentImageIndex])}
                     alt={product.name}
                     fill
                     className="object-cover"
