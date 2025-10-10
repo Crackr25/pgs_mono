@@ -19,16 +19,7 @@ export const getImageUrl = (imagePath, folder = '') => {
   const apiUrl = 'https://api.pinoyglobalsupply.com/';
   
   
-  // Ensure imagePath starts with /
-  let cleanImagePath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  
-  // Add folder prefix if provided
-  if (folder) {
-    const cleanFolder = folder.startsWith('/') ? folder : `/${folder}`;
-    cleanImagePath = `${cleanFolder}${cleanImagePath}`;
-  }
-  
-  return `${apiUrl}${cleanImagePath}`;
+  return `${apiUrl}${imagePath}`;
 };
 
 /**
