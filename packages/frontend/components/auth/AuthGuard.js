@@ -8,8 +8,9 @@ const AuthGuard = ({ children }) => {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      // Redirect to login page if not authenticated
-      router.push('/login');
+      // Redirect to buyer portal instead of login page if not authenticated
+      // This allows unauthenticated users to browse the marketplace
+      router.push('/buyer');
     }
   }, [isAuthenticated, loading, router]);
 

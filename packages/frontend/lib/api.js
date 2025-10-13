@@ -755,6 +755,38 @@ class ApiService {
     return this.request(`/marketplace/products/${id}`);
   }
 
+  // Search suggestions based on existing products
+  async getSearchSuggestions(query, limit = 8) {
+    const params = new URLSearchParams({
+      q: query,
+      limit: limit
+    });
+    return this.request(`/search/suggestions?${params.toString()}`);
+  }
+
+  // Full product search with filters
+  async searchProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/search/products?${queryString}`);
+  }
+
+  // Get popular search terms
+  async getPopularSearches(limit = 10) {
+    const params = new URLSearchParams({ limit });
+    return this.request(`/search/popular?${params.toString()}`);
+  }
+
+  // Track search for analytics
+  async trackSearch(query, resultsCount = 0) {
+    return this.request('/search/track', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: query,
+        results_count: resultsCount
+      })
+    });
+  }
+
   async submitMarketplaceInquiry(inquiryData) {
     return this.request('/marketplace/inquiries', {
       method: 'POST',

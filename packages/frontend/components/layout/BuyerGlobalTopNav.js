@@ -21,9 +21,8 @@ import apiService from '../../lib/api';
 
 export default function BuyerGlobalTopNav() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { cartCount } = useCart();
-  const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
@@ -46,16 +45,10 @@ export default function BuyerGlobalTopNav() {
     { code: 'SG', name: 'Singapore', flag: '🇸🇬' }
   ];
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/buyer/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
-  // Fetch unread message count
+  // Fetch unread message count - only for authenticated users
   const fetchUnreadCount = async () => {
-    if (!user) return;
+    if (!user || !isAuthenticated) return;
     
     try {
       const response = await apiService.getBuyerUnreadCount();
@@ -67,10 +60,12 @@ export default function BuyerGlobalTopNav() {
     }
   };
 
-  // Fetch unread count on component mount and when user changes
+  // Fetch unread count on component mount and when user changes - only for authenticated users
   useEffect(() => {
-    fetchUnreadCount();
-  }, [user]);
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    }
+  }, [user, isAuthenticated]);
 
   // Refresh unread count when navigating to/from messages page
   useEffect(() => {
@@ -108,26 +103,8 @@ export default function BuyerGlobalTopNav() {
             </Link>
           </div>
 
-          {/* Center - Search Bar */}
-          <div className="flex-1 max-w-2xl mx-8">
-            <form onSubmit={handleSearch} className="relative">
-              <div className="flex">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products, suppliers, categories..."
-                  className="flex-1 px-4 py-2 border border-secondary-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-primary-600 text-white rounded-r-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <Search className="w-5 h-5" />
-                </button>
-              </div>
-            </form>
-          </div>
+          {/* Center - Spacer (search bar moved to prominent section below) */}
+          <div className="flex-1"></div>
 
           {/* Right - Actions and User Menu */}
           <div className="flex items-center space-x-4">
@@ -190,95 +167,109 @@ export default function BuyerGlobalTopNav() {
               )}
             </div>
 
-            {/* Messages */}
-            <Link href="/buyer/messages">
-              <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
-                <MessageSquare className="w-5 h-5" />
-                {messageCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {messageCount > 9 ? '9+' : messageCount}
-                  </span>
-                )}
-              </button>
-            </Link>
+            {/* Conditional rendering based on authentication status */}
+            {isAuthenticated ? (
+              <>
+                {/* Messages - Authenticated users only */}
+                <Link href="/buyer/messages">
+                  <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
+                    <MessageSquare className="w-5 h-5" />
+                    {messageCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                        {messageCount > 9 ? '9+' : messageCount}
+                      </span>
+                    )}
+                  </button>
+                </Link>
 
-            {/* Orders */}
-            <Link href="/buyer/orders">
-              <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
-                <Package className="w-5 h-5" />
-                {orderCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {orderCount > 9 ? '9+' : orderCount}
-                  </span>
-                )}
-              </button>
-            </Link>
+                {/* Orders - Authenticated users only */}
+                <Link href="/buyer/orders">
+                  <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
+                    <Package className="w-5 h-5" />
+                    {orderCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+                        {orderCount > 9 ? '9+' : orderCount}
+                      </span>
+                    )}
+                  </button>
+                </Link>
 
-            {/* Cart */}
-            <Link href="/buyer/cart">
-              <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
-                <ShoppingCart className="w-5 h-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </button>
-            </Link>
+                {/* Cart - Authenticated users only */}
+                <Link href="/buyer/cart">
+                  <button className="relative p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg">
+                    <ShoppingCart className="w-5 h-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                        {cartCount > 9 ? '9+' : cartCount}
+                      </span>
+                    )}
+                  </button>
+                </Link>
 
-            {/* User Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-2 p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg"
-              >
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-blue-600">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'B'}
-                  </span>
-                </div>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-secondary-200 z-50">
-                  <div className="p-4 border-b border-secondary-200">
-                    <p className="text-sm font-medium text-secondary-900">
-                      {user?.name || 'Buyer Account'}
-                    </p>
-                    <p className="text-xs text-secondary-500">
-                      {user?.email || 'buyer@company.com'}
-                    </p>
-                  </div>
-                  
-                  <div className="py-2">
-                    <Link href="/buyer/profile">
-                      <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
-                        <User className="w-4 h-4" />
-                        <span>My Profile</span>
-                      </button>
-                    </Link>
-                    
-                    <Link href="/buyer/settings">
-                      <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
-                        <Settings className="w-4 h-4" />
-                        <span>Settings</span>
-                      </button>
-                    </Link>
-                    
-                    <div className="border-t border-secondary-200 mt-2 pt-2">
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
+                {/* User Menu - Authenticated users only */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center space-x-2 p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-blue-600">
+                        {user?.name?.charAt(0)?.toUpperCase() || 'B'}
+                      </span>
                     </div>
-                  </div>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+
+                  {showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-secondary-200 z-50">
+                      <div className="p-4 border-b border-secondary-200">
+                        <p className="text-sm font-medium text-secondary-900">
+                          {user?.name || 'Buyer Account'}
+                        </p>
+                        <p className="text-xs text-secondary-500">
+                          {user?.email || 'buyer@company.com'}
+                        </p>
+                      </div>
+                      
+                      <div className="py-2">
+                        <Link href="/buyer/profile">
+                          <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
+                            <User className="w-4 h-4" />
+                            <span>My Profile</span>
+                          </button>
+                        </Link>
+                        
+                        <Link href="/buyer/settings">
+                          <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
+                            <Settings className="w-4 h-4" />
+                            <span>Settings</span>
+                          </button>
+                        </Link>
+                        
+                        <div className="border-t border-secondary-200 mt-2 pt-2">
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <>
+                {/* Guest user actions - show login button */}
+                <Link href="/login">
+                  <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors">
+                    Log In
+                  </button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
