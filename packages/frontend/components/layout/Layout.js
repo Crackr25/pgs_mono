@@ -8,6 +8,7 @@ import BuyerGlobalTopNav from './BuyerGlobalTopNav';
 import SideBar from './SideBar';
 import BuyerSideBar from './BuyerSideBar';
 import Footer from './Footer';
+import ProminentSearchBar from '../common/ProminentSearchBar';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,8 +31,9 @@ export default function Layout({ children }) {
     setSidebarOpen(false);
   };
 
-  // Layout for unauthenticated users (login page)
-  if (!isAuthenticated) {
+  // Layout for unauthenticated users
+  // Only use minimal layout for login page, not for buyer pages
+  if (!isAuthenticated && router.pathname === '/login') {
     return (
       <div className="min-h-screen bg-secondary-50">
         {children}
@@ -53,16 +55,33 @@ export default function Layout({ children }) {
   }
 
   // Determine if this is a buyer page or buyer accessing chat
+  // Updated to work for both authenticated and unauthenticated users
   const isBuyerUser = user?.usertype === 'buyer';
   const isBuyerPage = router.pathname.startsWith('/buyer') || (isBuyerUser && router.pathname === '/chat');
   const isBuyerDashboard = router.pathname === '/buyer';
+  
+  // For unauthenticated users, treat all /buyer routes as buyer pages
+  const isUnauthenticatedBuyerPage = !isAuthenticated && router.pathname.startsWith('/buyer');
+  
+  // Determine when to show the prominent search bar (Alibaba-style)
+  // Show on main buyer pages but not on detail pages, forms, or specific functionality pages
+  const shouldShowProminentSearch = (isBuyerPage || isUnauthenticatedBuyerPage) && (
+    router.pathname === '/buyer' || // Homepage
+    router.pathname === '/buyer/search' || // Search results page
+    router.pathname === '/buyer/suppliers' || // Suppliers listing
+    router.pathname.startsWith('/buyer/products') && router.pathname === '/buyer/products' // Products listing (not detail)
+  );
 
   // Layout for buyer dashboard (home) - only global topnav, no sidenav
-  if (isBuyerDashboard) {
+  // Works for both authenticated and unauthenticated users
+  // Includes prominent Alibaba-style search bar when appropriate
+  if (isBuyerDashboard || (isUnauthenticatedBuyerPage && router.pathname === '/buyer')) {
     return (
       <CartProvider>
         <div className="min-h-screen bg-secondary-50">
           <BuyerGlobalTopNav />
+          {/* Prominent Search Bar - Alibaba Style (only on homepage) */}
+          {shouldShowProminentSearch && <ProminentSearchBar />}
           <main className="p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
               {children}
@@ -75,11 +94,15 @@ export default function Layout({ children }) {
   }
 
   // Layout for other buyer pages - both global topnav and sidenav
-  if (isBuyerPage) {
+  // Works for both authenticated and unauthenticated users
+  // Includes prominent Alibaba-style search bar when appropriate
+  if (isBuyerPage || isUnauthenticatedBuyerPage) {
     return (
       <CartProvider>
         <div className="min-h-screen bg-secondary-50">
           <BuyerGlobalTopNav />
+          {/* Prominent Search Bar - Alibaba Style (on main listing pages) */}
+          {shouldShowProminentSearch && <ProminentSearchBar />}
           <div className="flex">
             <BuyerSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
             <div className="flex-1 flex flex-col lg:ml-0">

@@ -18,8 +18,10 @@ import Pagination from '../common/Pagination';
 import { ProductCardSkeleton } from '../common/Skeleton';
 import QuickMessageModal from '../common/QuickMessageModal';
 import ToastNotification from '../common/ToastNotification';
+import LoginPromptModal from '../common/LoginPromptModal';
 import apiService from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLoginPrompt } from '../../hooks/useLoginPrompt';
 import { getImageUrl } from '../../lib/imageUtils';
 
 export default function ProductGrid({ hideFilters = false }) {
@@ -30,6 +32,7 @@ export default function ProductGrid({ hideFilters = false }) {
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
   const { user } = useAuth();
+  const { requireAuth, showLoginPrompt, hideLoginPrompt, promptConfig } = useLoginPrompt();
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -282,18 +285,26 @@ export default function ProductGrid({ hideFilters = false }) {
   };
 
   const openQuoteModal = (product) => {
-    // Pre-populate form with product details
-
-    
-    setQuoteQuantity(product.moq || 1);
-    setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
-    setSelectedProduct(product);
-    // Set default deadline to tomorrow (Laravel requires after:today)
-    const defaultDeadline = new Date();
-    defaultDeadline.setDate(defaultDeadline.getDate() + 1); // Tomorrow, not today
-    setQuoteDeadline(defaultDeadline.toISOString().split('T')[0]);
-    
-    setShowQuoteModal(true);
+    // Use requireAuth to check if user is logged in before allowing quote request
+    requireAuth(
+      () => {
+        // Pre-populate form with product details
+        setQuoteQuantity(product.moq || 1);
+        setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
+        setSelectedProduct(product);
+        // Set default deadline to tomorrow (Laravel requires after:today)
+        const defaultDeadline = new Date();
+        defaultDeadline.setDate(defaultDeadline.getDate() + 1); // Tomorrow, not today
+        setQuoteDeadline(defaultDeadline.toISOString().split('T')[0]);
+        
+        setShowQuoteModal(true);
+      },
+      {
+        title: "Login Required",
+        message: "You need to log in to request quotes from suppliers.",
+        actionText: `Request quote for "${product.name}"`
+      }
+    );
   };
 
 
@@ -332,8 +343,18 @@ export default function ProductGrid({ hideFilters = false }) {
   };
 
   const handleContactProduct = (product) => {
-    setSelectedProduct(product);
-    setShowMessageModal(true);
+    // Use requireAuth to check if user is logged in before allowing message
+    requireAuth(
+      () => {
+        setSelectedProduct(product);
+        setShowMessageModal(true);
+      },
+      {
+        title: "Login Required",
+        message: "You need to log in to send messages to suppliers.",
+        actionText: `Send message about "${product.name}"`
+      }
+    );
   };
 
 
@@ -656,6 +677,14 @@ export default function ProductGrid({ hideFilters = false }) {
         onSuccess={handleModalSuccess}
       />
 
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={hideLoginPrompt}
+        title={promptConfig.title}
+        message={promptConfig.message}
+        actionText={promptConfig.actionText}
+      />
 
       {/* Toast Notification */}
       <ToastNotification

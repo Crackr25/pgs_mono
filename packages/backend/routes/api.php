@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\StarredSupplierController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ContactInquiryController;
 use App\Http\Controllers\Api\ShippingAddressController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
@@ -60,6 +61,12 @@ Route::get('/marketplace/products/{id}', [MarketplaceController::class, 'getProd
 Route::post('/marketplace/inquiries', [MarketplaceController::class, 'submitInquiry']);
 Route::get('/marketplace/categories', [MarketplaceController::class, 'getCategories']);
 Route::get('/marketplace/locations', [MarketplaceController::class, 'getLocations']);
+
+// Search routes (public - for search functionality)
+Route::get('/search/suggestions', [SearchController::class, 'getSuggestions']);
+Route::get('/search/products', [SearchController::class, 'searchProducts']);
+Route::get('/search/popular', [SearchController::class, 'getPopularSearches']);
+Route::post('/search/track', [SearchController::class, 'trackSearch']);
 
 
 // Quote creation (public - buyers don't need accounts)

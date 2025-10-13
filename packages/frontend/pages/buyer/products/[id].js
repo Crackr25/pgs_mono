@@ -32,8 +32,10 @@ import Button from '../../../components/common/Button';
 import Skeleton from '../../../components/common/Skeleton';
 import CartNotification from '../../../components/common/CartNotification';
 import ToastNotification from '../../../components/common/ToastNotification';
+import LoginPromptModal from '../../../components/common/LoginPromptModal';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLoginPrompt } from '../../../hooks/useLoginPrompt';
 import apiService from '../../../lib/api';
 import { getImageUrl } from '../../../lib/imageUtils';
 
@@ -42,6 +44,7 @@ export default function ProductDetail() {
   const { id } = router.query;
   const { addToCart: addToCartContext } = useCart();
   const { user } = useAuth();
+  const { requireAuth, showLoginPrompt, hideLoginPrompt, promptConfig } = useLoginPrompt();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -142,52 +145,72 @@ export default function ProductDetail() {
     }
   };
 
-  const handleSaveProduct = async () => {
-    if (savingProduct) return;
-    
-    try {
-      setSavingProduct(true);
-      
-      if (isSaved) {
-        await apiService.unsaveProduct(id);
-        setIsSaved(false);
-      } else {
-        await apiService.saveProduct(id);
-        setIsSaved(true);
+  const handleSaveProduct = () => {
+    // Use requireAuth to check if user is logged in before allowing save
+    requireAuth(
+      async () => {
+        if (savingProduct) return;
+        
+        try {
+          setSavingProduct(true);
+          
+          if (isSaved) {
+            await apiService.unsaveProduct(id);
+            setIsSaved(false);
+          } else {
+            await apiService.saveProduct(id);
+            setIsSaved(true);
+          }
+        } catch (error) {
+          console.error('Error saving/unsaving product:', error);
+          alert('Failed to save product. Please try again.');
+        } finally {
+          setSavingProduct(false);
+        }
+      },
+      {
+        title: "Login Required",
+        message: "You need to log in to save products to your list.",
+        actionText: `Save "${product?.name}" to your list`
       }
-    } catch (error) {
-      console.error('Error saving/unsaving product:', error);
-      alert('Failed to save product. Please try again.');
-    } finally {
-      setSavingProduct(false);
-    }
+    );
   };
 
-  const handleAddToCart = async () => {
-    if (addingToCart) return;
+  const handleAddToCart = () => {
+    // Use requireAuth to check if user is logged in before allowing add to cart
+    requireAuth(
+      async () => {
+        if (addingToCart) return;
 
-    try {
-      setAddingToCart(true);
-      
-      // Call addToCart with correct parameters: productId, quantity, specifications
-      await addToCartContext(product.id, cartQuantity, selectedSpecs);
-      setShowCartNotification(true);
-      
-      // Hide notification after 3 seconds
-      setTimeout(() => {
-        setShowCartNotification(false);
-      }, 3000);
-      
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      showToastNotification(
-        'error',
-        'Cart Error',
-        'Failed to add product to cart. Please try again.'
-      );
-    } finally {
-      setAddingToCart(false);
-    }
+        try {
+          setAddingToCart(true);
+          
+          // Call addToCart with correct parameters: productId, quantity, specifications
+          await addToCartContext(product.id, cartQuantity, selectedSpecs);
+          setShowCartNotification(true);
+          
+          // Hide notification after 3 seconds
+          setTimeout(() => {
+            setShowCartNotification(false);
+          }, 3000);
+          
+        } catch (error) {
+          console.error('Error adding to cart:', error);
+          showToastNotification(
+            'error',
+            'Cart Error',
+            'Failed to add product to cart. Please try again.'
+          );
+        } finally {
+          setAddingToCart(false);
+        }
+      },
+      {
+        title: "Login Required",
+        message: "You need to log in to add products to your cart.",
+        actionText: `Add "${product?.name}" to cart`
+      }
+    );
   };
 
   const handleQuoteRequest = async () => {
@@ -298,16 +321,26 @@ export default function ProductDetail() {
   };
 
   const openQuoteModal = () => {
-    // Pre-populate form with product details
-    setQuoteQuantity(product.moq || 1);
-    setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
-    
-    // Set default deadline to tomorrow (Laravel requires after:today)
-    const defaultDeadline = new Date();
-    defaultDeadline.setDate(defaultDeadline.getDate() + 1); // Tomorrow, not today
-    setQuoteDeadline(defaultDeadline.toISOString().split('T')[0]);
-    
-    setShowQuoteModal(true);
+    // Use requireAuth to check if user is logged in before allowing quote request
+    requireAuth(
+      () => {
+        // Pre-populate form with product details
+        setQuoteQuantity(product.moq || 1);
+        setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
+        
+        // Set default deadline to tomorrow (Laravel requires after:today)
+        const defaultDeadline = new Date();
+        defaultDeadline.setDate(defaultDeadline.getDate() + 1); // Tomorrow, not today
+        setQuoteDeadline(defaultDeadline.toISOString().split('T')[0]);
+        
+        setShowQuoteModal(true);
+      },
+      {
+        title: "Login Required",
+        message: "You need to log in to request quotes from suppliers.",
+        actionText: `Request quote for "${product?.name}"`
+      }
+    );
   };
 
   const handleQuantityChange = (newQuantity) => {
@@ -605,7 +638,14 @@ Product Link: ${window.location.href}`;
               
               <div className="flex space-x-2">
                 <Button 
-                  onClick={() => setShowMessageForm(true)}
+                  onClick={() => requireAuth(
+                    () => setShowMessageForm(true),
+                    {
+                      title: "Login Required",
+                      message: "You need to log in to send messages to suppliers.",
+                      actionText: `Send message to ${product?.company?.name}`
+                    }
+                  )}
                   className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
@@ -1227,6 +1267,15 @@ Product Link: ${window.location.href}`;
           onClose={() => setShowCartNotification(false)}
           productName={product?.name}
           quantity={cartQuantity}
+        />
+
+        {/* Login Prompt Modal */}
+        <LoginPromptModal
+          isOpen={showLoginPrompt}
+          onClose={hideLoginPrompt}
+          title={promptConfig.title}
+          message={promptConfig.message}
+          actionText={promptConfig.actionText}
         />
 
         {/* Toast Notification */}

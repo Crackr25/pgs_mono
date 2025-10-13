@@ -46,7 +46,15 @@ export default function BuyerSideBar({ isOpen, onClose }) {
     }
   };
 
-  const navigation = [
+  // Navigation items - conditional based on authentication status
+  const publicNavigation = [
+    { name: 'Home', href: '/buyer', icon: Home },
+    { name: 'Search Products', href: '/buyer/search', icon: Search },
+    { name: 'Suppliers', href: '/buyer/suppliers', icon: Users },
+    { name: 'Trade Services', href: '/buyer/services', icon: Building },
+  ];
+
+  const authenticatedNavigation = [
     { name: 'Home', href: '/buyer', icon: Home },
     { name: 'Messages', href: '/buyer/messages', icon: MessageSquare },
     { name: 'My Quotes', href: '/buyer/quotes', icon: DollarSign },
@@ -57,6 +65,9 @@ export default function BuyerSideBar({ isOpen, onClose }) {
     { name: 'My Lists', href: '/buyer/lists', icon: BarChart3 },
     { name: 'Trade Services', href: '/buyer/services', icon: Building },
   ];
+
+  // Choose navigation based on authentication status
+  const navigation = isAuthenticated ? authenticatedNavigation : publicNavigation;
 
   const isActive = (href) => {
     if (href === '/buyer') {
@@ -129,23 +140,36 @@ export default function BuyerSideBar({ isOpen, onClose }) {
             })}
           </nav>
 
-          {/* Bottom section */}
+          {/* Bottom section - conditional based on authentication */}
           <div className="p-4 border-t border-secondary-200 mt-auto flex-shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-blue-600">
-                  {getCompanyInitial()}
-                </span>
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-blue-600">
+                    {getCompanyInitial()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-secondary-900 truncate">
+                    {companyData?.name || user?.name || 'Your Company'}
+                  </p>
+                  <p className="text-xs text-secondary-500 truncate">
+                    {companyData?.subscription || 'Buyer Account'}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-secondary-900 truncate">
-                  {companyData?.name || user?.name || 'Your Company'}
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-secondary-600 text-center">
+                  Sign in to access more features
                 </p>
-                <p className="text-xs text-secondary-500 truncate">
-                  {companyData?.subscription || 'Buyer Account'}
-                </p>
+                <Link href="/login">
+                  <button className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors text-sm">
+                    Log In
+                  </button>
+                </Link>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
