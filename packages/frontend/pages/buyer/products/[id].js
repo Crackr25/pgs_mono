@@ -59,6 +59,8 @@ export default function ProductDetail() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [cartQuantity, setCartQuantity] = useState(1);
   const [selectedSpecs, setSelectedSpecs] = useState({});
+  const [selectedVariation, setSelectedVariation] = useState(null);
+  const [variationPrice, setVariationPrice] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -114,6 +116,12 @@ export default function ProductDetail() {
     if (product) {
       // Set minimum quantity to MOQ
       setCartQuantity(product.moq || 1);
+      
+      // Set default variation if available
+      if (product.variations && product.variations.length > 0) {
+        setSelectedVariation(product.variations[0]);
+        setVariationPrice(product.variations[0].price);
+      }
     }
   }, [product]);
 
@@ -223,7 +231,7 @@ export default function ProductDetail() {
     }
 
     // MOQ validation - like Alibaba
-    const minQuantity = product.moq || 1;
+    const minQuantity = getCurrentMOQ();
     if (parseInt(quoteQuantity) < minQuantity) {
       showToastNotification(
         'warning', 
@@ -325,7 +333,7 @@ export default function ProductDetail() {
     requireAuth(
       () => {
         // Pre-populate form with product details
-        setQuoteQuantity(product.moq || 1);
+        setQuoteQuantity(getCurrentMOQ());
         setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
         
         // Set default deadline to tomorrow (Laravel requires after:today)
@@ -344,8 +352,8 @@ export default function ProductDetail() {
   };
 
   const handleQuantityChange = (newQuantity) => {
-    const minQty = product?.moq || 1;
-    const maxQty = product?.stock_quantity || 999999;
+    const minQty = getCurrentMOQ();
+    const maxQty = getCurrentStock() || 999999;
     
     if (newQuantity >= minQty && newQuantity <= maxQty) {
       setCartQuantity(newQuantity);
@@ -432,6 +440,29 @@ Product Link: ${window.location.href}`;
     if (product?.images) {
       setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
     }
+  };
+
+  const selectImage = (index) => {
+    setCurrentImageIndex(index);
+  };
+
+  const handleVariationChange = (variation) => {
+    setSelectedVariation(variation);
+    setVariationPrice(variation.price);
+    // Reset quantity to MOQ of selected variation
+    setCartQuantity(variation.moq || product.moq || 1);
+  };
+
+  const getCurrentPrice = () => {
+    return variationPrice || product.price;
+  };
+
+  const getCurrentMOQ = () => {
+    return selectedVariation?.moq || product.moq || 1;
+  };
+
+  const getCurrentStock = () => {
+    return selectedVariation?.stock_quantity || product.stock_quantity;
   };
 
   const renderStars = (rating) => {
@@ -524,39 +555,65 @@ Product Link: ${window.location.href}`;
         {/* Product Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Images */}
-          <div className="space-y-4">
+          <div className="flex gap-4">
+            {/* Image Thumbnails */}
+            {product.images && product.images.length > 1 && (
+              <div className="flex flex-col space-y-2 w-20">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => selectImage(index)}
+                    className={`relative aspect-square bg-secondary-100 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:border-primary-300 ${
+                      currentImageIndex === index
+                        ? 'border-primary-500 ring-2 ring-primary-200'
+                        : 'border-secondary-200'
+                    }`}
+                  >
+                    <Image
+                      src={getImageUrl(image)}
+                      alt={`${product.name} - Image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+            
             {/* Main Image */}
-            <div className="relative aspect-square bg-secondary-100 rounded-lg overflow-hidden">
-              {product.images && product.images.length > 0 ? (
-                <>
-                  <Image
-                    src={getImageUrl(product.images[currentImageIndex])}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                  />
-                  {product.images.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevImage}
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-md"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={nextImage}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-md"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <Package className="w-16 h-16 text-secondary-400" />
-                </div>
-              )}
+            <div className="flex-1">
+              <div className="relative aspect-square bg-secondary-100 rounded-lg overflow-hidden">
+                {product.images && product.images.length > 0 ? (
+                  <>
+                    <Image
+                      src={getImageUrl(product.images[currentImageIndex])}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                    />
+                    {product.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevImage}
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-md transition-all duration-200"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={nextImage}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-md transition-all duration-200"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <Package className="w-16 h-16 text-secondary-400" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -567,20 +624,64 @@ Product Link: ${window.location.href}`;
               <p className="text-secondary-600">{product.description}</p>
             </div>
 
+            {/* Product Variations */}
+            {product.variations && product.variations.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-secondary-900">Product Variations</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {product.variations.map((variation, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleVariationChange(variation)}
+                      className={`p-3 border rounded-lg text-left transition-all duration-200 ${
+                        selectedVariation === variation
+                          ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
+                          : 'border-secondary-200 hover:border-secondary-300 hover:bg-secondary-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-secondary-900">{variation.name}</div>
+                          {variation.description && (
+                            <div className="text-sm text-secondary-600 mt-1">{variation.description}</div>
+                          )}
+                          <div className="flex items-center space-x-4 mt-2 text-sm">
+                            <span className="text-secondary-600">MOQ: {variation.moq || product.moq} {product.unit}</span>
+                            <span className="text-secondary-600">Stock: {variation.stock_quantity?.toLocaleString() || 'N/A'}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-primary-600">
+                            ${variation.price.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-secondary-600">per {product.unit}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Price and Basic Info */}
             <div className="space-y-4">
               <div className="flex items-baseline space-x-2">
                 <span className="text-3xl font-bold text-primary-600">
-                  ${product.price.toFixed(2)}
+                  ${getCurrentPrice().toFixed(2)}
                 </span>
                 <span className="text-secondary-600">per {product.unit}</span>
+                {selectedVariation && (
+                  <span className="text-sm text-secondary-500 ml-2">
+                    ({selectedVariation.name})
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center space-x-2">
                   <Package className="w-4 h-4 text-secondary-400" />
                   <span className="text-secondary-600">MOQ:</span>
-                  <span className="font-medium">{product.moq} {product.unit}</span>
+                  <span className="font-medium">{getCurrentMOQ()} {product.unit}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-secondary-400" />
@@ -590,7 +691,7 @@ Product Link: ${window.location.href}`;
                 <div className="flex items-center space-x-2">
                   <Truck className="w-4 h-4 text-secondary-400" />
                   <span className="text-secondary-600">Stock:</span>
-                  <span className="font-medium">{product.stock_quantity.toLocaleString()}</span>
+                  <span className="font-medium">{getCurrentStock().toLocaleString()}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Info className="w-4 h-4 text-secondary-400" />
@@ -665,7 +766,7 @@ Product Link: ${window.location.href}`;
             </Card>
 
             {/* Add to Cart Section */}
-            {product.stock_quantity > 0 && (
+            {getCurrentStock() > 0 && (
               <Card className="p-6 bg-gray-50 border-2 border-dashed border-gray-200">
                 <h3 className="text-lg font-semibold mb-4">Add to Cart</h3>
                 
@@ -719,7 +820,7 @@ Product Link: ${window.location.href}`;
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => handleQuantityChange(cartQuantity - 1)}
-                      disabled={cartQuantity <= (product.moq || 1)}
+                      disabled={cartQuantity <= getCurrentMOQ()}
                       className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Minus className="w-4 h-4" />
@@ -728,19 +829,19 @@ Product Link: ${window.location.href}`;
                       type="number"
                       value={cartQuantity}
                       onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-                      min={product.moq || 1}
-                      max={product.stock_quantity}
+                      min={getCurrentMOQ()}
+                      max={getCurrentStock()}
                       className="w-20 px-3 py-2 text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     <button
                       onClick={() => handleQuantityChange(cartQuantity + 1)}
-                      disabled={cartQuantity >= product.stock_quantity}
+                      disabled={cartQuantity >= getCurrentStock()}
                       className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                     <span className="text-sm text-gray-600">
-                      {product.unit} (Min: {product.moq}, Max: {product.stock_quantity})
+                      {product.unit} (Min: {getCurrentMOQ()}, Max: {getCurrentStock()})
                     </span>
                   </div>
                 </div>
@@ -750,18 +851,21 @@ Product Link: ${window.location.href}`;
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Total Price:</span>
                     <span className="text-xl font-bold text-primary-600">
-                      ${(product.price * cartQuantity).toFixed(2)}
+                      ${(getCurrentPrice() * cartQuantity).toFixed(2)}
                     </span>
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
-                    ${product.price.toFixed(2)} × {cartQuantity} {product.unit}
+                    ${getCurrentPrice().toFixed(2)} × {cartQuantity} {product.unit}
+                    {selectedVariation && (
+                      <span className="ml-2 text-primary-600">({selectedVariation.name})</span>
+                    )}
                   </div>
                 </div>
 
                 {/* Add to Cart Button */}
                 <Button
                   onClick={handleAddToCart}
-                  disabled={addingToCart || cartQuantity < (product.moq || 1) || cartQuantity > product.stock_quantity}
+                  disabled={addingToCart || cartQuantity < getCurrentMOQ() || cartQuantity > getCurrentStock()}
                   className="w-full bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
@@ -771,7 +875,7 @@ Product Link: ${window.location.href}`;
             )}
 
             {/* Out of Stock Message */}
-            {product.stock_quantity === 0 && (
+            {getCurrentStock() === 0 && (
               <Card className="p-4 bg-red-50 border border-red-200">
                 <div className="flex items-center space-x-2 text-red-700">
                   <AlertCircle className="w-5 h-5" />
