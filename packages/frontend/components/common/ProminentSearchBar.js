@@ -174,14 +174,14 @@ export default function ProminentSearchBar({ className = "" }) {
   };
 
   return (
-    <div className={`bg-gradient-to-r from-primary-50 to-blue-50 py-8 ${className}`}>
+    <div className={`bg-gradient-to-r from-primary-50 to-primary-100 py-8 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Search Section Title */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-secondary-900 mb-2">
             Find Products & Suppliers
           </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
+          <p className="text-secondary-600 text-sm sm:text-base">
             Discover millions of products from verified suppliers worldwide
           </p>
         </div>
@@ -189,13 +189,13 @@ export default function ProminentSearchBar({ className = "" }) {
         {/* Main Search Bar - Alibaba Style */}
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSearch} className="relative">
-            <div className="flex bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="flex bg-white rounded-lg shadow-medium border border-secondary-200 overflow-hidden">
               {/* Category Dropdown */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="flex items-center px-4 py-4 text-gray-700 hover:bg-gray-50 border-r border-gray-200 min-w-0 whitespace-nowrap"
+                  className="flex items-center px-4 py-4 text-secondary-700 hover:bg-secondary-50 border-r border-secondary-200 min-w-0 whitespace-nowrap"
                 >
                   <span className="text-sm font-medium truncate max-w-32 sm:max-w-none">
                     {selectedCategory}
@@ -205,7 +205,7 @@ export default function ProminentSearchBar({ className = "" }) {
 
                 {/* Category Dropdown Menu */}
                 {showCategoryDropdown && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-b-lg shadow-medium z-50 max-h-60 overflow-y-auto">
                     {categories.map((category) => (
                       <button
                         key={category}
@@ -214,7 +214,7 @@ export default function ProminentSearchBar({ className = "" }) {
                           setSelectedCategory(category);
                           setShowCategoryDropdown(false);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 focus:bg-primary-50 focus:text-primary-700"
                       >
                         {category}
                       </button>
@@ -236,10 +236,10 @@ export default function ProminentSearchBar({ className = "" }) {
                 autoComplete="off"
               />
 
-              {/* Search Button - Alibaba Style Orange/Primary */}
+              {/* Search Button - Primary Blue Theme */}
               <button
                 type="submit"
-                className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
                 <div className="flex items-center space-x-2">
                   <Search className="w-5 h-5" />
@@ -252,12 +252,12 @@ export default function ProminentSearchBar({ className = "" }) {
             {showSuggestions && (
               <div 
                 ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+                className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-b-lg shadow-medium z-50 max-h-80 overflow-y-auto"
               >
                 {isLoadingSuggestions ? (
-                  <div className="px-4 py-3 text-center text-gray-500">
+                  <div className="px-4 py-3 text-center text-secondary-500">
                     <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
                       <span>Searching...</span>
                     </div>
                   </div>
@@ -267,40 +267,40 @@ export default function ProminentSearchBar({ className = "" }) {
                       key={index}
                       type="button"
                       onClick={() => selectSuggestion(suggestion)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 focus:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
-                        index === selectedSuggestionIndex ? 'bg-orange-50 border-orange-200' : ''
+                      className={`w-full text-left px-4 py-3 hover:bg-secondary-50 focus:bg-secondary-50 border-b border-secondary-100 last:border-b-0 transition-colors ${
+                        index === selectedSuggestionIndex ? 'bg-primary-50 border-primary-200' : ''
                       }`}
                     >
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
-                          <Package className="w-4 h-4 text-orange-500" />
+                          <Package className="w-4 h-4 text-primary-600" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col">
                             <div className="flex items-center space-x-2">
-                              <span className="text-gray-900 font-medium truncate">
+                              <span className="text-secondary-900 font-medium truncate">
                                 {suggestion.name || suggestion.text}
                               </span>
                               {suggestion.category && (
-                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full flex-shrink-0">
+                                <span className="text-xs text-secondary-500 bg-secondary-100 px-2 py-1 rounded-full flex-shrink-0">
                                   {suggestion.category}
                                 </span>
                               )}
                             </div>
                             {suggestion.company && (
-                              <span className="text-xs text-gray-500 truncate">
+                              <span className="text-xs text-secondary-500 truncate">
                                 by {suggestion.company.name}
                               </span>
                             )}
                             {suggestion.price && (
-                              <span className="text-xs text-orange-600 font-medium">
+                              <span className="text-xs text-primary-600 font-medium">
                                 ${parseFloat(suggestion.price).toFixed(2)}
                               </span>
                             )}
                           </div>
                         </div>
                         <div className="flex-shrink-0">
-                          <Search className="w-3 h-3 text-gray-300" />
+                          <Search className="w-3 h-3 text-secondary-300" />
                         </div>
                       </div>
                     </button>
@@ -312,7 +312,7 @@ export default function ProminentSearchBar({ className = "" }) {
 
           {/* Popular Searches - Optional Enhancement */}
           <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500 mb-2">Popular searches:</p>
+            <p className="text-sm text-secondary-500 mb-2">Popular searches:</p>
             <div className="flex flex-wrap justify-center gap-2">
               {['LED Lights', 'Face Masks', 'Solar Panels', 'Smartphones', 'Furniture'].map((term) => (
                 <button
@@ -323,7 +323,7 @@ export default function ProminentSearchBar({ className = "" }) {
                     params.set('q', term);
                     router.push(`/buyer/search?${params.toString()}`);
                   }}
-                  className="px-3 py-1 text-xs bg-white text-gray-600 rounded-full border border-gray-200 hover:border-primary-300 hover:text-primary-600 transition-colors"
+                  className="px-3 py-1 text-xs bg-white text-secondary-600 rounded-full border border-secondary-200 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                 >
                   {term}
                 </button>
