@@ -23,6 +23,7 @@ import QuickMessageModal from '../../components/common/QuickMessageModal';
 import QuickQuoteModal from '../../components/common/QuickQuoteModal';
 import ToastNotification from '../../components/common/ToastNotification';
 import apiService from '../../lib/api';
+import { getImageUrl } from '../../lib/imageUtils';
 
 export default function SearchResults() {
   const router = useRouter();
@@ -185,7 +186,7 @@ export default function SearchResults() {
           <div className="relative">
             {product.has_image ? (
               <img
-                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${product.image}`}
+                src={getImageUrl(product.image)}
                 alt={product.name}
                 className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
               />
