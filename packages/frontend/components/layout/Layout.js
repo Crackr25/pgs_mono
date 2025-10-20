@@ -75,7 +75,11 @@ export default function Layout({ children }) {
   // Layout for buyer dashboard (home) - only global topnav, no sidenav
   // Works for both authenticated and unauthenticated users
   // Includes prominent Alibaba-style search bar when appropriate
-  if (isBuyerDashboard || (isUnauthenticatedBuyerPage && router.pathname === '/buyer')) {
+  // Also applies to search page and product detail pages for better space utilization
+  if (isBuyerDashboard || 
+      (isUnauthenticatedBuyerPage && router.pathname === '/buyer') ||
+      router.pathname === '/buyer/search' ||
+      router.pathname.startsWith('/buyer/products/')) {
     return (
       <CartProvider>
         <div className="min-h-screen bg-secondary-50">

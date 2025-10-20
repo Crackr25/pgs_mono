@@ -25,7 +25,9 @@ import {
   AlertCircle,
   ShoppingCart,
   Plus,
-  Minus
+  Minus,
+  ZoomIn,
+  Search
 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
@@ -33,6 +35,10 @@ import Skeleton from '../../../components/common/Skeleton';
 import CartNotification from '../../../components/common/CartNotification';
 import ToastNotification from '../../../components/common/ToastNotification';
 import LoginPromptModal from '../../../components/common/LoginPromptModal';
+import ImageZoomViewer from '../../../components/common/ImageZoomViewer';
+import ProductSpotlight from '../../../components/common/ProductSpotlight';
+import BusinessRecommendations from '../../../components/common/BusinessRecommendations';
+import ProductSearchBar from '../../../components/common/ProductSearchBar';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLoginPrompt } from '../../../hooks/useLoginPrompt';
@@ -71,6 +77,8 @@ export default function ProductDetail() {
   const [submittingQuote, setSubmittingQuote] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastConfig, setToastConfig] = useState({});
+  const [showImageZoom, setShowImageZoom] = useState(false);
+  const [imageHoverZoom, setImageHoverZoom] = useState(false);
   
   const inquiryTemplates = [
     {
@@ -543,6 +551,15 @@ Product Link: ${window.location.href}`;
           <span className="text-secondary-900">{product.name}</span>
         </div>
 
+        {/* Enhanced Search Bar - Alibaba Style */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <ProductSearchBar 
+            placeholder="Search similar products or other suppliers..."
+            className="mb-0"
+            compact={false}
+          />
+        </div>
+
         {/* Back Button */}
         <button
           onClick={() => router.back()}
@@ -582,25 +599,45 @@ Product Link: ${window.location.href}`;
             
             {/* Main Image */}
             <div className="flex-1">
-              <div className="relative aspect-square bg-secondary-100 rounded-lg overflow-hidden">
+              <div 
+                className="relative aspect-square bg-secondary-100 rounded-lg overflow-hidden cursor-zoom-in group"
+                onMouseEnter={() => setImageHoverZoom(true)}
+                onMouseLeave={() => setImageHoverZoom(false)}
+                onClick={() => setShowImageZoom(true)}
+              >
                 {product.images && product.images.length > 0 ? (
                   <>
                     <Image
                       src={getImageUrl(product.images[currentImageIndex])}
                       alt={product.name}
                       fill
-                      className="object-cover"
+                      className={`object-cover transition-transform duration-300 ${
+                        imageHoverZoom ? 'scale-110' : 'scale-100'
+                      }`}
                     />
+                    
+                    {/* Zoom indicator */}
+                    <div className="absolute top-3 right-3 bg-black bg-opacity-60 text-white px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm flex items-center space-x-1">
+                      <ZoomIn className="w-3 h-3" />
+                      <span>Click to zoom</span>
+                    </div>
+                    
                     {product.images.length > 1 && (
                       <>
                         <button
-                          onClick={prevImage}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            prevImage();
+                          }}
                           className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-md transition-all duration-200"
                         >
                           <ChevronLeft className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={nextImage}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            nextImage();
+                          }}
                           className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-md transition-all duration-200"
                         >
                           <ChevronRight className="w-5 h-5" />
@@ -906,6 +943,56 @@ Product Link: ${window.location.href}`;
           </div>
         </div>
 
+        {/* Product Spotlight Section - Alibaba Style (Hidden for now) */}
+        {/* 
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <ProductSpotlight 
+              product={product} 
+              company={product.company}
+            />
+          </div>
+          
+          <div className="lg:col-span-1">
+            <Card className="p-4 sticky top-4">
+              <h4 className="font-semibold text-gray-900 mb-3">Supplier Quick Info</h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Response Time:</span>
+                  <span className="font-medium">{product.company.response_time || '< 24h'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Business Type:</span>
+                  <span className="font-medium">{product.company.business_type || 'Manufacturer'}</span>
+                </div>
+                {product.company.years_in_business && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Experience:</span>
+                    <span className="font-medium">{product.company.years_in_business}+ years</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Location:</span>
+                  <span className="font-medium">{product.company.location}</span>
+                </div>
+                {product.company.website && (
+                  <div className="pt-2 border-t">
+                    <Link 
+                      href={product.company.website} 
+                      target="_blank"
+                      className="flex items-center text-primary-600 hover:text-primary-700 text-sm"
+                    >
+                      <Globe className="w-3 h-3 mr-1" />
+                      Visit Company Website
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+        */}
+
         {/* Tabs Navigation */}
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8">
@@ -1068,6 +1155,13 @@ Product Link: ${window.location.href}`;
             </div>
           )}
         </div>
+
+        {/* Business Recommendations - Alibaba Style */}
+        <BusinessRecommendations 
+          currentProduct={product}
+          currentCompany={product.company}
+          className="mt-8"
+        />
 
         {/* Message Form Modal */}
         {showMessageForm && (
@@ -1391,6 +1485,16 @@ Product Link: ${window.location.href}`;
           message={toastConfig.message}
           duration={toastConfig.duration}
         />
+
+        {/* Image Zoom Viewer */}
+        {showImageZoom && product?.images && (
+          <ImageZoomViewer
+            images={product.images.map(img => getImageUrl(img))}
+            currentIndex={currentImageIndex}
+            onClose={() => setShowImageZoom(false)}
+            onIndexChange={(index) => setCurrentImageIndex(index)}
+          />
+        )}
       </div>
     </>
   );
