@@ -16,10 +16,15 @@ export const getImageUrl = (imagePath, folder = '') => {
     return imagePath;
   }
   
-  const apiUrl = 'https://api.pinoyglobalsupply.com/';
+  const apiUrl = 'http://localhost:8000/';
   
+  // If the path doesn't start with 'storage/', add it
+  let fullPath = imagePath;
+  if (!fullPath.startsWith('storage/') && !fullPath.startsWith('/storage/')) {
+    fullPath = `storage/${fullPath}`;
+  }
   
-  return `${apiUrl}${imagePath}`;
+  return `${apiUrl}${fullPath}`;
 };
 
 /**

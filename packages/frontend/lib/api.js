@@ -279,22 +279,20 @@ class ApiService {
     const formData = new FormData();
     
     if (fieldName) {
-      // Use the specific field name provided
-      const isMultiple = ['production_line_photos', 'quality_control_photos', 'warehouse_photos', 'certifications_display_photos'].includes(fieldName);
-      files.forEach((file) => {
-        if (isMultiple) {
-          formData.append(`${fieldName}[]`, file);
-        } else {
-          formData.append(fieldName, file);
-        }
-      });
+      // Use specific field name for targeted uploads
+      if (files.length === 1) {
+        formData.append(fieldName, files[0]);
+      } else {
+        files.forEach((file, index) => {
+          formData.append(`${fieldName}[${index}]`, file);
+        });
+      }
     } else {
-      // Fallback to filename-based logic for backward compatibility
-      files.forEach((file) => {
+      // Use filename-based mapping (legacy behavior)
+      files.forEach((file, index) => {
         const fileName = file.name.toLowerCase();
-        const fileType = file.type;
         
-        if (fileType.startsWith('video/') || fileName.includes('overview')) {
+        if (fileName.includes('overview') || fileName.includes('video')) {
           formData.append('factory_overview_video', file);
         } else if (fileName.includes('production') || fileName.includes('line')) {
           formData.append('production_line_photos[]', file);
@@ -303,14 +301,28 @@ class ApiService {
         } else if (fileName.includes('warehouse') || fileName.includes('storage')) {
           formData.append('warehouse_photos[]', file);
         } else if (fileName.includes('cert') || fileName.includes('display')) {
-          formData.append('certifications_display_photos[]', file);
+          formData.append('certifications_photos[]', file);
         } else {
+          // Default to production line photos
           formData.append('production_line_photos[]', file);
         }
       });
     }
     
     return this.uploadFormData(`/companies/${companyId}/upload-factory-tour`, formData, onProgress);
+  }
+
+  async uploadCompanyBanner(companyId, file, onProgress) {
+    const formData = new FormData();
+    formData.append('banner', file);
+    
+    return this.uploadFormData(`/companies/${companyId}/upload-banner`, formData, onProgress);
+  }
+
+  async deleteCompanyBanner(companyId) {
+    return this.request(`/companies/${companyId}/banner`, {
+      method: 'DELETE'
+    });
   }
 
   // Product methods

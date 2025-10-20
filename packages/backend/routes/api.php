@@ -107,6 +107,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/companies/{company}/upload-kyc', [CompanyController::class, 'uploadKyc']);
     Route::post('/companies/{company}/upload-factory-tour', [CompanyController::class, 'uploadFactoryTour']);
     
+    // Company banner management
+    Route::post('/companies/{company}/upload-banner', [CompanyController::class, 'uploadBanner']);
+    Route::delete('/companies/{company}/banner', [CompanyController::class, 'deleteBanner']);
+    
     // Product management
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);

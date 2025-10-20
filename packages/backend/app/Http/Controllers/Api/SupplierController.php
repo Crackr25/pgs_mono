@@ -34,6 +34,7 @@ class SupplierController extends Controller
                 'about' => $company->about,
                 'location' => $company->location,
                 'address' => $company->address,
+                'company_banner' => $company->company_banner,
                 'established' => $company->established,
                 'verified' => $company->verified,
                 'rating' => $company->rating ?? 4.2,

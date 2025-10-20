@@ -222,6 +222,9 @@ export default function CompanyProfile() {
         case 'factory-tour':
           response = await apiService.uploadFactoryTour(company.id, files, onProgress);
           break;
+        case 'banner':
+          response = await apiService.uploadCompanyBanner(company.id, files[0], onProgress);
+          break;
         default:
           throw new Error('Invalid upload type');
       }
@@ -237,7 +240,12 @@ export default function CompanyProfile() {
       });
 
       // Update company data with uploaded files instead of full refresh
-      if (response && response.data) {
+      if (response && response.company) {
+        setCompany(prev => ({
+          ...prev,
+          ...response.company
+        }));
+      } else if (response && response.data) {
         setCompany(prev => ({
           ...prev,
           ...response.data
@@ -257,6 +265,32 @@ export default function CompanyProfile() {
         }));
       });
       setError(error.message || 'Upload failed');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBannerDelete = async () => {
+    if (!company || !company.company_banner) return;
+
+    if (!confirm('Are you sure you want to delete the company banner?')) return;
+
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      const response = await apiService.deleteCompanyBanner(company.id);
+      
+      // Update company data to remove banner
+      setCompany(prev => ({
+        ...prev,
+        company_banner: null
+      }));
+
+      console.log('Banner deleted successfully');
+    } catch (error) {
+      console.error('Delete banner error:', error);
+      setError(error.message || 'Failed to delete banner');
     } finally {
       setIsSaving(false);
     }
@@ -350,6 +384,71 @@ export default function CompanyProfile() {
             <div className="text-sm text-red-700">{error}</div>
           </div>
         )}
+
+        {/* Company Banner */}
+        <Card>
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-secondary-900 mb-6">
+              Company Banner
+            </h3>
+            
+            {/* Banner Display */}
+            <div className="mb-6">
+              {company.company_banner ? (
+                <div className="relative">
+                  <div className="w-full h-48 md:h-64 rounded-lg overflow-hidden bg-secondary-100">
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_STORAGE_URL || '/storage'}/${company.company_banner}`}
+                      alt="Company Banner"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {isEditing && (
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBannerDelete}
+                        disabled={isSaving}
+                        className="bg-white/90 hover:bg-white text-red-600 border-red-200 hover:border-red-300"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-48 md:h-64 rounded-lg border-2 border-dashed border-secondary-300 bg-secondary-50 flex items-center justify-center">
+                  <div className="text-center">
+                    <Camera className="mx-auto h-12 w-12 text-secondary-400" />
+                    <h3 className="mt-2 text-sm font-medium text-secondary-900">No banner image</h3>
+                    <p className="mt-1 text-sm text-secondary-500">
+                      Upload a banner image to showcase your company
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Banner Upload */}
+            {isEditing && (
+              <div className="border-t pt-6">
+                <FileUpload
+                  key={`banner-upload-${isEditing}`}
+                  label={company.company_banner ? "Replace Banner Image" : "Upload Banner Image"}
+                  accept=".jpg,.jpeg,.png,.webp"
+                  multiple={false}
+                  maxSize={10}
+                  onUpload={(files) => handleFileUpload(files, 'banner')}
+                  uploadProgress={uploadProgress}
+                  uploadErrors={uploadErrors}
+                  description="Recommended size: 1200x400px. Supported formats: JPG, PNG, WebP (max 10MB)"
+                />
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Company Information */}
         <Card>

@@ -298,6 +298,81 @@ class CompanyController extends Controller
     }
 
     /**
+     * Upload company banner image
+     */
+    public function uploadBanner(Request $request, Company $company): JsonResponse
+    {
+        // Check if user owns this company
+        if ($company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'banner' => 'required|file|mimes:jpg,jpeg,png,webp|max:10240', // 10MB max
+        ]);
+
+        try {
+            // Delete old banner if exists
+            if ($company->company_banner) {
+                \Storage::disk('public')->delete($company->company_banner);
+            }
+
+            // Store new banner
+            $path = $request->file('banner')->store('companies/' . $company->id . '/banner', 'public');
+            
+            // Update company record
+            $company->company_banner = $path;
+            $company->save();
+
+            return response()->json([
+                'message' => 'Banner uploaded successfully',
+                'banner_path' => $path,
+                'banner_url' => \Storage::disk('public')->url($path),
+                'company' => $company->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to upload banner: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete company banner image
+     */
+    public function deleteBanner(Company $company): JsonResponse
+    {
+        // Check if user owns this company
+        if ($company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            if ($company->company_banner) {
+                // Delete file from storage
+                \Storage::disk('public')->delete($company->company_banner);
+                
+                // Update company record
+                $company->company_banner = null;
+                $company->save();
+
+                return response()->json([
+                    'message' => 'Banner deleted successfully',
+                    'company' => $company->fresh()
+                ]);
+            }
+
+            return response()->json(['message' => 'No banner to delete'], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete banner: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get marketplace statistics
      */
     public function getMarketplaceStats(): JsonResponse
