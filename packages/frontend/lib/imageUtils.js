@@ -16,7 +16,9 @@ export const getImageUrl = (imagePath, folder = '') => {
     return imagePath;
   }
   
-  const apiUrl = 'http://localhost:8000/';
+
+
+  const apiUrl = process.env.API_URL_STORAGE;
   
   // If the path doesn't start with 'storage/', add it
   let fullPath = imagePath;
