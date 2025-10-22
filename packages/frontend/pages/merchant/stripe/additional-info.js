@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Layout from '../../../components/Layout';
+import Layout from '../../../components/layout/Layout';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import { useAuth } from '../../../contexts/AuthContext';

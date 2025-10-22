@@ -18,12 +18,12 @@ export const getImageUrl = (imagePath, folder = '') => {
   
 
 
-  const apiUrl = process.env.API_URL_STORAGE;
+  const apiUrl = 'https://api.pinoyglobalsupply.com';
   
   // If the path doesn't start with 'storage/', add it
   let fullPath = imagePath;
   if (!fullPath.startsWith('storage/') && !fullPath.startsWith('/storage/')) {
-    fullPath = `storage/${fullPath}`;
+    fullPath = `/storage/${fullPath}`;
   }
   
   return `${apiUrl}${fullPath}`;

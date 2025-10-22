@@ -26,14 +26,13 @@ export default function ImageSwiper({ images = [], alt = '', className = '' }) {
   };
 
   const getImageUrl = (image) => {
-    if (typeof image === 'string') {
-      return image.startsWith('http') ? image : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${image}`;
+    if (typeof image === "string") {
+      return image.startsWith("http") ? image : `https://api.pinoyglobalsupply.com/storage/${image}`;
     }
-    // Handle ProductImage objects from backend
     if (image.image_path) {
-      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${image.image_path}`;
+      return `https://api.pinoyglobalsupply.com/storage/${image.image_path}`;
     }
-    return image.image_url || '';
+    return image.image_url || "";
   };
 
   const currentImage = images[currentIndex];

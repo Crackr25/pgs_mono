@@ -2,8 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  env:{
+    NEXT_PUBLIC_API_URL: 'https://api.pinoyglobalsupply.com/api',
+  },
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'api.pinoyglobalsupply.com', 'pinoyglobalsupply.com'],
     unoptimized: true
   }
 }

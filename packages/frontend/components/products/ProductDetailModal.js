@@ -85,46 +85,46 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
 
   // Use the EXACT same image logic as MultiImageUpload (which works in edit page)
   const getImageUrl = (image) => {
-    if (typeof image === 'string') {
-      // If it's already a URL string, check if it's full or relative
-      if (image.startsWith('http')) return image;
-      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${image}`;
+    if (typeof image === "string") {
+      return image.startsWith("http") ? image : `https://api.pinoyglobalsupply.com/storage/${image}`;
     }
-    if (image?.preview) return image.preview;
-    if (image?.image_url) return image.image_url;
-    if (image?.image_path) {
-      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${image.image_path}`;
+    if (image.image_path) {
+      return `https://api.pinoyglobalsupply.com/storage/${image.image_path}`;
     }
-    return '';
+    return image.image_url || "";
   };
 
   // Video URL helper function
+  // const getVideoUrl = (video) => {
+    // if (!video) return "";
+    // if (typeof video === "string") {
+      // if (video.startsWith("http")) return video;
+      //return `https://api.pinoyglobalsupply.com/storage/${video}`;
+    //}
+    //if (video.video_path) {
+      //return `https://api.pinoyglobalsupply.com/storage/${video.video_path}`;
+    //}
+    //return video.video_url || "";
+  //};
+
   const getVideoUrl = (video) => {
-    if (!video) return '';
-    
-    // Handle string paths
-    if (typeof video === 'string') {
-      if (video.startsWith('http')) return video;
-      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${video}`;
-    }
-    
-    // Handle file preview (from VideoUpload component)
-    if (video?.preview) return video.preview;
-    
-    // Handle different video object formats
-    if (video?.video_url) return video.video_url;
-    if (video?.video_path) {
-      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${video.video_path}`;
-    }
-    
-    // Handle backend format (from our upload)
-    if (video?.path) {
-      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${video.path}`;
-    }
-    
-    console.log('Could not determine video URL for:', video);
-    return '';
-  };
+  if (!video) return "";
+
+  // If it's already a full URL (starts with http), just return it
+  if (typeof video === "string") {
+    if (video.startsWith("http")) return video;
+    return `https://api.pinoyglobalsupply.com/storage/${video.replace(/^storage\//, "")}`;
+  }
+
+  // If it's an object (from your database)
+  if (video.path) {
+    // Remove any leading "storage/" if it accidentally exists
+    const path = video.path.replace(/^storage\//, "");
+    return `https://api.pinoyglobalsupply.com/storage/${path}`;
+  }
+
+  return "";
+};	
 
   const images = (() => {
     if (product?.images && product.images.length > 0) {
