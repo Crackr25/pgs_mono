@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatMessage;
 use App\Models\Conversation;
-use App\Events\MessageSent;
+// use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -94,7 +94,7 @@ class ChatMessageController extends Controller
         $message->load('sender', 'receiver');
 
         // Broadcast the message
-        broadcast(new MessageSent($message));
+        // broadcast(new MessageSent($message));
 
         return response()->json([
             'success' => true,

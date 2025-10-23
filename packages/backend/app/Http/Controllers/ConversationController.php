@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\User;
-use App\Events\MessageSent;
+// use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -165,7 +165,7 @@ class ConversationController extends Controller
             $message->load('sender', 'receiver');
 
             // Broadcast the message
-            broadcast(new MessageSent($message));
+            // broadcast(new MessageSent($message));
 
             DB::commit();
 
