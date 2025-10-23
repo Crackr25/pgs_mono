@@ -27,7 +27,8 @@ import {
   Plus,
   Minus,
   ZoomIn,
-  Search
+  Search,
+  X
 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
@@ -39,6 +40,8 @@ import ImageZoomViewer from '../../../components/common/ImageZoomViewer';
 import ProductSpotlight from '../../../components/common/ProductSpotlight';
 import BusinessRecommendations from '../../../components/common/BusinessRecommendations';
 import ProductSearchBar from '../../../components/common/ProductSearchBar';
+import FloatingChatIcon from '../../../components/common/FloatingChatIcon';
+import SimpleFloatingChat from '../../../components/common/SimpleFloatingChat';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLoginPrompt } from '../../../hooks/useLoginPrompt';
@@ -58,6 +61,7 @@ export default function ProductDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [showMessageForm, setShowMessageForm] = useState(false);
+  const [showFloatingChat, setShowFloatingChat] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -354,7 +358,7 @@ export default function ProductDetail() {
       {
         title: "Login Required",
         message: "You need to log in to request quotes from suppliers.",
-        actionText: `Request quote for "${product?.name}"`
+        actionText: `Send inquiry for "${product?.name}"`
       }
     );
   };
@@ -377,11 +381,17 @@ export default function ProductDetail() {
 
   const handleMessageSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!selectedTemplate || (selectedTemplate === 'custom' && !customMessage.trim())) {
+      showToastNotification('error', 'Invalid Message', 'Please select a template or write a custom message');
+      return;
+    }
+
     try {
       let messageContent = '';
       
       if (selectedTemplate === 'custom') {
-        messageContent = customMessage;
+        messageContent = customMessage.trim();
       } else {
         const template = inquiryTemplates.find(t => t.id === selectedTemplate);
         if (template) {
@@ -394,35 +404,85 @@ export default function ProductDetail() {
 
       // Add product context to the message
       const productContext = `
-      
+
 --- Product Details ---
 Product: ${product.name}
-Price: $${product.price.toFixed(2)} per ${product.unit}
-MOQ: ${product.moq} ${product.unit}
+Price: $${getCurrentPrice().toFixed(2)} per ${product.unit}
+MOQ: ${getCurrentMOQ()} ${product.unit}
 Category: ${product.category}
 Supplier: ${product.company.name}
 Product Link: ${window.location.href}`;
 
+      // Use the correct API method for product messages
       const messagePayload = {
-        recipient_id: product.company.id,
-        recipient_type: 'company',
-        message: messageContent + productContext,
+        supplier_id: product.company.user_id || product.company.id,
         product_id: parseInt(id),
-        message_type: 'product_inquiry'
+        message: messageContent + productContext,
+        product_context: {
+          product_name: product.name,
+          product_price: getCurrentPrice(),
+          product_unit: product.unit,
+          product_moq: getCurrentMOQ(),
+          supplier_name: product.company.name
+        }
       };
       
-      const response = await apiService.sendBuyerMessage(messagePayload);
-      alert('Message sent successfully! You can continue the conversation in your messages.');
+      console.log('Sending message payload:', messagePayload); // Debug log
+      
+      const response = await apiService.sendProductMessage(messagePayload);
+      
+      console.log('Message response:', response); // Debug log
+      
+      showToastNotification(
+        'success',
+        'Message sent successfully!',
+        'You can continue the conversation in your messages section.',
+        5000
+      );
+      
       setShowMessageForm(false);
       setSelectedTemplate('');
       setCustomMessage('');
       setQuantity('');
       
-      // Redirect to buyer messages
-      router.push('/buyer/messages');
+      // Redirect to buyer messages after a short delay
+      setTimeout(() => {
+        router.push('/buyer/messages');
+      }, 2000);
+      
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      
+      // Better error handling
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.errors) {
+          // Laravel validation errors
+          const errorMessages = Object.values(errorData.errors).flat();
+          showToastNotification(
+            'error',
+            'Validation Error',
+            errorMessages.join(', ')
+          );
+        } else if (errorData.message) {
+          showToastNotification('error', 'Error', errorData.message);
+        } else {
+          showToastNotification(
+            'error',
+            'Message Failed',
+            'Failed to send message. Please try again.'
+          );
+        }
+      } else if (error.message) {
+        showToastNotification('error', 'Error', error.message);
+      } else {
+        showToastNotification(
+          'error',
+          'Network Error',
+          'Failed to send message. Please check your connection and try again.'
+        );
+      }
     }
   };
 
@@ -1049,7 +1109,34 @@ Product Link: ${window.location.href}`;
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={() => requireAuth(
+                        () => setShowFloatingChat(true),
+                        {
+                          title: "Login Required",
+                          message: "You need to log in to chat with suppliers.",
+                          actionText: `Chat with ${product?.company?.name}`
+                        }
+                      )}
+                      variant="primary"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Chat now
+                    </Button>
+                    <Button 
+                      onClick={openQuoteModal}
+                      variant="success"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <DollarSign className="w-4 h-4 mr-1" />
+                      Send inquiry
+                    </Button>
+                  </div>
                   <Button 
                     onClick={() => requireAuth(
                       () => setShowMessageForm(true),
@@ -1059,19 +1146,12 @@ Product Link: ${window.location.href}`;
                         actionText: `Send message to ${product?.company?.name}`
                       }
                     )}
-                    className="bg-primary-600 hover:bg-primary-700 text-white text-sm"
+                    variant="outline"
                     size="sm"
+                    className="w-full"
                   >
-                    <MessageSquare className="w-4 h-4 mr-1" />
-                    Message
-                  </Button>
-                  <Button 
-                    onClick={openQuoteModal}
-                    className="bg-green-600 hover:bg-green-700 text-white text-sm"
-                    size="sm"
-                  >
-                    <DollarSign className="w-4 h-4 mr-1" />
-                    Quote
+                    <Mail className="w-4 h-4 mr-1" />
+                    Send Message
                   </Button>
                 </div>
               </div>
@@ -1342,35 +1422,80 @@ Product Link: ${window.location.href}`;
         {/* Quote Request Modal */}
         {showQuoteModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-secondary-900">Request Quote</h3>
-                  <button
-                    onClick={() => setShowQuoteModal(false)}
-                    className="text-secondary-400 hover:text-secondary-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+            <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-secondary-900">Send Inquiry</h3>
+                <button
+                  onClick={() => setShowQuoteModal(false)}
+                  className="text-secondary-400 hover:text-secondary-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
 
-                {/* Product Info Summary */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <Package className="w-6 h-6 text-gray-500" />
+              {/* Supplier Info */}
+              <div className="p-6 border-b border-gray-100 bg-gray-50">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-6 h-6 text-primary-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-secondary-900">{product?.company?.name}</h4>
+                    <div className="flex items-center space-x-2 text-sm text-secondary-600 mt-1">
+                      <MapPin className="w-3 h-3" />
+                      <span>{product?.company?.location || 'Philippines'}</span>
+                      <span>•</span>
+                      <span>Response: {product?.company?.response_time || '< 24h'}</span>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-secondary-900">{product?.name}</h4>
-                      <p className="text-sm text-secondary-600">{product?.company?.name}</p>
-                      <p className="text-sm text-primary-600 font-medium">${product?.price}/piece</p>
+                    <div className="flex items-center space-x-1 mt-1">
+                      {renderStars(product?.company?.rating || 4.5)}
+                      <span className="text-sm text-secondary-600 ml-1">
+                        ({product?.company?.total_reviews || 0} reviews)
+                      </span>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <form onSubmit={(e) => { e.preventDefault(); handleQuoteRequest(); }} className="space-y-4">
+              {/* Product Info Summary */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                    {product?.images && product.images.length > 0 ? (
+                      <Image
+                        src={getImageUrl(product.images[0])}
+                        alt={product.name}
+                        width={64}
+                        height={64}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-secondary-900 mb-1">{product?.name}</h4>
+                    <div className="flex items-center space-x-3 text-sm text-secondary-600">
+                      <div className="flex items-center space-x-1">
+                        <DollarSign className="w-3 h-3" />
+                        <span className="font-medium text-primary-600">${product?.price}/{product?.unit}</span>
+                      </div>
+                      <span>•</span>
+                      <div className="flex items-center space-x-1">
+                        <Package className="w-3 h-3" />
+                        <span>MOQ: {product?.moq} {product?.unit}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+
+                <form onSubmit={(e) => { e.preventDefault(); handleQuoteRequest(); }} className="space-y-6">
                   {/* Quantity */}
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
@@ -1476,7 +1601,7 @@ Product Link: ${window.location.href}`;
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex space-x-3 pt-4">
+                  <div className="flex space-x-3 pt-6 border-t border-gray-100">
                     <Button
                       type="button"
                       variant="outline"
@@ -1488,7 +1613,8 @@ Product Link: ${window.location.href}`;
                     </Button>
                     <Button
                       type="submit"
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                      variant="success"
+                      className="flex-1"
                       disabled={
                         submittingQuote || 
                         !quoteQuantity || 
@@ -1500,12 +1626,12 @@ Product Link: ${window.location.href}`;
                       {submittingQuote ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Submitting...
+                          Sending...
                         </>
                       ) : (
                         <>
                           <DollarSign className="w-4 h-4 mr-2" />
-                          Send Quote Request
+                          Send Inquiry
                         </>
                       )}
                     </Button>
@@ -1552,6 +1678,26 @@ Product Link: ${window.location.href}`;
             onIndexChange={(index) => setCurrentImageIndex(index)}
           />
         )}
+
+        {/* Floating Chat Icon */}
+        <FloatingChatIcon
+          onClick={() => requireAuth(
+            () => setShowFloatingChat(true),
+            {
+              title: "Login Required",
+              message: "You need to log in to chat with suppliers.",
+              actionText: `Chat with ${product?.company?.name}`
+            }
+          )}
+          isVisible={!showFloatingChat}
+        />
+
+        {/* Simple Floating Chat */}
+        <SimpleFloatingChat
+          isOpen={showFloatingChat}
+          onClose={() => setShowFloatingChat(false)}
+          product={product}
+        />
       </div>
     </>
   );

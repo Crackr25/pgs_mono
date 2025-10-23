@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Company;
-use App\Events\MessageSent;
+// use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -134,6 +134,12 @@ class BuyerMessageController extends Controller
      */
     public function sendMessage(Request $request)
     {
+        // Add debugging
+        \Log::info('BuyerMessageController::sendMessage called', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all()
+        ]);
+
         $request->validate([
             'conversation_id' => 'nullable|exists:conversations,id',
             'recipient_id' => 'required_without:conversation_id|integer',
@@ -145,6 +151,14 @@ class BuyerMessageController extends Controller
         ]);
 
         $user = Auth::user();
+        
+        if (!$user) {
+            \Log::error('BuyerMessageController::sendMessage - No authenticated user');
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
         $conversation = null;
         
         // If conversation_id is provided, verify buyer access
@@ -191,24 +205,39 @@ class BuyerMessageController extends Controller
         }
 
         // Create message
-        $message = ChatMessage::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'receiver_id' => $conversation->seller_id,
-            'message' => $request->message,
-            'message_type' => $request->message_type ?? 'text',
-            'product_id' => $request->product_id,
-            'product_context' => $request->product_context
-        ]);
+        try {
 
-        // Update conversation's last message timestamp
-        $conversation->update(['last_message_at' => now()]);
+            $message = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $user->id,
+                'receiver_id' => $conversation->seller_id,
+                'message' => $request->message,
+                'message_type' => $request->message_type ?? 'text',
+                'product_id' => $request->product_id,
+                'product_context' => $request->product_context
+            ]);
 
-        // Load relationships for broadcasting
-        $message->load('sender', 'receiver');
+            \Log::info('Message created successfully', ['message_id' => $message->id]);
+
+            // Update conversation's last message timestamp
+            $conversation->update(['last_message_at' => now()]);
+
+            // Load relationships for broadcasting
+            $message->load('sender', 'receiver');
+        } catch (\Exception $e) {
+            \Log::error('Failed to create message:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create message: ' . $e->getMessage()
+            ], 500);
+        }
 
         // Broadcast the message
-        broadcast(new MessageSent($message));
+        // broadcast(new MessageSent($message));
 
         return response()->json([
             'success' => true,
@@ -300,7 +329,7 @@ class BuyerMessageController extends Controller
         $message->load('sender', 'receiver');
 
         // Broadcast the message
-        broadcast(new MessageSent($message));
+        // broadcast(new MessageSent($message));
 
         return response()->json([
             'success' => true,

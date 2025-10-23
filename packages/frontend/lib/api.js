@@ -594,14 +594,51 @@ class ApiService {
   async sendBuyerMessage(messageData) {
     return this.request('/buyer/messages/send', {
       method: 'POST',
-      body: JSON.stringify(messageData),
+      data: messageData,
     });
+  }
+
+  async sendBuyerMessageWithAttachment(conversationId, message, attachment = null) {
+    // If no attachment, use regular message endpoint
+    if (!attachment) {
+      return this.sendBuyerMessage({
+        conversation_id: conversationId,
+        message: message,
+        message_type: 'text'
+      });
+    }
+
+    // If attachment provided, use attachment endpoint
+    const formData = new FormData();
+    formData.append('conversation_id', conversationId);
+    formData.append('message', message || '');
+    formData.append('message_type', attachment.type?.startsWith('image/') ? 'image' : 'file');
+    formData.append('attachment', attachment);
+
+    // Use fetch directly for FormData to avoid header conflicts
+    const response = await fetch(`${this.baseURL}/buyer/messages/send-attachment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = new Error(data.message || `HTTP error! status: ${response.status}`);
+      error.response = { data, status: response.status };
+      throw error;
+    }
+
+    return data;
   }
 
   async markBuyerMessagesAsRead(data) {
     return this.request('/buyer/messages/mark-read', {
       method: 'POST',
-      body: JSON.stringify(data),
+      data: data,
     });
   }
 
