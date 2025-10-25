@@ -86,10 +86,10 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
   // Use the EXACT same image logic as MultiImageUpload (which works in edit page)
   const getImageUrl = (image) => {
     if (typeof image === "string") {
-      return image.startsWith("http") ? image : `https://api.pinoyglobalsupply.com/storage/${image}`;
+      return image.startsWith("http") ? image : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${image}`;
     }
     if (image.image_path) {
-      return `https://api.pinoyglobalsupply.com/storage/${image.image_path}`;
+      return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${image.image_path}`;
     }
     return image.image_url || "";
   };
@@ -113,14 +113,14 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
   // If it's already a full URL (starts with http), just return it
   if (typeof video === "string") {
     if (video.startsWith("http")) return video;
-    return `https://api.pinoyglobalsupply.com/storage/${video.replace(/^storage\//, "")}`;
+    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${video.replace(/^storage\//, "")}`;
   }
 
   // If it's an object (from your database)
   if (video.path) {
     // Remove any leading "storage/" if it accidentally exists
     const path = video.path.replace(/^storage\//, "");
-    return `https://api.pinoyglobalsupply.com/storage/${path}`;
+    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${path}`;
   }
 
   return "";

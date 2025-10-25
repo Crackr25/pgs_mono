@@ -18,7 +18,7 @@ export const getImageUrl = (imagePath, folder = '') => {
   
 
 
-  const apiUrl = 'https://api.pinoyglobalsupply.com';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
   
   // If the path doesn't start with 'storage/', add it
   let fullPath = imagePath;
