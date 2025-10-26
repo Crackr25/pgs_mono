@@ -165,6 +165,18 @@ export default function Onboarding() {
       setCurrentStep(currentStep + 1);
     } catch (error) {
       console.error('Onboarding error:', error);
+      
+      // If company already exists (registration taken), refresh auth and redirect
+      if (error.message && error.message.includes('registration has already been taken')) {
+        console.log('Company already exists, refreshing auth context and redirecting...');
+        await checkAuthStatus();
+        // Small delay to ensure auth context is updated
+        setTimeout(() => {
+          router.push('/');
+        }, 1000);
+        return;
+      }
+      
       setError(error.message || 'An error occurred during onboarding');
     } finally {
       setIsLoading(false);

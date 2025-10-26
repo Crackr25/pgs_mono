@@ -96,6 +96,11 @@ export const AuthProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
+  // Expose checkAuthStatus for manual refresh
+  const refreshAuth = async () => {
+    await checkAuthStatus();
+  };
+
   const value = {
     user,
     loading,
@@ -105,6 +110,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     clearError,
+    checkAuthStatus: refreshAuth,
     isAuthenticated: !!user,
   };
 
