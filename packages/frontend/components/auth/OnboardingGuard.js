@@ -41,13 +41,22 @@ const OnboardingGuard = ({ children }) => {
         return;
       }
       
-      // Check if seller user has a company profile
+      // For sellers, first check if user object already has company data (from backend)
+      if (user.company) {
+        console.log('Company data found in user object:', user.company);
+        setHasCompany(true);
+        return;
+      }
+      
+      // Fallback: Check if seller user has a company profile via API
       const companies = await apiService.getCompanies();
       const userCompany = companies.data?.find(company => company.user_id === user.id);
       
       if (userCompany) {
+        console.log('Company data found via API:', userCompany);
         setHasCompany(true);
       } else {
+        console.log('No company found for user, redirecting to onboarding');
         setHasCompany(false);
         // If seller doesn't have company data and not already on onboarding page, redirect
         if (router.pathname !== '/onboarding') {

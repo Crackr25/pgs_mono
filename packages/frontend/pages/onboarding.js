@@ -34,7 +34,7 @@ export default function Onboarding() {
   });
 
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, checkAuthStatus } = useAuth();
 
   const steps = [
     { id: 1, name: 'Company Profile', icon: Building, completed: false },
@@ -157,6 +157,9 @@ export default function Onboarding() {
       
       // Store company ID for file uploads
       setCompanyId(response.id);
+      
+      // Refresh auth context to load the new company data
+      await checkAuthStatus();
       
       // Move to next step
       setCurrentStep(currentStep + 1);
@@ -536,8 +539,10 @@ export default function Onboarding() {
             </div>
 
             <div className="flex justify-end mt-6">
-              <Button onClick={() => {
+              <Button onClick={async () => {
                 setSuccess(true);
+                // Refresh auth context to update user with company data
+                await checkAuthStatus();
                 setTimeout(() => {
                   router.push('/');
                 }, 2000);
