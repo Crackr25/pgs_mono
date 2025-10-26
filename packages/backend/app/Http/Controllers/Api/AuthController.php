@@ -28,6 +28,9 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
+        
+        // Load company relationship if user is a seller
+        $user->load('company');
 
         // Load company data for sellers to ensure fresh onboarding status
         if ($user->usertype === 'seller') {
