@@ -96,9 +96,17 @@ export const AuthProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
-  // Expose checkAuthStatus for manual refresh
-  const refreshAuth = async () => {
-    await checkAuthStatus();
+  const refreshUser = async () => {
+    try {
+      if (apiService.token) {
+        const userData = await apiService.getCurrentUser();
+        setUser(userData);
+        return userData;
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      throw error;
+    }
   };
 
   const value = {
@@ -110,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     clearError,
-    checkAuthStatus: refreshAuth,
+    refreshUser,
     isAuthenticated: !!user,
   };
 

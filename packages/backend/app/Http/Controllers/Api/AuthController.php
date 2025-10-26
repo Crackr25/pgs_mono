@@ -29,11 +29,6 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        // Load company data for sellers to ensure fresh onboarding status
-        if ($user->usertype === 'seller') {
-            $user->load('company');
-        }
-
         return response()->json([
             'user' => $user,
             'token' => $token,
@@ -58,11 +53,6 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        // Load company data for sellers to ensure fresh onboarding status
-        if ($user->usertype === 'seller') {
-            $user->load('company');
-        }
-
         return response()->json([
             'user' => $user,
             'token' => $token,
@@ -81,12 +71,7 @@ class AuthController extends Controller
 
     public function user(Request $request): JsonResponse
     {
-        $user = $request->user();
-        // Load company data for sellers to ensure fresh onboarding status
-        if ($user->usertype === 'seller') {
-            $user->load('company');
-        }
-        return response()->json($user);
+        return response()->json($request->user());
     }
 
     public function getUserCompany(Request $request): JsonResponse
