@@ -29,7 +29,7 @@ export default function CompanyProfile() {
       setIsLoading(true);
       setError(null);
       
-      const companies = await apiService.getCompanies();
+      const companies = await apiService.getCompanies({ user_id: user.id });
       const userCompany = companies.data?.find(comp => comp.user_id === user.id);
       
       if (userCompany) {
