@@ -5,6 +5,7 @@ import FileUpload from '../common/FileUpload';
 import Button from '../common/Button';
 import MultiImageUpload from './MultiImageUpload';
 import VideoUpload from './VideoUpload';
+import { PRODUCT_CATEGORIES } from '../../lib/constants/categories';
 
 export default function ProductForm({ product = null, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -83,16 +84,7 @@ export default function ProductForm({ product = null, onSubmit, onCancel }) {
     videosLength: formData.videos?.length || 0
   });
 
-  const categoryOptions = [
-    { value: 'electronics', label: 'Electronics' },
-    { value: 'automotive', label: 'Automotive' },
-    { value: 'textiles', label: 'Textiles' },
-    { value: 'machinery', label: 'Machinery' },
-    { value: 'chemicals', label: 'Chemicals' },
-    { value: 'food', label: 'Food & Beverages' },
-    { value: 'construction', label: 'Construction Materials' },
-    { value: 'packaging', label: 'Packaging' }
-  ];
+  const categoryOptions = PRODUCT_CATEGORIES;
 
   return (
     <div className="space-y-6">

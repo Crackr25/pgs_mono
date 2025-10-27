@@ -111,15 +111,41 @@ class MarketplaceController extends Controller
      */
     public function getCategories(): JsonResponse
     {
-        $categories = Product::where('active', true)
+        // Define standard categories that match frontend ProductForm
+        $standardCategories = [
+            'electronics',
+            'automotive', 
+            'textiles',
+            'machinery',
+            'chemicals',
+            'food',
+            'construction',
+            'packaging',
+            'apparel',
+            'conductor',
+            'furniture',
+            'hair_clipper',
+            'metal'
+        ];
+
+        // Get categories from existing products
+        $existingCategories = Product::where('active', true)
             ->distinct()
             ->pluck('category')
             ->filter()
-            ->sort()
-            ->values();
-            
+            ->map(function($category) {
+                return strtolower(str_replace(' ', '_', $category));
+            })
+            ->toArray();
+
+        // Merge standard categories with any additional ones from database
+        $allCategories = array_unique(array_merge($standardCategories, $existingCategories));
+        
+        // Sort and return
+        sort($allCategories);
+        
         return response()->json([
-            'data' => $categories
+            'data' => $allCategories
         ]);
     }
     

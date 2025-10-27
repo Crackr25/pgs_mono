@@ -23,6 +23,7 @@ import apiService from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoginPrompt } from '../../hooks/useLoginPrompt';
 import { getImageUrl } from '../../lib/imageUtils';
+import { getCategoryLabel } from '../../lib/constants/categories';
 
 export default function ProductGrid({ hideFilters = false }) {
   const [viewMode, setViewMode] = useState('grid');
@@ -565,7 +566,7 @@ export default function ProductGrid({ hideFilters = false }) {
                 >
                   <option value="">All Categories</option>
                   {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>{getCategoryLabel(category)}</option>
                   ))}
                 </select>
               )}
