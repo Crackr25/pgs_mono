@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Search, ChevronDown, Clock, TrendingUp, Package } from 'lucide-react';
 import apiService from '../../lib/api';
+import { PRODUCT_CATEGORIES, getCategoryLabel } from '../../lib/constants/categories';
 
 /**
  * ProminentSearchBar - Alibaba-style large central search bar
@@ -16,7 +17,7 @@ import apiService from '../../lib/api';
 export default function ProminentSearchBar({ className = "" }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   
   // Search suggestions state
@@ -29,19 +30,14 @@ export default function ProminentSearchBar({ className = "" }) {
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
 
-  // Sample categories - can be fetched from API
+  // Categories from shared constants
   const categories = [
-    'All Categories',
-    'Electronics',
-    'Machinery',
-    'Textiles',
-    'Food & Agriculture',
-    'Construction Materials',
-    'Automotive',
-    'Home & Garden',
-    'Health & Beauty',
-    'Sports & Entertainment'
+    { value: '', label: 'All Categories' },
+    ...PRODUCT_CATEGORIES
   ];
+
+  // Debug log to check categories
+  console.log('Categories loaded:', categories);
 
   // Fallback suggestions for when API is unavailable or no results
   const fallbackSuggestions = [
@@ -153,7 +149,7 @@ export default function ProminentSearchBar({ className = "" }) {
     // Perform search with selected suggestion
     const params = new URLSearchParams();
     params.set('q', searchTerm);
-    if (selectedCategory !== 'All Categories') {
+    if (selectedCategory) {
       params.set('category', selectedCategory);
     }
     router.push(`/buyer/search?${params.toString()}`);
@@ -166,7 +162,7 @@ export default function ProminentSearchBar({ className = "" }) {
       // Construct search URL with category filter if not "All Categories"
       const params = new URLSearchParams();
       params.set('q', searchQuery.trim());
-      if (selectedCategory !== 'All Categories') {
+      if (selectedCategory) {
         params.set('category', selectedCategory);
       }
       router.push(`/buyer/search?${params.toString()}`);
@@ -191,32 +187,41 @@ export default function ProminentSearchBar({ className = "" }) {
           <form onSubmit={handleSearch} className="relative">
             <div className="flex bg-white rounded-lg shadow-medium border border-secondary-200 overflow-hidden">
               {/* Category Dropdown */}
-              <div className="relative">
+              <div className="relative z-50">
                 <button
                   type="button"
-                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="flex items-center px-4 py-4 text-secondary-700 hover:bg-secondary-50 border-r border-secondary-200 min-w-0 whitespace-nowrap"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Category button clicked!', showCategoryDropdown); // Debug log
+                    setShowCategoryDropdown(!showCategoryDropdown);
+                  }}
+                  className="flex items-center px-4 py-4 text-secondary-700 hover:bg-secondary-50 border-r border-secondary-200 min-w-0 whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 relative z-50"
+                  style={{ userSelect: 'none' }}
                 >
-                  <span className="text-sm font-medium truncate max-w-32 sm:max-w-none">
-                    {selectedCategory}
+                  <span className="text-sm font-medium truncate max-w-32 sm:max-w-none pointer-events-none">
+                    {selectedCategory ? getCategoryLabel(selectedCategory) : 'All Categories'}
                   </span>
-                  <ChevronDown className="w-4 h-4 ml-2 flex-shrink-0" />
+                  <ChevronDown className={`w-4 h-4 ml-2 flex-shrink-0 pointer-events-none transition-transform duration-200 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Category Dropdown Menu */}
                 {showCategoryDropdown && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-b-lg shadow-medium z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-b-lg shadow-xl z-[70] max-h-60 overflow-y-auto min-w-[200px]">
                     {categories.map((category) => (
                       <button
-                        key={category}
+                        key={category.value || 'all'}
                         type="button"
-                        onClick={() => {
-                          setSelectedCategory(category);
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Category selected:', category); // Debug log
+                          setSelectedCategory(category.value);
                           setShowCategoryDropdown(false);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 focus:bg-primary-50 focus:text-primary-700"
+                        className="block w-full text-left px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 focus:bg-primary-50 focus:text-primary-700 transition-colors duration-150 cursor-pointer"
                       >
-                        {category}
+                        {category.label}
                       </button>
                     ))}
                   </div>
@@ -336,8 +341,9 @@ export default function ProminentSearchBar({ className = "" }) {
       {/* Click outside to close dropdowns */}
       {(showCategoryDropdown || showSuggestions) && (
         <div
-          className="fixed inset-0 z-30"
-          onClick={() => {
+          className="fixed inset-0 z-[20]"
+          onClick={(e) => {
+            console.log('Backdrop clicked'); // Debug log
             setShowCategoryDropdown(false);
             setShowSuggestions(false);
           }}

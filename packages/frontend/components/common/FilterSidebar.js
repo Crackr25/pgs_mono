@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Star, Shield, Clock, Filter as FilterIcon } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
+import { getCategoryLabel } from '../../lib/constants/categories';
 
 export default function FilterSidebar({ 
   filters, 
@@ -163,7 +164,7 @@ export default function FilterSidebar({
                     onChange={(e) => onFilterChange('category', e.target.value)}
                     className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                   />
-                  <span className="ml-2 text-sm text-secondary-700">{category}</span>
+                  <span className="ml-2 text-sm text-secondary-700">{getCategoryLabel(category)}</span>
                 </label>
               ))}
             </div>
