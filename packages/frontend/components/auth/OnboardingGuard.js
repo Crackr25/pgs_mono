@@ -42,7 +42,7 @@ const OnboardingGuard = ({ children }) => {
       }
       
       // Check if seller user has a company profile
-      const companies = await apiService.getCompanies();
+      const companies = await apiService.getCompanies({ user_id: user.id });
       const userCompany = companies.data?.find(company => company.user_id === user.id);
       
       if (userCompany) {
