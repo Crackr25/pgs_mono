@@ -134,11 +134,6 @@ class BuyerMessageController extends Controller
      */
     public function sendMessage(Request $request)
     {
-        // Add debugging
-        \Log::info('BuyerMessageController::sendMessage called', [
-            'user_id' => Auth::id(),
-            'request_data' => $request->all()
-        ]);
 
         $request->validate([
             'conversation_id' => 'nullable|exists:conversations,id',
@@ -203,6 +198,8 @@ class BuyerMessageController extends Controller
                 ]);
             }
         }
+
+
 
         // Create message
         try {

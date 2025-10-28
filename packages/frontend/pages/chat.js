@@ -32,7 +32,7 @@ export default function Chat() {
   // Subscribe to conversation when selected
   useEffect(() => {
     if (selectedConversation && currentUser) {
-      subscribeToConversation(selectedConversation.id);
+      // subscribeToConversation(selectedConversation.id);
       fetchMessages(selectedConversation.id);
     }
     
@@ -85,6 +85,7 @@ export default function Chat() {
     try {
       const response = await chatAPI.getConversations();
       if (response.success) {
+        console.log(response.conversations);
         setConversations(response.conversations);
       }
     } catch (error) {

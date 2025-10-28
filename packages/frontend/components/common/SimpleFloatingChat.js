@@ -133,12 +133,29 @@ export default function SimpleFloatingChat({
       setSending(true);
       
       if (conversation.id) {
-        // Existing conversation - send message to it
-        const response = await apiService.sendBuyerMessageWithAttachment(
-          conversation.id,
-          newMessage.trim(),
-          null // No attachment
-        );
+        // Existing conversation - send message to it with product context
+        const messagePayload = {
+          conversation_id: conversation.id,
+          message: newMessage.trim(),
+          product_id: product?.id || null,
+          product_context: product ? {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            unit: product.unit,
+            moq: product.moq,
+            image: product.images && product.images.length > 0 ? product.images[0] : null,
+            has_image: product.images && product.images.length > 0,
+            company_name: product.company.name,
+            company: {
+              id: product.company.id,
+              name: product.company.name
+            }
+          } : null,
+          message_type: product ? 'product_inquiry' : 'text'
+        };
+
+        const response = await apiService.sendBuyerMessage(messagePayload);
         
         if (response.success !== false) {
           // Refresh messages to get the latest
@@ -153,9 +170,23 @@ export default function SimpleFloatingChat({
         // New conversation - create it by sending first message
         const messagePayload = {
           recipient_id: product.company.user_id || product.company.id,
-          recipient_type: 'user',
+          recipient_type: 'company',
           message: newMessage.trim(),
           product_id: product.id,
+          product_context: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            unit: product.unit,
+            moq: product.moq,
+            image: product.images && product.images.length > 0 ? product.images[0] : null,
+            has_image: product.images && product.images.length > 0,
+            company_name: product.company.name,
+            company: {
+              id: product.company.id,
+              name: product.company.name
+            }
+          },
           message_type: 'product_inquiry'
         };
 
@@ -295,7 +326,7 @@ export default function SimpleFloatingChat({
           )}
 
           {/* Main Chat Area */}
-          <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''}`}>
+          <div className={`flex-1 flex flex-col overflow-hidden ${isMobile && showSidebar ? 'hidden' : ''}`}>
             {/* Chat Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center space-x-3">
@@ -360,7 +391,7 @@ export default function SimpleFloatingChat({
             )}
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ height: 'calc(100% - 180px)' }}>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -407,21 +438,21 @@ export default function SimpleFloatingChat({
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-gray-200 bg-white">
-              <div className="flex items-center space-x-2">
+            <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+              <div className="flex items-center space-x-2 w-full">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder={`Message ${conversation?.seller?.company?.name || conversation?.seller?.name || product?.company?.name || 'supplier'}...`}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   disabled={sending || !conversation}
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!newMessage.trim() || sending || !conversation}
-                  className="p-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                  className="flex-shrink-0 p-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                   title="Send message"
                 >
                   {sending ? (

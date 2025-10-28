@@ -105,6 +105,8 @@ class ChatMessageController extends Controller
                 'receiver_id' => $message->receiver_id,
                 'message' => $message->message,
                 'message_type' => $message->message_type,
+                'product_id' => $message->product_id,
+                'product_context' => $message->product_context,
                 'attachments' => $message->attachments,
                 'created_at' => $message->created_at->toISOString(),
                 'read' => $message->read,
