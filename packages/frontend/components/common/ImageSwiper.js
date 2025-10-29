@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { getImageUrl } from '../../lib/imageUtils';
 
 export default function ImageSwiper({ images = [], alt = '', className = '' }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,12 +26,12 @@ export default function ImageSwiper({ images = [], alt = '', className = '' }) {
     setCurrentIndex(index);
   };
 
-  const getImageUrl = (image) => {
+  const getImageUrlForSwiper = (image) => {
     if (typeof image === "string") {
-      return image.startsWith("http") ? image : `https://api.pinoyglobalsupply.com/storage/${image}`;
+      return image.startsWith("http") ? image : getImageUrl(image);
     }
     if (image.image_path) {
-      return `https://api.pinoyglobalsupply.com/storage/${image.image_path}`;
+      return getImageUrl(image.image_path);
     }
     return image.image_url || "";
   };
@@ -43,7 +44,7 @@ export default function ImageSwiper({ images = [], alt = '', className = '' }) {
         {/* Main Image */}
         <div className="relative overflow-hidden rounded-lg bg-gray-100">
           <img
-            src={getImageUrl(currentImage)}
+            src={getImageUrlForSwiper(currentImage)}
             alt={alt || `Image ${currentIndex + 1}`}
             className="w-full h-48 object-cover cursor-pointer"
             onClick={() => setShowFullscreen(true)}
@@ -111,7 +112,7 @@ export default function ImageSwiper({ images = [], alt = '', className = '' }) {
 
             {/* Fullscreen Image */}
             <img
-              src={getImageUrl(currentImage)}
+              src={getImageUrlForSwiper(currentImage)}
               alt={alt || `Image ${currentIndex + 1}`}
               className="max-w-full max-h-full object-contain"
             />
