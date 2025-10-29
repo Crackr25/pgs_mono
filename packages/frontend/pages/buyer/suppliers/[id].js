@@ -211,41 +211,39 @@ export default function SupplierDetail() {
         {/* Header Section */}
         <div className="bg-white border-b border-secondary-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-20">
-              {/* Left: Logo and Company Info */}
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                    {supplier.logo ? (
-                      <img src={supplier.logo} alt={supplier.name} className="w-10 h-10 rounded-lg object-cover" />
-                    ) : (
-                      <Building className="w-6 h-6 text-primary-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-secondary-900">{supplier.name}</h1>
-                    <div className="flex items-center space-x-4 text-sm text-secondary-600">
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{supplier.location}</span>
-                      </div>
-                      <span>•</span>
-                      <span>{supplier.main_products || 'Manufacturing'}</span>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between h-16">
+              {/* Left: Breadcrumb */}
+              <div className="flex items-center space-x-2 text-sm">
+                <Link href="/buyer" className="text-primary-600 hover:text-primary-700">
+                  Marketplace
+                </Link>
+                <span className="text-secondary-400">/</span>
+                <Link href="/buyer/suppliers" className="text-primary-600 hover:text-primary-700">
+                  Suppliers
+                </Link>
+                <span className="text-secondary-400">/</span>
+                <span className="text-secondary-900 font-medium">{supplier.name}</span>
               </div>
 
-              {/* Right: Action Buttons */}
-              <div className="flex items-center space-x-3">
-                <Button className="px-6">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Contact Supplier
-                </Button>
-                <Button variant="outline" className="px-6">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Chat Now
-                </Button>
+              {/* Right: Rating and Verification */}
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="font-semibold text-secondary-900">
+                      {supplier.rating || supplier.average_rating || '0.0'}
+                    </span>
+                    <span className="text-sm text-secondary-600">
+                      ({supplier.review_count || 0} reviews)
+                    </span>
+                  </div>
+                  {supplier.verified && (
+                    <div className="flex items-center space-x-1 text-sm text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Verified Supplier</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -396,22 +394,22 @@ export default function SupplierDetail() {
           </div>
         </div>
 
-        {/* Banner Section - Show only for home, contacts, and promotion tabs */}
-        {!['products', 'company-profile', 'certifications', 'contacts', 'promotion'].includes(activeTab) && (
+        {/* Banner Section - Show only for home tab */}
+        {activeTab === 'home' && (
           <div className="relative">
             {supplier.company_banner ? (
-              <div className="w-full bg-secondary-100">
+              <div className="w-full bg-secondary-200">
                 <img
                   src={getImageUrl(supplier.company_banner)}
                   alt={`${supplier.name} Banner`}
-                  className="w-full h-auto"
+                  className="w-full h-48 sm:h-60 lg:h-72 xl:h-80 object-cover"
                 />
               </div>
             ) : (
-              <div className="w-full h-64 bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center">
+              <div className="w-full h-48 sm:h-60 lg:h-72 xl:h-80 bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center">
                 <div className="text-center text-white">
-                  <h2 className="text-3xl font-bold mb-2 text-primary-100">Welcome to {supplier.name}</h2>
-                  <p className="text-primary-100">Your trusted manufacturing partner</p>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold mb-2 text-primary-100">Welcome to {supplier.name}</h2>
+                  <p className="text-sm sm:text-base lg:text-lg text-primary-100">Your trusted manufacturing partner</p>
                 </div>
               </div>
             )}
@@ -419,68 +417,257 @@ export default function SupplierDetail() {
         )}
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex gap-6">
+            {/* Sidebar - Left */}
+            <div className="w-80 flex-shrink-0 space-y-4">
+              {/* Company Profile Card */}
+              <Card className="p-6">
+                <div className="text-center mb-6">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-primary-100 rounded-lg flex items-center justify-center overflow-hidden">
+                    {supplier.company_banner ? (
+                      <img src={getImageUrl(supplier.company_banner)} alt={supplier.name} className="w-full h-full rounded-lg object-cover" />
+                    ) : supplier.logo ? (
+                      <img src={supplier.logo} alt={supplier.name} className="w-18 h-18 rounded-lg object-cover" />
+                    ) : (
+                      <Building className="w-10 h-10 text-primary-600" />
+                    )}
+                  </div>
+                  <h2 className="text-lg font-bold text-secondary-900 mb-1">{supplier.name}</h2>
+                  <p className="text-sm text-secondary-600 mb-3">{supplier.location}</p>
+                  
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-primary-600">{supplier.products_count || products.length || 0}</div>
+                      <div className="text-xs text-secondary-600">Products</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-green-600">{supplier.orders_count || supplier.total_orders || 0}</div>
+                      <div className="text-xs text-secondary-600">Orders</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-lg font-bold text-secondary-900">
+                          {supplier.rating || supplier.average_rating || '0.0'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-secondary-600">Rating</div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <Button className="w-full">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Contact Supplier
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <Phone className="w-4 h-4 mr-2" />
+                      Chat Now
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Contact Info */}
+              <Card className="p-4">
+                <h3 className="font-semibold text-secondary-900 mb-3">Contact Details</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Phone className="w-4 h-4 text-secondary-400" />
+                    <span className="text-secondary-600">{supplier.phone || 'Not provided'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Mail className="w-4 h-4 text-secondary-400" />
+                    <span className="text-secondary-600 truncate">{supplier.email || 'Not provided'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Globe className="w-4 h-4 text-secondary-400" />
+                    <span className="text-secondary-600 truncate">{supplier.website || 'Not provided'}</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Business Info */}
+              <Card className="p-4">
+                <h3 className="font-semibold text-secondary-900 mb-3">Business Info</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-secondary-600">Business Type:</span>
+                    <span className="font-medium text-right">{supplier.business_type || 'Manufacturer'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary-600">Employees:</span>
+                    <span className="font-medium">{supplier.employees || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary-600">Established:</span>
+                    <span className="font-medium">{supplier.year_established || 'N/A'}</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Certifications */}
+              <Card className="p-4">
+                <h3 className="font-semibold text-secondary-900 mb-3">Certifications</h3>
+                <div className="space-y-2">
+                  {supplier.verified && (
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-secondary-700">Verified Supplier</span>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <Award className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-secondary-700">ISO 9001 Certified</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Shield className="w-4 h-4 text-purple-500" />
+                    <span className="text-sm text-secondary-700">Trade Assurance</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStarSupplier}
+                    disabled={starringSupplier}
+                    className={`w-full ${isStarred ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                  >
+                    <Heart className={`w-4 h-4 mr-2 ${isStarred ? 'fill-current' : ''}`} />
+                    {isStarred ? 'Starred' : 'Star Supplier'}
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share Profile
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
             {/* Main Content Area */}
-            <div className="lg:col-span-3">
-              {/* Company Overview Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card className="p-6 text-center">
-                  <div className="text-2xl font-bold text-primary-600 mb-2">
-                    {supplier.products_count || products.length || 0}
-                  </div>
-                  <div className="text-sm text-secondary-600">Total Products</div>
-                </Card>
-                <Card className="p-6 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">
-                    {supplier.orders_count || supplier.total_orders || 0}
-                  </div>
-                  <div className="text-sm text-secondary-600">Total Orders</div>
-                </Card>
-                <Card className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-1 mb-2">
-                    <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span className="text-2xl font-bold text-secondary-900">
-                      {supplier.rating || supplier.average_rating || '0.0'}
-                    </span>
-                  </div>
-                  <div className="text-sm text-secondary-600">Customer Rating</div>
-                </Card>
-              </div>
+            <div className="flex-1 min-w-0">
 
               {/* Tab Content with Smooth Transitions */}
               <div className="transition-all duration-300 ease-in-out">
                 {activeTab === 'home' && (
                   <div className="space-y-6 animate-in fade-in-50 duration-300">
                     <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Welcome to {supplier.name}</h3>
-                      <p className="text-secondary-700 leading-relaxed mb-4">
+                      <h3 className="text-xl font-bold text-secondary-900 mb-4">About {supplier.name}</h3>
+                      <p className="text-secondary-700 leading-relaxed mb-6">
                         {supplier.description || supplier.about || 'We are a leading manufacturer committed to providing high-quality products and exceptional service to our global customers.'}
                       </p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-primary-50 rounded-lg">
-                          <div className="text-2xl font-bold text-primary-600">
+                      
+                      {/* Key Highlights */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center p-4 bg-primary-50 rounded-lg border border-primary-100">
+                          <Package className="w-8 h-8 text-primary-600 mx-auto mb-2" />
+                          <div className="text-xl font-bold text-primary-600">
                             {supplier.products_count || products.length || 0}
                           </div>
-                          <div className="text-sm text-secondary-600">Products</div>
+                          <div className="text-sm text-secondary-600">Total Products</div>
                         </div>
-                        <div className="text-center p-4 bg-green-50 rounded-lg">
-                          <div className="text-2xl font-bold text-green-600">
+                        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+                          <ShoppingCart className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                          <div className="text-xl font-bold text-green-600">
                             {supplier.orders_count || supplier.total_orders || 0}
                           </div>
-                          <div className="text-sm text-secondary-600">Orders</div>
+                          <div className="text-sm text-secondary-600">Total Orders</div>
                         </div>
-                        <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                          <div className="flex items-center justify-center space-x-1">
-                            <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                            <span className="text-2xl font-bold text-secondary-900">
-                              {supplier.rating || supplier.average_rating || '0.0'}
-                            </span>
+                        <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                          <Star className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                          <div className="text-xl font-bold text-secondary-900">
+                            {supplier.rating || supplier.average_rating || '0.0'}
                           </div>
-                          <div className="text-sm text-secondary-600">Rating</div>
+                          <div className="text-sm text-secondary-600">Customer Rating</div>
+                        </div>
+                        <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+                          <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                          <div className="text-xl font-bold text-blue-600">
+                            {supplier.year_established || new Date().getFullYear() - 5}
+                          </div>
+                          <div className="text-sm text-secondary-600">Year Established</div>
                         </div>
                       </div>
+
+                      {/* Main Products Section */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold text-secondary-900 mb-3">Main Products</h4>
+                        <p className="text-secondary-600">{supplier.main_products || 'Various manufacturing products and solutions'}</p>
+                      </div>
                     </Card>
+
+                    {/* Featured Products Preview */}
+                    {products.length > 0 && (
+                      <Card className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-secondary-900">Featured Products</h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setActiveTab('products')}
+                          >
+                            View All Products
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {products.slice(0, 6).map((product) => {
+                            // Debug: Log product structure
+                            console.log('Product debug:', {
+                              id: product.id,
+                              name: product.name,
+                              image: product.image,
+                              has_image: product.has_image,
+                              images: product.images,
+                              allKeys: Object.keys(product)
+                            });
+                            
+                            return (
+                              <div key={product.id} className="border border-secondary-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200">
+                                <div className="aspect-w-16 aspect-h-9">
+                                  {(product.has_image || product.image || (product.images && product.images.length > 0)) ? (
+                                    <img
+                                      src={getImageUrl(product.image || (product.images && product.images[0]))}
+                                      alt={product.name}
+                                      className="w-full h-32 object-cover"
+                                      onError={(e) => {
+                                        console.log('Image load error for product:', product.name, 'URL:', e.target.src);
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
+                                      <div className="text-center">
+                                        <ShoppingCart className="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                                        <p className="text-xs text-gray-500">No Image</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="p-3">
+                                  <h4 className="font-medium text-secondary-900 mb-1 text-sm line-clamp-2">{product.name}</h4>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-primary-600 font-bold">
+                                      ${product.price}
+                                    </span>
+                                    <span className="text-xs text-secondary-500">
+                                      MOQ: {product.moq || 1}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </Card>
+                    )}
                   </div>
                 )}
 
@@ -531,36 +718,73 @@ export default function SupplierDetail() {
 
                 {activeTab === 'products' && (
                   <div className="space-y-6 animate-in fade-in-50 duration-300">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Products Header */}
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-secondary-900">All Products</h2>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-secondary-600">
+                          {products.length} products found
+                        </span>
+                        <select className="px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                          <option>Sort by: Default</option>
+                          <option>Price: Low to High</option>
+                          <option>Price: High to Low</option>
+                          <option>Newest First</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Products Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {products.map((product) => (
-                        <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all duration-200">
-                          <div className="aspect-w-16 aspect-h-9">
-                          {product.has_image ? (
+                        <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                          <div className="relative">
+                            {(product.has_image || product.image || (product.images && product.images.length > 0)) ? (
                               <img
-                                src={getImageUrl(product.image)}
+                                src={getImageUrl(product.image || (product.images && product.images[0]))}
                                 alt={product.name}
-                                  className="w-full h-48 object-cover"
+                                className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200"
+                                onError={(e) => {
+                                  console.log('Image load error for product:', product.name, 'URL:', e.target.src);
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
                               />
                             ) : (
-                              <div className="w-full h-48 bg-gray-200 flex items-center justify-center group-hover:bg-gray-300 transition-colors duration-200">
+                              <div className="w-full h-40 bg-gray-200 flex items-center justify-center group-hover:bg-gray-300 transition-colors duration-200">
                                 <div className="text-center">
-                                  <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-lg flex items-center justify-center">
-                                    <ShoppingCart className="w-8 h-8 text-gray-500" />
-                                  </div>
-                                  <p className="text-sm text-gray-500">No Image Available</p>
+                                  <ShoppingCart className="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                                  <p className="text-xs text-gray-500">No Image</p>
                                 </div>
                               </div>
                             )}
+                            {/* Quick action on hover */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                              <Button
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200"
+                              >
+                                View Details
+                              </Button>
+                            </div>
                           </div>
-                          <div className="p-4">
-                            <h4 className="font-medium text-secondary-900 mb-2 line-clamp-2">{product.name}</h4>
-                            <div className="flex items-center justify-between">
+                          <div className="p-3">
+                            <h4 className="font-medium text-secondary-900 mb-2 line-clamp-2 text-sm">
+                              {product.name}
+                            </h4>
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-lg font-bold text-primary-600">
                                 ${product.price}
                               </span>
-                              <span className="text-sm text-secondary-600">
-                                MOQ: {product.moq || 1}
-                              </span>
+                              {product.discount && (
+                                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                                  -{product.discount}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-secondary-600">
+                              <span>MOQ: {product.moq || 1}</span>
+                              <span>⭐ {product.rating || '4.5'}</span>
                             </div>
                           </div>
                         </Card>
@@ -568,9 +792,10 @@ export default function SupplierDetail() {
                     </div>
                     
                     {products.length === 0 && (
-                      <div className="text-center py-8">
-                        <Package className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-                        <p className="text-secondary-600">No products available</p>
+                      <div className="text-center py-12">
+                        <Package className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Products Found</h3>
+                        <p className="text-secondary-600">This supplier hasn't added any products yet.</p>
                       </div>
                     )}
                   </div>
@@ -876,69 +1101,6 @@ export default function SupplierDetail() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Contact Card */}
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-secondary-900 mb-4">Contact Info</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Phone className="w-4 h-4 text-secondary-400" />
-                    <span className="text-secondary-600">{supplier.phone || 'Not provided'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Mail className="w-4 h-4 text-secondary-400" />
-                    <span className="text-secondary-600">{supplier.email || 'Not provided'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Globe className="w-4 h-4 text-secondary-400" />
-                    <span className="text-secondary-600">{supplier.website || 'Not provided'}</span>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Certifications */}
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-secondary-900 mb-4">Certifications</h3>
-                <div className="space-y-2">
-                  {supplier.verified && (
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-secondary-700">Verified Supplier</span>
-                    </div>
-                  )}
-                  <div className="flex items-center space-x-2">
-                    <Award className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm text-secondary-700">ISO 9001 Certified</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Shield className="w-4 h-4 text-purple-500" />
-                    <span className="text-sm text-secondary-700">Trade Assurance</span>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card className="p-6">
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleStarSupplier}
-                    disabled={starringSupplier}
-                    className={`w-full ${isStarred ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
-                  >
-                    <Heart className={`w-4 h-4 mr-2 ${isStarred ? 'fill-current' : ''}`} />
-                    {isStarred ? 'Starred' : 'Star Supplier'}
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share Profile
-                  </Button>
-                </div>
-              </Card>
             </div>
           </div>
         </div>
