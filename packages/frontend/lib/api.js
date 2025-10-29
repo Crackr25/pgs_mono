@@ -22,17 +22,15 @@ class ApiService {
     }
   }
 
-  getHeaders() {
+  getHeaders(includeAuth = true) {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
 
-    if (this.token) {
+    if (this.token && includeAuth) {
       headers.Authorization = `Bearer ${this.token}`;
     }
-
-
 
     return headers;
   }
@@ -49,6 +47,37 @@ class ApiService {
       config.body = JSON.stringify(options.data);
       delete config.data;
     }
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Public request method for endpoints that don't require authentication
+  async publicRequest(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      headers: this.getHeaders(false), // Don't include auth headers
+      ...options,
+    };
+
+    // Convert data to body if present
+    if (options.data) {
+      config.body = JSON.stringify(options.data);
+      delete config.data;
+    }
+
+
 
     try {
       const response = await fetch(url, config);
@@ -793,15 +822,15 @@ class ApiService {
   // Marketplace methods (public - no auth required)
   async getMarketplaceProducts(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/marketplace/products?${queryString}`);
+    return this.publicRequest(`/marketplace/products?${queryString}`);
   }
 
   async getMarketplaceStats() {
-    return this.request('/marketplace/stats');
+    return this.publicRequest('/marketplace/stats');
   }
 
   async getMarketplaceProductDetails(id) {
-    return this.request(`/marketplace/products/${id}`);
+    return this.publicRequest(`/marketplace/products/${id}`);
   }
 
   // Search suggestions based on existing products
@@ -871,22 +900,34 @@ class ApiService {
   }
 
   async checkSavedProduct(productId) {
-    return this.request(`/saved-products/check/${productId}`);
+    try {
+      // Only check if user is authenticated
+      if (!this.token) {
+        return { is_saved: false };
+      }
+      return this.request(`/saved-products/check/${productId}`);
+    } catch (error) {
+      // If authentication fails, assume not saved
+      if (error.message?.includes('401') || error.message?.includes('Unauthenticated')) {
+        return { is_saved: false };
+      }
+      throw error;
+    }
   }
 
-  // Supplier methods
+  // Supplier methods (public endpoints)
   async getSupplierDetails(supplierId) {
-    return this.request(`/suppliers/${supplierId}`);
+    return this.publicRequest(`/suppliers/${supplierId}`);
   }
 
   async getSupplierProducts(supplierId, params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/suppliers/${supplierId}/products${queryString ? `?${queryString}` : ''}`);
+    return this.publicRequest(`/suppliers/${supplierId}/products${queryString ? `?${queryString}` : ''}`);
   }
 
   async getSupplierReviews(supplierId, params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/suppliers/${supplierId}/reviews${queryString ? `?${queryString}` : ''}`);
+    return this.publicRequest(`/suppliers/${supplierId}/reviews${queryString ? `?${queryString}` : ''}`);
   }
 
   // Starred Suppliers methods
@@ -909,7 +950,19 @@ class ApiService {
   }
 
   async checkStarredSupplier(supplierId) {
-    return this.request(`/starred-suppliers/check/${supplierId}`);
+    try {
+      // Only check if user is authenticated
+      if (!this.token) {
+        return { is_starred: false };
+      }
+      return this.request(`/starred-suppliers/check/${supplierId}`);
+    } catch (error) {
+      // If authentication fails, assume not starred
+      if (error.message?.includes('401') || error.message?.includes('Unauthenticated')) {
+        return { is_starred: false };
+      }
+      throw error;
+    }
   }
 
   // Cart methods

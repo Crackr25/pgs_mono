@@ -68,6 +68,10 @@ Route::get('/search/products', [SearchController::class, 'searchProducts']);
 Route::get('/search/popular', [SearchController::class, 'getPopularSearches']);
 Route::post('/search/track', [SearchController::class, 'trackSearch']);
 
+// Supplier routes (public - for supplier profile browsing like Alibaba)
+Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
+Route::get('/suppliers/{id}/products', [SupplierController::class, 'products']);
+Route::get('/suppliers/{id}/reviews', [SupplierController::class, 'reviews']);
 
 // Quote creation (public - buyers don't need accounts)
 Route::post('/quotes', [QuoteController::class, 'store']);
@@ -177,11 +181,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/saved-products', [SavedProductController::class, 'store']);
     Route::delete('/saved-products/{productId}', [SavedProductController::class, 'destroy']);
     Route::get('/saved-products/check/{productId}', [SavedProductController::class, 'checkSaved']);
-
-    // Supplier routes
-    Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
-    Route::get('/suppliers/{id}/products', [SupplierController::class, 'products']);
-    Route::get('/suppliers/{id}/reviews', [SupplierController::class, 'reviews']);
 
     // Starred Suppliers routes
     Route::get('/starred-suppliers', [StarredSupplierController::class, 'index']);

@@ -689,14 +689,33 @@ Product Link: ${window.location.href}`;
                 <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
                   <Shield className="w-3 h-3 text-primary-600" />
                 </div>
-                <Link 
-                  href={`/buyer/suppliers/${product.company.id}`}
-                  className="text-primary-600 hover:text-primary-700 font-medium transition-colors cursor-pointer"
-                >
-                  {product.company.name}
-                </Link>
+                {product.company?.id ? (
+                  <Link 
+                    href={`/buyer/suppliers/${encodeURIComponent(product.company.id)}`}
+                    className="text-primary-600 hover:text-primary-700 font-medium transition-colors cursor-pointer"
+                    onClick={() => {
+                      console.log('Navigating to supplier ID:', product.company.id);
+                    }}
+                  >
+                    {product.company.name}
+                  </Link>
+                ) : (
+                  <span className="text-primary-600 font-medium">
+                    {product.company?.name || 'Unknown Company'}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="block text-xs text-red-500 mt-1">
+                        No company ID available
+                        {product.company && (
+                          <div className="mt-1 p-2 bg-gray-100 text-black text-xs rounded">
+                            Company data: {JSON.stringify(product.company, null, 2)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </span>
+                )}
                 <span className="text-secondary-500">•</span>
-                <span className="text-secondary-600 text-sm">{product.company.years_in_business || '3'} yrs</span>
+                <span className="text-secondary-600 text-sm">{product.company?.years_in_business || '3'} yrs</span>
                 <span className="text-secondary-500">•</span>
                 <div className="flex items-center space-x-1">
                   <span className="w-4 h-3 bg-blue-500 rounded-sm flex items-center justify-center relative overflow-hidden">
@@ -1083,12 +1102,28 @@ Product Link: ${window.location.href}`;
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <Link href={`/buyer/suppliers/${product.company.id}`}>
-                        <h3 className="font-semibold text-secondary-900 hover:text-primary-600 cursor-pointer">
-                          {product.company.name}
+                      {product.company?.id ? (
+                        <Link 
+                          href={`/buyer/suppliers/${encodeURIComponent(product.company.id)}`}
+                          onClick={() => {
+                            console.log('Navigating to supplier ID (sidebar):', product.company.id);
+                          }}
+                        >
+                          <h3 className="font-semibold text-secondary-900 hover:text-primary-600 cursor-pointer">
+                            {product.company.name}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <h3 className="font-semibold text-secondary-900">
+                          {product.company?.name || 'Unknown Company'}
+                          {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-red-500 mt-1">
+                              No company ID available
+                            </div>
+                          )}
                         </h3>
-                      </Link>
-                      {product.company.verified && (
+                      )}
+                      {product.company?.verified && (
                         <Shield className="w-4 h-4 text-green-500" />
                       )}
                     </div>

@@ -109,7 +109,11 @@ export default function SupplierDetail() {
       const response = await apiService.checkStarredSupplier(id);
       setIsStarred(response.is_starred);
     } catch (error) {
-      console.error('Error checking starred status:', error);
+      // Don't log error for unauthenticated users - this is expected behavior
+      if (error.response?.status !== 401) {
+        console.error('Error checking starred status:', error);
+      }
+      setIsStarred(false); // Default to not starred if check fails
     }
   };
 
@@ -185,7 +189,10 @@ export default function SupplierDetail() {
       <div className="text-center py-12">
         <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Supplier Not Found</h2>
-        <p className="text-gray-600 mb-4">{error || 'The supplier you are looking for does not exist.'}</p>
+        <p className="text-gray-600 mb-4">
+          {error || 'The supplier you are looking for does not exist.'}
+          {id && <span className="block text-sm mt-2">Supplier ID: {id}</span>}
+        </p>
         <Link href="/buyer">
           <Button>Back to Marketplace</Button>
         </Link>
