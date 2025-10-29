@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FileText, Image, Video, Download, Edit, Trash2, Eye, X } from 'lucide-react';
 import Button from './Button';
-import { getImageUrl } from '../../lib/imageUtils';
 
 export default function DocumentDisplay({ 
   documents, 
@@ -42,8 +41,8 @@ export default function DocumentDisplay({
   };
 
   const getPublicUrl = (filePath) => {
-    // Use the centralized image URL utility
-    return getImageUrl(filePath);
+    // Convert storage path to public URL
+    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${filePath}`;
   };
 
   const isImage = (filePath) => {
