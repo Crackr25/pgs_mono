@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, ShoppingCart, TrendingUp, Users, Star, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import apiService from '../../lib/api';
 
 export default function BusinessRecommendations({ 
   currentProduct, 
@@ -24,17 +25,22 @@ export default function BusinessRecommendations({
     try {
       setLoading(true);
       
-      // Fetch related products based on category using your existing API
-      const relatedResponse = await fetch(`/api/marketplace/products?category=${currentProduct?.category}&limit=4`);
-      const relatedData = await relatedResponse.json();
+      // Fetch related products based on category using the proper API service
+      const relatedData = await apiService.getMarketplaceProducts({ 
+        category: currentProduct?.category, 
+        limit: 4 
+      });
       
-      // Fetch trending products (use your existing API without filters)
-      const trendingResponse = await fetch('/api/marketplace/products?limit=4');
-      const trendingData = await trendingResponse.json();
+      // Fetch trending products
+      const trendingData = await apiService.getMarketplaceProducts({ 
+        limit: 4,
+        sort: 'trending' 
+      });
       
-      // Fetch products from same supplier (filter by current product's company)
-      const supplierResponse = await fetch(`/api/marketplace/products?limit=4`);
-      const supplierData = await supplierResponse.json();
+      // Fetch products from same supplier
+      const supplierData = await apiService.getMarketplaceProducts({ 
+        limit: 8 // Get more to filter out current product
+      });
       
       // Filter supplier products to exclude current product and show only from same company
       const filteredSupplierProducts = supplierData.data?.filter(product => 
