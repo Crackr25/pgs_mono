@@ -18,15 +18,21 @@ export const getImageUrl = (imagePath, folder = '') => {
   
 
 
-  const apiUrl = 'https://api.pinoyglobalsupply.com/' || 'http://localhost:8000';
+  // Use environment variables with proper fallback
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
   
   // If the path doesn't start with 'storage/', add it
   let fullPath = imagePath;
   if (!fullPath.startsWith('storage/') && !fullPath.startsWith('/storage/')) {
-    fullPath = `/storage/${fullPath}`;
+    fullPath = `storage/${fullPath}`;
   }
   
-  return `${apiUrl}${fullPath}`;
+  // Ensure we don't have double slashes
+  if (fullPath.startsWith('/')) {
+    fullPath = fullPath.substring(1);
+  }
+  
+  return `${baseUrl}/${fullPath}`;
 };
 
 /**
