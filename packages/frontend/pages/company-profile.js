@@ -8,6 +8,8 @@ import FileUpload from '../components/common/FileUpload';
 import DocumentDisplay from '../components/common/DocumentDisplay';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../lib/api';
+import { getImageUrl } from '../lib/imageUtils';
+import { checkEnvironmentSetup, debugImageUrl } from '../lib/debugUtils';
 
 export default function CompanyProfile() {
   const [company, setCompany] = useState(null);
@@ -22,6 +24,10 @@ export default function CompanyProfile() {
 
   useEffect(() => {
     fetchCompanyProfile();
+    // Debug environment setup (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      checkEnvironmentSetup();
+    }
   }, []);
 
   const fetchCompanyProfile = async () => {
@@ -398,7 +404,7 @@ export default function CompanyProfile() {
                 <div className="relative">
                   <div className="w-full h-48 md:h-64 rounded-lg overflow-hidden bg-secondary-100">
                     <img
-                      src={`${process.env.NEXT_PUBLIC_STORAGE_URL || '/storage'}/${company.company_banner}`}
+                      src={getImageUrl(company.company_banner)}
                       alt="Company Banner"
                       className="w-full h-full object-cover"
                     />
