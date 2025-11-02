@@ -12,6 +12,9 @@ export default function DocumentDisplay({
 }) {
   const [previewFile, setPreviewFile] = useState(null);
 
+  // Debug logging
+  console.log('DocumentDisplay - Title:', title, 'Documents:', documents, 'Count:', documents?.length);
+
   if (!documents || documents.length === 0) {
     return (
       <div className={`text-center py-8 ${className}`}>
@@ -25,6 +28,10 @@ export default function DocumentDisplay({
   }
 
   const getFileIcon = (filePath) => {
+    if (!filePath || typeof filePath !== 'string') {
+      return FileText; // Default icon for invalid paths
+    }
+    
     const extension = filePath.split('.').pop().toLowerCase();
     
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
@@ -46,11 +53,13 @@ export default function DocumentDisplay({
   };
 
   const isImage = (filePath) => {
+    if (!filePath || typeof filePath !== 'string') return false;
     const extension = filePath.split('.').pop().toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension);
   };
 
   const isVideo = (filePath) => {
+    if (!filePath || typeof filePath !== 'string') return false;
     const extension = filePath.split('.').pop().toLowerCase();
     return ['mp4', 'mov', 'avi', 'mkv'].includes(extension);
   };
@@ -83,9 +92,13 @@ export default function DocumentDisplay({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {documents.map((filePath, index) => {
+        {documents.map((document, index) => {
+          // Handle both string paths and document objects
+          const filePath = typeof document === 'string' ? document : document.url;
+          const documentName = typeof document === 'string' ? null : document.name;
+          
           const Icon = getFileIcon(filePath);
-          const fileName = getFileName(filePath);
+          const fileName = documentName || getFileName(filePath);
           const publicUrl = getPublicUrl(filePath);
 
           return (
@@ -118,7 +131,7 @@ export default function DocumentDisplay({
                   {fileName}
                 </h5>
                 <p className="text-xs text-secondary-500 mt-1">
-                  {filePath.split('.').pop().toUpperCase()}
+                  {filePath && typeof filePath === 'string' ? filePath.split('.').pop().toUpperCase() : 'FILE'}
                 </p>
               </div>
 

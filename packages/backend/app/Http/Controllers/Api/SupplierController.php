@@ -35,7 +35,7 @@ class SupplierController extends Controller
                 'location' => $company->location,
                 'address' => $company->address,
                 'company_banner' => $company->company_banner,
-                'established' => $company->established,
+                'established' => $company->year_established,
                 'verified' => $company->verified,
                 'rating' => $company->rating ?? 4.2,
                 'total_reviews' => $company->total_reviews ?? 0,
@@ -56,7 +56,7 @@ class SupplierController extends Controller
                 'rating_breakdown' => $ratingBreakdown,
                 
                 // Business details
-                'employee_count' => $company->employee_count ?? '50-100',
+                'employee_count' => $company->employees ?? '50-100',
                 'export_countries' => $company->export_countries ?? '15+',
                 'main_products' => $company->main_products ?? 'Electronics, Components',
                 'trade_type' => $company->trade_type ?? 'Manufacturer, Exporter',
@@ -70,6 +70,14 @@ class SupplierController extends Controller
                     'CE Certification',
                     'RoHS Compliance',
                     'FCC Certification'
+                ],
+                
+                // Document files - Company Documents & Media (matching company-profile.js logic)
+                'documents' => [
+                    'business' => $this->getBusinessDocuments($company),
+                    'certifications' => $this->getCertificationDocuments($company),
+                    'kyc' => $this->getKycDocuments($company),
+                    'factory' => $this->getFactoryDocuments($company)
                 ],
                 
                 'created_at' => $company->created_at,
@@ -282,5 +290,173 @@ class SupplierController extends Controller
         });
 
         return $reviews;
+    }
+
+    private function getBusinessDocuments($company)
+    {
+        $documents = [];
+
+        if (!empty($company->dti_sec_certificate)) {
+            $documents[] = [
+                'name' => 'DTI/SEC Certificate',
+                'url' => $company->dti_sec_certificate
+            ];
+        }
+
+        if (!empty($company->peza_documents)) {
+            $pezaDocs = is_string($company->peza_documents) 
+                ? json_decode($company->peza_documents, true) 
+                : $company->peza_documents;
+            if (is_array($pezaDocs)) {
+                foreach ($pezaDocs as $file) {
+                    $documents[] = [
+                        'name' => 'PEZA Document',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        if (!empty($company->business_permits)) {
+            $permitFiles = is_string($company->business_permits) 
+                ? json_decode($company->business_permits, true) 
+                : $company->business_permits;
+            if (is_array($permitFiles)) {
+                foreach ($permitFiles as $file) {
+                    $documents[] = [
+                        'name' => 'Business Permit',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        return $documents;
+    }
+
+    private function getCertificationDocuments($company)
+    {
+        $documents = [];
+
+        if (!empty($company->product_certifications)) {
+            $certFiles = is_string($company->product_certifications) 
+                ? json_decode($company->product_certifications, true) 
+                : $company->product_certifications;
+            if (is_array($certFiles)) {
+                foreach ($certFiles as $file) {
+                    $documents[] = [
+                        'name' => 'Product Certification',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        return $documents;
+    }
+
+    private function getKycDocuments($company)
+    {
+        $documents = [];
+
+        if (!empty($company->owner_id_front)) {
+            $documents[] = [
+                'name' => 'Owner ID (Front)',
+                'url' => $company->owner_id_front
+            ];
+        }
+
+        if (!empty($company->owner_id_back)) {
+            $documents[] = [
+                'name' => 'Owner ID (Back)',
+                'url' => $company->owner_id_back
+            ];
+        }
+
+        if (!empty($company->proof_of_address)) {
+            $documents[] = [
+                'name' => 'Proof of Address',
+                'url' => $company->proof_of_address
+            ];
+        }
+
+        if (!empty($company->business_registration_cert)) {
+            $documents[] = [
+                'name' => 'Business Registration Certificate',
+                'url' => $company->business_registration_cert
+            ];
+        }
+
+        return $documents;
+    }
+
+    private function getFactoryDocuments($company)
+    {
+        $documents = [];
+
+        if (!empty($company->factory_overview_video)) {
+            $documents[] = [
+                'name' => 'Factory Overview Video',
+                'url' => $company->factory_overview_video
+            ];
+        }
+
+        if (!empty($company->production_line_photos)) {
+            $photos = is_string($company->production_line_photos) 
+                ? json_decode($company->production_line_photos, true) 
+                : $company->production_line_photos;
+            if (is_array($photos)) {
+                foreach ($photos as $file) {
+                    $documents[] = [
+                        'name' => 'Production Line Photo',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        if (!empty($company->quality_control_photos)) {
+            $photos = is_string($company->quality_control_photos) 
+                ? json_decode($company->quality_control_photos, true) 
+                : $company->quality_control_photos;
+            if (is_array($photos)) {
+                foreach ($photos as $file) {
+                    $documents[] = [
+                        'name' => 'Quality Control Photo',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        if (!empty($company->warehouse_photos)) {
+            $photos = is_string($company->warehouse_photos) 
+                ? json_decode($company->warehouse_photos, true) 
+                : $company->warehouse_photos;
+            if (is_array($photos)) {
+                foreach ($photos as $file) {
+                    $documents[] = [
+                        'name' => 'Warehouse Photo',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        if (!empty($company->certifications_photos)) {
+            $photos = is_string($company->certifications_photos) 
+                ? json_decode($company->certifications_photos, true) 
+                : $company->certifications_photos;
+            if (is_array($photos)) {
+                foreach ($photos as $file) {
+                    $documents[] = [
+                        'name' => 'Certification Photo',
+                        'url' => $file
+                    ];
+                }
+            }
+        }
+
+        return $documents;
     }
 }

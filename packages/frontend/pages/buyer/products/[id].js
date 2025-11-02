@@ -39,7 +39,7 @@ import LoginPromptModal from '../../../components/common/LoginPromptModal';
 import ImageZoomViewer from '../../../components/common/ImageZoomViewer';
 import ProductSpotlight from '../../../components/common/ProductSpotlight';
 import BusinessRecommendations from '../../../components/common/BusinessRecommendations';
-import ProductSearchBar from '../../../components/common/ProductSearchBar';
+import ProminentSearchBar from '../../../components/common/ProminentSearchBar';
 import FloatingChatIcon from '../../../components/common/FloatingChatIcon';
 import SimpleFloatingChat from '../../../components/common/SimpleFloatingChat';
 import { useCart } from '../../../contexts/CartContext';
@@ -598,38 +598,8 @@ Product Link: ${window.location.href}`;
       </Head>
 
       <div className="space-y-6">
-        {/* Enhanced Search Bar - Alibaba Style - Moved to top */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-            <div className="flex items-center space-x-3 mb-3">
-              <Search className="w-5 h-5 text-white" />
-              <span className="text-white font-medium">Find Similar Products or Suppliers</span>
-            </div>
-            <div className="relative">
-              <ProductSearchBar 
-                placeholder="Search similar products, suppliers, or browse categories..."
-                className="mb-0 border-0 shadow-lg"
-                compact={false}
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md">
-                  <Search className="w-4 h-4 mr-2" />
-                  Search
-                </Button>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-blue-100">
-              <span>Popular:</span>
-              <button className="hover:text-white transition-colors">LED Lights</button>
-              <span>•</span>
-              <button className="hover:text-white transition-colors">Industrial Equipment</button>
-              <span>•</span>
-              <button className="hover:text-white transition-colors">Electronics</button>
-              <span>•</span>
-              <button className="hover:text-white transition-colors">Home & Garden</button>
-            </div>
-          </div>
-        </div>
+        {/* Enhanced Search Bar - Alibaba Style - Same as Main Page */}
+        <ProminentSearchBar />
 
         {/* Enhanced Breadcrumb - Alibaba Style */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
@@ -692,6 +662,8 @@ Product Link: ${window.location.href}`;
                 {product.company?.id ? (
                   <Link 
                     href={`/buyer/suppliers/${encodeURIComponent(product.company.id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-primary-600 hover:text-primary-700 font-medium transition-colors cursor-pointer"
                     onClick={() => {
                       console.log('Navigating to supplier ID:', product.company.id);

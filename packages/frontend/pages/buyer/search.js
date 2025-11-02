@@ -24,7 +24,7 @@ import apiService from '../../lib/api';
 
 export default function SearchResults() {
   const router = useRouter();
-  const { q: searchQuery } = router.query;
+  const { q: searchQuery, category: categoryParam } = router.query;
   
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -41,7 +41,7 @@ export default function SearchResults() {
     to: 0
   });
   const [filters, setFilters] = useState({
-    category: '',
+    category: categoryParam || '',
     priceRange: '',
     location: '',
     search: searchQuery || '',
@@ -74,6 +74,12 @@ export default function SearchResults() {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (categoryParam) {
+      setFilters(prev => ({ ...prev, category: categoryParam }));
+    }
+  }, [categoryParam]);
+
+  useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchLocations();
@@ -100,7 +106,9 @@ export default function SearchResults() {
         }
       });
       
+      console.log('Search params being sent:', params);
       const response = await apiService.getMarketplaceProducts(params);
+      console.log('Search response:', response);
       
       if (response && response.data) {
         setProducts(response.data);
