@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Skeleton from '../../../components/common/Skeleton';
+import DocumentDisplay from '../../../components/common/DocumentDisplay';
+import Modal from '../../../components/common/Modal';
 import apiService from '../../../lib/api';
 import { getImageUrl } from '../../../lib/imageUtils';
+import { useAuth } from '../../../contexts/AuthContext';
 import { 
   ArrowLeft,
   Star,
@@ -27,6 +30,7 @@ import {
   ChevronRight,
   Heart,
   Share2,
+  Send,
   AlertCircle,
   Building,
   Users,
@@ -42,6 +46,7 @@ import {
 export default function SupplierDetail() {
   const router = useRouter();
   const { id } = router.query;
+  const { user } = useAuth();
   
   const [supplier, setSupplier] = useState(null);
   const [products, setProducts] = useState([]);
@@ -57,6 +62,28 @@ export default function SupplierDetail() {
   const [showProductsDropdown, setShowProductsDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginAction, setLoginAction] = useState('');
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return products;
+    }
+    
+    return products.filter(product => 
+      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [products, searchQuery]);
+
+  // Auto-redirect to products tab when user starts searching
+  useEffect(() => {
+    if (searchQuery.trim() && activeTab !== 'products') {
+      setActiveTab('products');
+    }
+  }, [searchQuery, activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -83,22 +110,47 @@ export default function SupplierDetail() {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Fetching supplier details for ID:', id);
       const supplierData = await apiService.getSupplierDetails(id);
+      console.log('Supplier data received:', supplierData);
+      console.log('Supplier data keys:', Object.keys(supplierData));
+      console.log('Supplier documents debug:', supplierData.documents);
+      if (supplierData.documents) {
+        console.log('Business documents:', supplierData.documents.business);
+        console.log('Certification documents:', supplierData.documents.certifications);
+        console.log('KYC documents:', supplierData.documents.kyc);
+        console.log('Factory documents:', supplierData.documents.factory);
+      }
+      console.log('Supplier data structure:', JSON.stringify(supplierData, null, 2));
       setSupplier(supplierData);
       
       // Fetch company products
-      const productsData = await apiService.getSupplierProducts(id, { page: 1, per_page: 8 });
-      setProducts(productsData.data || []);
+      try {
+        const productsData = await apiService.getSupplierProducts(id, { page: 1, per_page: 8 });
+        console.log('Products data received:', productsData);
+        setProducts(productsData.data || []);
+      } catch (productsError) {
+        console.error('Error fetching products:', productsError);
+        setProducts([]);
+      }
       
       // Fetch company reviews
-      const reviewsData = await apiService.getSupplierReviews(id, { page: 1, per_page: 10 });
-      setReviews(reviewsData.data || []);
+      try {
+        const reviewsData = await apiService.getSupplierReviews(id, { page: 1, per_page: 10 });
+        console.log('Reviews data received:', reviewsData);
+        setReviews(reviewsData.data || []);
+      } catch (reviewsError) {
+        console.error('Error fetching reviews:', reviewsError);
+        setReviews([]);
+      }
 
       // Check if supplier is starred
       await checkIfSupplierStarred();
     } catch (error) {
       console.error('Error fetching supplier details:', error);
-      setError('Failed to load supplier details');
+      console.error('Error response:', error.response);
+      setError(`Failed to load supplier details: ${error.response?.status || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -135,6 +187,49 @@ export default function SupplierDetail() {
     } finally {
       setStarringSupplier(false);
     }
+  };
+
+  // Contact handlers
+  const handleChatNow = () => {
+    if (!user) {
+      setLoginAction(`Chat with ${supplier?.name || 'CK'}`);
+      setShowLoginModal(true);
+      return;
+    }
+    // TODO: Implement chat functionality
+    console.log('Opening chat with supplier:', supplier.name);
+    // This would typically open a chat window or redirect to chat page
+    alert(`Chat feature will be implemented. Opening chat with ${supplier.name}`);
+  };
+
+  const handleSendInquiry = () => {
+    if (!user) {
+      setLoginAction(`Send Inquiry to ${supplier?.name || 'CK'}`);
+      setShowLoginModal(true);
+      return;
+    }
+    // TODO: Implement inquiry form
+    console.log('Opening inquiry form for supplier:', supplier.name);
+    // This would typically open an inquiry modal or form
+    alert(`Inquiry feature will be implemented. Sending inquiry to ${supplier.name}`);
+  };
+
+  const handleSendMessage = () => {
+    if (!user) {
+      setLoginAction(`Send Message to ${supplier?.name || 'CK'}`);
+      setShowLoginModal(true);
+      return;
+    }
+    // TODO: Implement message functionality
+    console.log('Opening message form for supplier:', supplier.name);
+    // This would typically open a message compose modal
+    alert(`Message feature will be implemented. Sending message to ${supplier.name}`);
+  };
+
+  const handleLogin = () => {
+    // Redirect to login page
+    router.push('/login');
+    setShowLoginModal(false);
   };
 
   const renderStars = (rating) => {
@@ -193,6 +288,20 @@ export default function SupplierDetail() {
           {error || 'The supplier you are looking for does not exist.'}
           {id && <span className="block text-sm mt-2">Supplier ID: {id}</span>}
         </p>
+        {/* Debug information */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-xs text-gray-600 max-w-2xl mx-auto">
+            <h3 className="font-semibold mb-2">Debug Information:</h3>
+            <div className="space-y-1">
+              <div><strong>Supplier ID:</strong> {id || 'undefined'}</div>
+              <div><strong>Error:</strong> {error || 'No error message'}</div>
+              <div><strong>Supplier Data:</strong> {supplier ? 'Loaded' : 'Not loaded'}</div>
+              {supplier && (
+                <div><strong>Supplier Keys:</strong> {Object.keys(supplier).join(', ')}</div>
+              )}
+            </div>
+          </div>
+        )}
         <Link href="/buyer">
           <Button>Back to Marketplace</Button>
         </Link>
@@ -387,8 +496,22 @@ export default function SupplierDetail() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-64 pl-4 pr-10 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                   />
-                  <Search className="absolute right-3 w-4 h-4 text-secondary-400" />
+                  {searchQuery ? (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 w-4 h-4 text-secondary-400 hover:text-secondary-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <Search className="absolute right-3 w-4 h-4 text-secondary-400" />
+                  )}
                 </div>
+                {searchQuery && (
+                  <div className="absolute top-full left-0 mt-1 text-xs text-secondary-600">
+                    {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''} found
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -433,24 +556,28 @@ export default function SupplierDetail() {
                       <Building className="w-10 h-10 text-primary-600" />
                     )}
                   </div>
-                  <h2 className="text-lg font-bold text-secondary-900 mb-1">{supplier.name}</h2>
-                  <p className="text-sm text-secondary-600 mb-3">{supplier.location}</p>
+                  <h2 className="text-lg font-bold text-secondary-900 mb-1">{supplier.name || 'No name provided'}</h2>
+                  <p className="text-sm text-secondary-600 mb-3">{supplier.location || 'No location provided'}</p>
                   
                   {/* Quick Stats */}
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     <div className="text-center">
-                      <div className="text-lg font-bold text-primary-600">{supplier.products_count || products.length || 0}</div>
+                      <div className="text-lg font-bold text-primary-600">
+                        {supplier.products_count || supplier.total_products || products.length || 0}
+                      </div>
                       <div className="text-xs text-secondary-600">Products</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-bold text-green-600">{supplier.orders_count || supplier.total_orders || 0}</div>
+                      <div className="text-lg font-bold text-green-600">
+                        {supplier.orders_count || supplier.total_orders || supplier.orders || 0}
+                      </div>
                       <div className="text-xs text-secondary-600">Orders</div>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center justify-center space-x-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
                         <span className="text-lg font-bold text-secondary-900">
-                          {supplier.rating || supplier.average_rating || '0.0'}
+                          {supplier.rating || supplier.average_rating || supplier.customer_rating || '0.0'}
                         </span>
                       </div>
                       <div className="text-xs text-secondary-600">Rating</div>
@@ -459,13 +586,27 @@ export default function SupplierDetail() {
 
                   {/* Action Buttons */}
                   <div className="space-y-2">
-                    <Button className="w-full">
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={handleChatNow}
+                    >
                       <MessageSquare className="w-4 h-4 mr-2" />
-                      Contact Supplier
+                      Chat now
                     </Button>
-                    <Button variant="outline" className="w-full">
-                      <Phone className="w-4 h-4 mr-2" />
-                      Chat Now
+                    <Button 
+                      className="w-full !bg-green-600 hover:!bg-green-700 text-white"
+                      onClick={handleSendInquiry}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Inquiry
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
+                      onClick={handleSendMessage}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Message
                     </Button>
                   </div>
                 </div>
@@ -477,15 +618,27 @@ export default function SupplierDetail() {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2 text-sm">
                     <Phone className="w-4 h-4 text-secondary-400" />
-                    <span className="text-secondary-600">{supplier.phone || 'Not provided'}</span>
+                    <span className="text-secondary-600">
+                      {supplier.peza_id || 'Not provided'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Phone className="w-4 h-4 text-secondary-400" />
+                    <span className="text-secondary-600">
+                      {supplier.phone || supplier.contact_phone || supplier.contact?.phone || 'Not provided'}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm">
                     <Mail className="w-4 h-4 text-secondary-400" />
-                    <span className="text-secondary-600 truncate">{supplier.email || 'Not provided'}</span>
+                    <span className="text-secondary-600 truncate">
+                      {supplier.email || supplier.contact_email || supplier.contact?.email || 'Not provided'}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm">
                     <Globe className="w-4 h-4 text-secondary-400" />
-                    <span className="text-secondary-600 truncate">{supplier.website || 'Not provided'}</span>
+                    <span className="text-secondary-600 truncate">
+                      {supplier.website || supplier.contact_website || supplier.contact?.website || 'Not provided'}
+                    </span>
                   </div>
                 </div>
               </Card>
@@ -496,15 +649,21 @@ export default function SupplierDetail() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-secondary-600">Business Type:</span>
-                    <span className="font-medium text-right">{supplier.business_type || 'Manufacturer'}</span>
+                    <span className="font-medium text-right">
+                      {supplier.business_type || supplier.type || 'Manufacturer'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-secondary-600">Employees:</span>
-                    <span className="font-medium">{supplier.employees || 'N/A'}</span>
+                    <span className="font-medium">
+                      {supplier.employee_count || 'N/A'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-secondary-600">Established:</span>
-                    <span className="font-medium">{supplier.year_established || 'N/A'}</span>
+                    <span className="font-medium">
+                      {supplier.established || 'N/A'}
+                    </span>
                   </div>
                 </div>
               </Card>
@@ -590,7 +749,7 @@ export default function SupplierDetail() {
                         <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
                           <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                           <div className="text-xl font-bold text-blue-600">
-                            {supplier.year_established || new Date().getFullYear() - 5}
+                            {supplier.established || 'N/A'}
                           </div>
                           <div className="text-sm text-secondary-600">Year Established</div>
                         </div>
@@ -603,11 +762,147 @@ export default function SupplierDetail() {
                       </div>
                     </Card>
 
+                    {/* Company Documents & Media Section */}
+                    {supplier.documents && (
+                      (supplier.documents.business?.length > 0 || 
+                       supplier.documents.certifications?.length > 0 || 
+                       supplier.documents.kyc?.length > 0) && (
+                      <Card className="p-6">
+                        <h3 className="text-xl font-bold text-secondary-900 mb-4">Company Documents & Media</h3>
+                        
+                        <div className="space-y-8">
+                          {/* Business Documents Section */}
+                          {supplier.documents.business?.length > 0 && (
+                            <div>
+                              <div className="flex items-center mb-4">
+                                <Shield className="h-5 w-5 text-blue-600 mr-2" />
+                                <h4 className="text-md font-medium text-secondary-900">Business Documents</h4>
+                              </div>
+                              <DocumentDisplay
+                                documents={supplier.documents.business}
+                                title="Registration & Permits"
+                                isEditing={false}
+                              />
+                            </div>
+                          )}
+
+                          {/* Product Certifications Section */}
+                          {supplier.documents.certifications?.length > 0 && (
+                            <div>
+                              <div className="flex items-center mb-4">
+                                <Award className="h-5 w-5 text-green-600 mr-2" />
+                                <h4 className="text-md font-medium text-secondary-900">Product Certifications</h4>
+                              </div>
+                              <DocumentDisplay
+                                documents={supplier.documents.certifications}
+                                title="Quality & Safety Certifications"
+                                isEditing={false}
+                              />
+                            </div>
+                          )}
+
+                          {/* KYC Documents Section */}
+                          {supplier.documents.kyc?.length > 0 && (
+                            <div>
+                              <div className="flex items-center mb-4">
+                                <Shield className="h-5 w-5 text-purple-600 mr-2" />
+                                <h4 className="text-md font-medium text-secondary-900">KYC Verification</h4>
+                              </div>
+                              <DocumentDisplay
+                                documents={supplier.documents.kyc}
+                                title="Identity & Address Verification"
+                                isEditing={false}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                      )
+                    )}
+
+                    {/* Manufacturing Facilities & Capabilities */}
+                    {supplier.documents?.factory?.length > 0 && (
+                      <Card className="p-6">
+                        <h3 className="text-xl font-bold text-secondary-900 mb-4">Manufacturing Facilities & Capabilities</h3>
+                        
+                        <div className="space-y-8">
+                          {/* Factory Tour Section */}
+                          <div>
+                            <div className="flex items-center mb-4">
+                              <Building className="h-5 w-5 text-orange-600 mr-2" />
+                              <h4 className="text-md font-medium text-secondary-900">Factory Tour</h4>
+                            </div>
+                            <DocumentDisplay
+                              documents={supplier.documents.factory}
+                              title="Manufacturing Facilities & Capabilities"
+                              isEditing={false}
+                            />
+                          </div>
+
+                          {/* Production Capabilities Info */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="font-medium text-secondary-900 mb-3">Production Capacity</h4>
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Daily Output:</span>
+                                  <span className="font-medium">{supplier.daily_output || 'Not specified'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Monthly Capacity:</span>
+                                  <span className="font-medium">{supplier.monthly_capacity || 'Not specified'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Production Lines:</span>
+                                  <span className="font-medium">{supplier.production_lines || 'Not specified'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Factory Size:</span>
+                                  <span className="font-medium">{supplier.factory_size || 'Not specified'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-medium text-secondary-900 mb-3">Quality Control</h4>
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">24/7 Quality Monitoring</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">Advanced Testing Equipment</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">QC Team: 15 members</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">Defect Rate: &lt; 0.1%</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
+
                     {/* Featured Products Preview */}
                     {products.length > 0 && (
                       <Card className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-secondary-900">Featured Products</h3>
+                          <div>
+                            <h3 className="text-lg font-semibold text-secondary-900">
+                              {searchQuery ? 'Search Results' : 'Featured Products'}
+                            </h3>
+                            {searchQuery && (
+                              <p className="text-sm text-secondary-600 mt-1">
+                                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found for "{searchQuery}"
+                              </p>
+                            )}
+                          </div>
                           <Button
                             variant="outline"
                             size="sm"
@@ -617,7 +912,7 @@ export default function SupplierDetail() {
                           </Button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {products.slice(0, 6).map((product) => {
+                          {filteredProducts.slice(0, 6).map((product) => {
                             // Debug: Log product structure
                             console.log('Product debug:', {
                               id: product.id,
@@ -666,6 +961,23 @@ export default function SupplierDetail() {
                             );
                           })}
                         </div>
+                        
+                        {/* No results message for search */}
+                        {searchQuery && filteredProducts.length === 0 && (
+                          <div className="text-center py-8">
+                            <Package className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
+                            <h4 className="text-lg font-medium text-secondary-900 mb-2">No products found</h4>
+                            <p className="text-secondary-600">No products match your search for "{searchQuery}"</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSearchQuery('')}
+                              className="mt-3"
+                            >
+                              Clear search
+                            </Button>
+                          </div>
+                        )}
                       </Card>
                     )}
                   </div>
@@ -723,7 +1035,7 @@ export default function SupplierDetail() {
                       <h2 className="text-2xl font-bold text-secondary-900">All Products</h2>
                       <div className="flex items-center space-x-4">
                         <span className="text-sm text-secondary-600">
-                          {products.length} products found
+                          {filteredProducts.length} products found
                         </span>
                         <select className="px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                           <option>Sort by: Default</option>
@@ -736,7 +1048,7 @@ export default function SupplierDetail() {
 
                     {/* Products Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {products.map((product) => (
+                      {filteredProducts.map((product) => (
                         <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group">
                           <div className="relative">
                             {(product.has_image || product.image || (product.images && product.images.length > 0)) ? (
@@ -791,11 +1103,13 @@ export default function SupplierDetail() {
                       ))}
                     </div>
                     
-                    {products.length === 0 && (
+                    {filteredProducts.length === 0 && (
                       <div className="text-center py-12">
                         <Package className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Products Found</h3>
-                        <p className="text-secondary-600">This supplier hasn't added any products yet.</p>
+                        <p className="text-secondary-600">
+                          {searchQuery.trim() ? `No products found matching "${searchQuery}"` : "This supplier hasn't added any products yet."}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -843,13 +1157,15 @@ export default function SupplierDetail() {
 
                 {activeTab === 'company-profile' && (
                   <div className="space-y-6 animate-in fade-in-50 duration-300">
+                    {/* Company Description */}
                     <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">About Company</h3>
+                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Company Description</h3>
                       <p className="text-secondary-700 leading-relaxed">
                         {supplier.description || supplier.about || 'No company description available.'}
                       </p>
                     </Card>
 
+                    {/* Company Information */}
                     <Card className="p-6">
                       <h3 className="text-lg font-semibold text-secondary-900 mb-4">Company Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -857,21 +1173,21 @@ export default function SupplierDetail() {
                           <Building className="w-5 h-5 text-secondary-400" />
                           <div>
                             <div className="text-sm text-secondary-600">Business Type</div>
-                            <div className="font-medium">{supplier.business_type || 'Manufacturer'}</div>
+                            <div className="font-medium">{supplier.business_type || supplier.trade_type || 'Manufacturer'}</div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
                           <Users className="w-5 h-5 text-secondary-400" />
                           <div>
                             <div className="text-sm text-secondary-600">Employees</div>
-                            <div className="font-medium">{supplier.employees || 'N/A'}</div>
+                            <div className="font-medium">{supplier.employee_count || 'N/A'}</div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
                           <Calendar className="w-5 h-5 text-secondary-400" />
                           <div>
                             <div className="text-sm text-secondary-600">Established</div>
-                            <div className="font-medium">{supplier.year_established || 'N/A'}</div>
+                            <div className="font-medium">{supplier.established || 'N/A'}</div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -881,103 +1197,249 @@ export default function SupplierDetail() {
                             <div className="font-medium">{supplier.main_products || 'Various'}</div>
                           </div>
                         </div>
+                        <div className="flex items-center space-x-3">
+                          <DollarSign className="w-5 h-5 text-secondary-400" />
+                          <div>
+                            <div className="text-sm text-secondary-600">Payment Terms</div>
+                            <div className="font-medium">{supplier.payment_terms || 'T/T, L/C'}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Truck className="w-5 h-5 text-secondary-400" />
+                          <div>
+                            <div className="text-sm text-secondary-600">Delivery Terms</div>
+                            <div className="font-medium">{supplier.delivery_terms || 'FOB, CIF'}</div>
+                          </div>
+                        </div>
                       </div>
                     </Card>
+
+                    {/* Company Documents & Media */}
+                    {supplier.documents && (
+                      (supplier.documents.business?.length > 0 || 
+                       supplier.documents.certifications?.length > 0 || 
+                       supplier.documents.kyc?.length > 0) && (
+                      <Card className="p-6">
+                        <h3 className="text-lg font-semibold text-secondary-900 mb-4">Company Documents & Media</h3>
+                        
+                        <div className="space-y-8">
+                          {/* Business Documents Section */}
+                          {supplier.documents.business?.length > 0 && (
+                            <div>
+                              <div className="flex items-center mb-4">
+                                <Shield className="h-5 w-5 text-blue-600 mr-2" />
+                                <h4 className="text-md font-medium text-secondary-900">Business Documents</h4>
+                              </div>
+                              <DocumentDisplay
+                                documents={supplier.documents.business}
+                                title="Registration & Permits"
+                                isEditing={false}
+                              />
+                            </div>
+                          )}
+
+                          {/* Product Certifications Section */}
+                          {supplier.documents.certifications?.length > 0 && (
+                            <div>
+                              <div className="flex items-center mb-4">
+                                <Award className="h-5 w-5 text-green-600 mr-2" />
+                                <h4 className="text-md font-medium text-secondary-900">Product Certifications</h4>
+                              </div>
+                              <DocumentDisplay
+                                documents={supplier.documents.certifications}
+                                title="Quality & Safety Certifications"
+                                isEditing={false}
+                              />
+                            </div>
+                          )}
+
+                          {/* KYC Documents Section */}
+                          {supplier.documents.kyc?.length > 0 && (
+                            <div>
+                              <div className="flex items-center mb-4">
+                                <Shield className="h-5 w-5 text-purple-600 mr-2" />
+                                <h4 className="text-md font-medium text-secondary-900">KYC Verification</h4>
+                              </div>
+                              <DocumentDisplay
+                                documents={supplier.documents.kyc}
+                                title="Identity & Address Verification"
+                                isEditing={false}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                      )
+                    )}
+
+                    {/* Manufacturing Facilities & Capabilities */}
+                    {supplier.documents?.factory?.length > 0 && (
+                      <Card className="p-6">
+                        <h3 className="text-lg font-semibold text-secondary-900 mb-4">Manufacturing Facilities & Capabilities</h3>
+                        
+                        <div className="space-y-8">
+                          {/* Factory Tour Section */}
+                          <div>
+                            <div className="flex items-center mb-4">
+                              <Building className="h-5 w-5 text-orange-600 mr-2" />
+                              <h4 className="text-md font-medium text-secondary-900">Factory Tour</h4>
+                            </div>
+                            <DocumentDisplay
+                              documents={supplier.documents.factory}
+                              title="Manufacturing Facilities & Capabilities"
+                              isEditing={false}
+                            />
+                          </div>
+
+                          {/* Production Capabilities Info */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="font-medium text-secondary-900 mb-3">Production Capacity</h4>
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Daily Output:</span>
+                                  <span className="font-medium">50,000 units</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Monthly Capacity:</span>
+                                  <span className="font-medium">1.5M units</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Production Lines:</span>
+                                  <span className="font-medium">5 lines</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Factory Size:</span>
+                                  <span className="font-medium">{supplier.factory_size || '10,000 sqm'}</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-medium text-secondary-900 mb-3">Quality Control</h4>
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">24/7 Quality Monitoring</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">Advanced Testing Equipment</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">QC Team: 15 members</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">Defect Rate: &lt; 0.1%</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
                   </div>
                 )}
 
                 {activeTab === 'certifications' && (
                   <div className="space-y-6 animate-in fade-in-50 duration-300">
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Company Certifications</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="flex items-start space-x-3">
-                          <CheckCircle className="w-6 h-6 text-green-500 mt-1" />
-                          <div>
-                            <h4 className="font-medium text-secondary-900">ISO 9001:2015</h4>
-                            <p className="text-sm text-secondary-600">Quality Management System</p>
-                            <p className="text-xs text-secondary-500 mt-1">Valid until: Dec 2025</p>
-                          </div>
+                    {supplier.documents?.certifications?.length > 0 ? (
+                      <Card className="p-6">
+                        <h3 className="text-lg font-semibold text-secondary-900 mb-4">Product Certifications</h3>
+                        <DocumentDisplay
+                          documents={supplier.documents.certifications}
+                          title="Quality & Safety Certifications"
+                          isEditing={false}
+                        />
+                      </Card>
+                    ) : (
+                      <Card className="p-6">
+                        <div className="text-center py-12">
+                          <Award className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Certifications Available</h3>
+                          <p className="text-secondary-600">This supplier hasn't uploaded any certification documents yet.</p>
                         </div>
-                        <div className="flex items-start space-x-3">
-                          <CheckCircle className="w-6 h-6 text-green-500 mt-1" />
-                          <div>
-                            <h4 className="font-medium text-secondary-900">ISO 14001:2015</h4>
-                            <p className="text-sm text-secondary-600">Environmental Management System</p>
-                            <p className="text-xs text-secondary-500 mt-1">Valid until: Dec 2025</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                          <CheckCircle className="w-6 h-6 text-blue-500 mt-1" />
-                          <div>
-                            <h4 className="font-medium text-secondary-900">CE Certification</h4>
-                            <p className="text-sm text-secondary-600">European Conformity</p>
-                            <p className="text-xs text-secondary-500 mt-1">Valid until: Dec 2026</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start space-x-3">
-                          <CheckCircle className="w-6 h-6 text-purple-500 mt-1" />
-                          <div>
-                            <h4 className="font-medium text-secondary-900">FDA Approved</h4>
-                            <p className="text-sm text-secondary-600">Food and Drug Administration</p>
-                            <p className="text-xs text-secondary-500 mt-1">Valid until: Jun 2025</p>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
+                      </Card>
+                    )}
                   </div>
                 )}
 
                 {activeTab === 'factory-tour' && (
                   <div className="space-y-6 animate-in fade-in-50 duration-300">
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Factory Overview</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="aspect-video bg-secondary-100 rounded-lg flex items-center justify-center">
-                          <div className="text-center">
-                            <Package className="w-12 h-12 text-secondary-400 mx-auto mb-2" />
-                            <p className="text-secondary-600">Factory Overview Video</p>
-                          </div>
-                        </div>
-                        <div className="space-y-4">
+                    {supplier.documents?.factory?.length > 0 ? (
+                      <Card className="p-6">
+                        <h3 className="text-lg font-semibold text-secondary-900 mb-4">Manufacturing Facilities & Capabilities</h3>
+                        <div className="space-y-8">
                           <div>
-                            <h4 className="font-medium text-secondary-900 mb-2">Factory Details</h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-secondary-600">Total Area:</span>
-                                <span className="font-medium">{supplier.factory_size || '10,000 sqm'}</span>
+                            <div className="flex items-center mb-4">
+                              <Building className="h-5 w-5 text-orange-600 mr-2" />
+                              <h4 className="text-md font-medium text-secondary-900">Factory Tour</h4>
+                            </div>
+                            <DocumentDisplay
+                              documents={supplier.documents.factory}
+                              title="Manufacturing Facilities & Capabilities"
+                              isEditing={false}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="font-medium text-secondary-900 mb-3">Production Capacity</h4>
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Daily Output:</span>
+                                  <span className="font-medium">{supplier.daily_output || 'Not specified'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Monthly Capacity:</span>
+                                  <span className="font-medium">{supplier.monthly_capacity || 'Not specified'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Production Lines:</span>
+                                  <span className="font-medium">{supplier.production_lines || 'Not specified'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-secondary-600">Factory Size:</span>
+                                  <span className="font-medium">{supplier.factory_size || 'Not specified'}</span>
+                                </div>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-secondary-600">Production Lines:</span>
-                                <span className="font-medium">5 Lines</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-secondary-600">Daily Capacity:</span>
-                                <span className="font-medium">50,000 units</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-secondary-600">Quality Control:</span>
-                                <span className="font-medium">24/7 Monitoring</span>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-medium text-secondary-900 mb-3">Quality Control</h4>
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">24/7 Quality Monitoring</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">Advanced Testing Equipment</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">QC Team: {supplier.qc_team_size || '15 members'}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-secondary-700">Defect Rate: {supplier.defect_rate || '< 0.1%'}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-
-                    <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Production Areas</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {['Production Line', 'Quality Control', 'Warehouse'].map((area, index) => (
-                          <div key={area} className="aspect-video bg-secondary-100 rounded-lg flex items-center justify-center hover:bg-secondary-200 transition-colors duration-200">
-                            <div className="text-center">
-                              <Building className="w-8 h-8 text-secondary-400 mx-auto mb-2" />
-                              <p className="text-sm text-secondary-600">{area}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
+                      </Card>
+                    ) : (
+                      <Card className="p-6">
+                        <div className="text-center py-12">
+                          <Building className="w-16 h-16 text-secondary-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-secondary-900 mb-2">No Factory Information Available</h3>
+                          <p className="text-secondary-600">This supplier hasn't uploaded factory photos or videos yet.</p>
+                        </div>
+                      </Card>
+                    )}
                   </div>
                 )}
 
@@ -998,38 +1460,55 @@ export default function SupplierDetail() {
                             <Phone className="w-5 h-5 text-secondary-400 mt-1" />
                             <div>
                               <h4 className="font-medium text-secondary-900">Phone Number</h4>
-                              <p className="text-secondary-600">{supplier.phone || 'Not provided'}</p>
+                              <p className="text-secondary-600">{supplier.phone || supplier.contact_phone || supplier.contact?.phone || 'Not provided'}</p>
                             </div>
                           </div>
                           <div className="flex items-start space-x-3">
                             <Mail className="w-5 h-5 text-secondary-400 mt-1" />
                             <div>
                               <h4 className="font-medium text-secondary-900">Email Address</h4>
-                              <p className="text-secondary-600">{supplier.email || 'Not provided'}</p>
+                              <p className="text-secondary-600">{supplier.email || supplier.contact_email || supplier.contact?.email || 'Not provided'}</p>
                             </div>
                           </div>
                           <div className="flex items-start space-x-3">
                             <Globe className="w-5 h-5 text-secondary-400 mt-1" />
                             <div>
                               <h4 className="font-medium text-secondary-900">Website</h4>
-                              <p className="text-secondary-600">{supplier.website || 'Not provided'}</p>
+                              <p className="text-secondary-600">{supplier.website || supplier.contact_website || supplier.contact?.website || 'Not provided'}</p>
                             </div>
                           </div>
+                          {supplier.peza_id && (
+                            <div className="flex items-start space-x-3">
+                              <Building className="w-5 h-5 text-secondary-400 mt-1" />
+                              <div>
+                                <h4 className="font-medium text-secondary-900">PEZA ID</h4>
+                                <p className="text-secondary-600">{supplier.peza_id}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         
                         <div className="space-y-4">
-                          <h4 className="font-medium text-secondary-900">Key Contacts</h4>
+                          <h4 className="font-medium text-secondary-900">Business Information</h4>
                           <div className="space-y-3">
-                            <div className="p-3 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors duration-200">
-                              <div className="font-medium text-secondary-900">Sales Manager</div>
-                              <div className="text-sm text-secondary-600">John Doe</div>
-                              <div className="text-sm text-secondary-600">sales@company.com</div>
+                            <div className="p-3 bg-secondary-50 rounded-lg">
+                              <div className="font-medium text-secondary-900">Business Type</div>
+                              <div className="text-sm text-secondary-600">{supplier.business_type || supplier.type || 'Manufacturer'}</div>
                             </div>
-                            <div className="p-3 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors duration-200">
-                              <div className="font-medium text-secondary-900">Export Manager</div>
-                              <div className="text-sm text-secondary-600">Jane Smith</div>
-                              <div className="text-sm text-secondary-600">export@company.com</div>
+                            <div className="p-3 bg-secondary-50 rounded-lg">
+                              <div className="font-medium text-secondary-900">Employees</div>
+                              <div className="text-sm text-secondary-600">{supplier.employee_count || 'Not specified'}</div>
                             </div>
+                            <div className="p-3 bg-secondary-50 rounded-lg">
+                              <div className="font-medium text-secondary-900">Established</div>
+                              <div className="text-sm text-secondary-600">{supplier.established || 'Not specified'}</div>
+                            </div>
+                            {supplier.main_products && (
+                              <div className="p-3 bg-secondary-50 rounded-lg">
+                                <div className="font-medium text-secondary-900">Main Products</div>
+                                <div className="text-sm text-secondary-600">{supplier.main_products}</div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1105,6 +1584,68 @@ export default function SupplierDetail() {
           </div>
         </div>
       </div>
+
+      {/* Login Required Modal */}
+      <Modal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        size="sm"
+      >
+        <div className="text-center py-6">
+          {/* Lock Icon */}
+          <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-9a2 2 0 00-2-2H6a2 2 0 00-2 2v9a2 2 0 002 2zm10-12V9a4 4 0 00-8 0v2m8 0V9a4 4 0 00-4-4 4 4 0 00-4 4v2" />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-secondary-900 mb-2">
+            Login Required
+          </h3>
+
+          {/* Message */}
+          <p className="text-secondary-600 mb-6">
+            You need to log in to chat with suppliers.
+          </p>
+          <p className="text-sm text-secondary-500 mb-6">
+            Action: {loginAction}
+          </p>
+
+          {/* Buttons */}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleLogin}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              Log In
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowLoginModal(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+
+          {/* Register Link */}
+          <div className="mt-4 pt-4 border-t border-secondary-200">
+            <p className="text-sm text-secondary-600">
+              Don't have an account?{' '}
+              <button
+                onClick={() => {
+                  router.push('/register');
+                  setShowLoginModal(false);
+                }}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                You can register after clicking here
+              </button>
+            </p>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

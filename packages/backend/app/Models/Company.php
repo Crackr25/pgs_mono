@@ -27,6 +27,7 @@ class Company extends Model
         'phone',
         'email',
         'logo',
+        'company_banner',
         'verified',
         'status',
         // Onboarding file uploads

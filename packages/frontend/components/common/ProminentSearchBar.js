@@ -39,13 +39,162 @@ export default function ProminentSearchBar({ className = "" }) {
   // Debug log to check categories
   console.log('Categories loaded:', categories);
 
+  // Fuzzy matching function for handling typos (Levenshtein distance)
+  const calculateSimilarity = (str1, str2) => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const distance = levenshteinDistance(longer.toLowerCase(), shorter.toLowerCase());
+    return (longer.length - distance) / longer.length;
+  };
+
+  const levenshteinDistance = (str1, str2) => {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  };
+
+  // Enhanced fuzzy search function
+  const fuzzyMatchSuggestions = (query, suggestions) => {
+    if (!query || query.length < 2) return [];
+
+    let queryLower = query.toLowerCase().trim();
+    
+    // Apply typo corrections
+    Object.keys(typoCorrections).forEach(typo => {
+      if (queryLower.includes(typo)) {
+        queryLower = queryLower.replace(typo, typoCorrections[typo]);
+      }
+    });
+
+    const matches = [];
+
+    suggestions.forEach(suggestion => {
+      const name = suggestion.name.toLowerCase();
+      const words = name.split(' ');
+      const keywords = suggestion.keywords || [];
+      
+      let bestScore = 0;
+      let matchType = 'fuzzy';
+
+      // 1. Check for exact substring match (highest priority)
+      if (name.includes(queryLower)) {
+        bestScore = 1.0;
+        matchType = 'exact';
+      }
+      // 2. Check corrected query after typo fix
+      else if (queryLower !== query.toLowerCase() && name.includes(queryLower)) {
+        bestScore = 0.95;
+        matchType = 'typo_corrected';
+      }
+      // 3. Check individual words
+      else {
+        words.forEach(word => {
+          if (word.includes(queryLower)) {
+            bestScore = Math.max(bestScore, 0.9);
+          } else {
+            const similarity = calculateSimilarity(queryLower, word);
+            if (similarity >= 0.6) {
+              bestScore = Math.max(bestScore, similarity * 0.8);
+            }
+          }
+        });
+
+        // 4. Check keywords if available
+        keywords.forEach(keyword => {
+          if (keyword.includes(queryLower)) {
+            bestScore = Math.max(bestScore, 0.85);
+          } else {
+            const similarity = calculateSimilarity(queryLower, keyword);
+            if (similarity >= 0.7) {
+              bestScore = Math.max(bestScore, similarity * 0.7);
+            }
+          }
+        });
+
+        // 5. Check overall string similarity
+        const overallSimilarity = calculateSimilarity(queryLower, name);
+        if (overallSimilarity >= 0.5) {
+          bestScore = Math.max(bestScore, overallSimilarity * 0.6);
+        }
+
+        // 6. Handle common variations (plurals, etc.)
+        const singularQuery = queryLower.endsWith('s') ? queryLower.slice(0, -1) : queryLower + 's';
+        if (name.includes(singularQuery)) {
+          bestScore = Math.max(bestScore, 0.85);
+        }
+      }
+      
+      if (bestScore >= 0.4) { // Lower threshold to catch more typos
+        matches.push({ 
+          ...suggestion, 
+          score: bestScore, 
+          matchType,
+          correctedQuery: queryLower !== query.toLowerCase() ? queryLower : null
+        });
+      }
+    });
+
+    // Sort by score (highest first) and return top matches
+    return matches
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+  };
+
+  // Common typo corrections and variations
+  const typoCorrections = {
+    'clipppers': 'clippers',
+    'clippersss': 'clippers',
+    'clipperss': 'clippers',
+    'clippperss': 'clippers',
+    'cliper': 'clipper',
+    'clipers': 'clippers',
+    'clippper': 'clipper',
+    'trimer': 'trimmer',
+    'trimmers': 'trimmer',
+    'trimmmmer': 'trimmer',
+    'headfones': 'headphones',
+    'headfone': 'headphone',
+    'smartfone': 'smartphone',
+    'smartfones': 'smartphones'
+  };
+
   // Fallback suggestions for when API is unavailable or no results
   const fallbackSuggestions = [
-    { name: 'bluetooth headphones', category: 'Electronics', company: { name: 'Tech Supplier' } },
-    { name: 'led lights', category: 'Electronics', company: { name: 'LED Solutions' } },
-    { name: 'face masks', category: 'Health & Beauty', company: { name: 'Safety First' } },
-    { name: 'smartphones', category: 'Electronics', company: { name: 'Mobile Tech' } },
-    { name: 'furniture', category: 'Home & Garden', company: { name: 'Home Decor Co' } }
+    { name: 'hair clippers', category: 'Beauty & Personal Care', company: { name: 'Beauty Supply Co' }, keywords: ['clipper', 'clip', 'hair cut', 'barber'] },
+    { name: 'hair trimmer', category: 'Beauty & Personal Care', company: { name: 'Grooming Tech' }, keywords: ['trim', 'grooming', 'beard'] },
+    { name: 'hair cutting machine', category: 'Beauty & Personal Care', company: { name: 'Professional Tools' }, keywords: ['cutting', 'machine', 'professional'] },
+    { name: 'electric hair clipper', category: 'Beauty & Personal Care', company: { name: 'Electric Tools' }, keywords: ['electric', 'cordless', 'rechargeable'] },
+    { name: 'professional barber clippers', category: 'Beauty & Personal Care', company: { name: 'Barber Supply' }, keywords: ['professional', 'barber', 'salon'] },
+    { name: 'bluetooth headphones', category: 'Electronics', company: { name: 'Tech Supplier' }, keywords: ['wireless', 'audio', 'music'] },
+    { name: 'led lights', category: 'Electronics', company: { name: 'LED Solutions' }, keywords: ['lighting', 'bulb', 'lamp'] },
+    { name: 'face masks', category: 'Health & Beauty', company: { name: 'Safety First' }, keywords: ['protection', 'safety', 'medical'] },
+    { name: 'smartphones', category: 'Electronics', company: { name: 'Mobile Tech' }, keywords: ['mobile', 'phone', 'android', 'iphone'] },
+    { name: 'furniture', category: 'Home & Garden', company: { name: 'Home Decor Co' }, keywords: ['home', 'decor', 'chair', 'table'] }
   ];
 
   // Fetch search suggestions from API based on existing products
@@ -63,31 +212,23 @@ export default function ProminentSearchBar({ className = "" }) {
       const response = await apiService.getSearchSuggestions(query, 8);
       
       if (response && response.data && response.data.length > 0) {
-        setSuggestions(response.data);
+        // Apply fuzzy matching to API results as well
+        const fuzzyMatches = fuzzyMatchSuggestions(query, response.data);
+        setSuggestions(fuzzyMatches);
         setShowSuggestions(true);
       } else {
-        // Fallback to local filtering if no API results
-        const filtered = fallbackSuggestions
-          .filter(suggestion => 
-            suggestion.name.toLowerCase().includes(query.toLowerCase())
-          )
-          .slice(0, 8);
-        
-        setSuggestions(filtered);
-        setShowSuggestions(filtered.length > 0);
+        // Fallback to local fuzzy matching if no API results
+        const fuzzyMatches = fuzzyMatchSuggestions(query, fallbackSuggestions);
+        setSuggestions(fuzzyMatches);
+        setShowSuggestions(fuzzyMatches.length > 0);
       }
     } catch (error) {
       console.error('Error fetching search suggestions:', error);
       
-      // Fallback to local suggestions on API error
-      const filtered = fallbackSuggestions
-        .filter(suggestion => 
-          suggestion.name.toLowerCase().includes(query.toLowerCase())
-        )
-        .slice(0, 8);
-      
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
+      // Fallback to local fuzzy matching on API error
+      const fuzzyMatches = fuzzyMatchSuggestions(query, fallbackSuggestions);
+      setSuggestions(fuzzyMatches);
+      setShowSuggestions(fuzzyMatches.length > 0);
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -149,9 +290,10 @@ export default function ProminentSearchBar({ className = "" }) {
     // Perform search with selected suggestion
     const params = new URLSearchParams();
     params.set('q', searchTerm);
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all') {
       params.set('category', selectedCategory);
     }
+    console.log('Selected suggestion:', searchTerm, 'with category:', selectedCategory);
     router.push(`/buyer/search?${params.toString()}`);
   };
 
@@ -159,12 +301,37 @@ export default function ProminentSearchBar({ className = "" }) {
     e.preventDefault();
     setShowSuggestions(false);
     if (searchQuery.trim()) {
+      // Apply typo correction to the search query automatically
+      let correctedQuery = searchQuery.trim().toLowerCase();
+      
+      // Apply specific typo corrections first
+      Object.keys(typoCorrections).forEach(typo => {
+        if (correctedQuery.includes(typo)) {
+          correctedQuery = correctedQuery.replace(typo, typoCorrections[typo]);
+        }
+      });
+      
+      // Apply pattern-based corrections for repeated letters
+      correctedQuery = correctedQuery
+        // Fix repeated 's' at end: "clippersss" -> "clippers"
+        .replace(/(\w+)s{2,}$/g, '$1s')
+        // Fix repeated 'p': "clipppper" -> "clipper" 
+        .replace(/(\w*)p{3,}(\w*)/g, '$1pp$2')
+        // Fix repeated 'l': "clillper" -> "clipper"
+        .replace(/(\w*)l{3,}(\w*)/g, '$1ll$2')
+        // Fix repeated 'm': "trimmmmer" -> "trimmer"
+        .replace(/(\w*)m{3,}(\w*)/g, '$1mm$2');
+      
+      // Use the corrected query for search
+      const finalQuery = correctedQuery;
+      
       // Construct search URL with category filter if not "All Categories"
       const params = new URLSearchParams();
-      params.set('q', searchQuery.trim());
-      if (selectedCategory) {
+      params.set('q', finalQuery);
+      if (selectedCategory && selectedCategory !== 'all') {
         params.set('category', selectedCategory);
       }
+      console.log('Searching for:', finalQuery, '(original:', searchQuery.trim(), ') with category:', selectedCategory);
       router.push(`/buyer/search?${params.toString()}`);
     }
   };
@@ -267,7 +434,13 @@ export default function ProminentSearchBar({ className = "" }) {
                     </div>
                   </div>
                 ) : (
-                  suggestions.map((suggestion, index) => (
+                  <>
+                    {suggestions.some(s => s.matchType === 'typo_corrected') && (
+                      <div className="px-4 py-2 bg-blue-50 border-b border-blue-200 text-sm text-blue-800">
+                        <span className="font-medium">Showing results for corrected spelling</span>
+                      </div>
+                    )}
+                    {suggestions.map((suggestion, index) => (
                     <button
                       key={index}
                       type="button"
@@ -286,6 +459,16 @@ export default function ProminentSearchBar({ className = "" }) {
                               <span className="text-secondary-900 font-medium truncate">
                                 {suggestion.name || suggestion.text}
                               </span>
+                              {suggestion.matchType === 'typo_corrected' && (
+                                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full flex-shrink-0">
+                                  Showing results for corrected spelling
+                                </span>
+                              )}
+                              {suggestion.matchType === 'fuzzy' && suggestion.score && suggestion.score < 0.8 && (
+                                <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full flex-shrink-0">
+                                  Did you mean?
+                                </span>
+                              )}
                               {suggestion.category && (
                                 <span className="text-xs text-secondary-500 bg-secondary-100 px-2 py-1 rounded-full flex-shrink-0">
                                   {suggestion.category}
@@ -304,12 +487,16 @@ export default function ProminentSearchBar({ className = "" }) {
                             )}
                           </div>
                         </div>
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 flex items-center space-x-1">
+                          {suggestion.matchType === 'fuzzy' && (
+                            <span className="text-xs text-orange-500">✨</span>
+                          )}
                           <Search className="w-3 h-3 text-secondary-300" />
                         </div>
                       </div>
                     </button>
-                  ))
+                  ))}
+                  </>
                 )}
               </div>
             )}
