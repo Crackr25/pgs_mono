@@ -431,11 +431,11 @@ export default function ProductGrid({ hideFilters = false }) {
       </Link>
       
       <div className="px-4 pb-4 mt-auto">
-        <div className="flex space-x-2">
+        <div className="flex">
           <Button 
-            variant="outline" 
+            variant="primary" 
             size="sm" 
-            className="flex-1"
+            className="w-full"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -444,19 +444,6 @@ export default function ProductGrid({ hideFilters = false }) {
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Message
-          </Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            className="flex-1"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              openQuoteModal(product);
-            }}
-          >
-            <DollarSign className="w-4 h-4 mr-1" />
-            Quote
           </Button>
         </div>
       </div>
