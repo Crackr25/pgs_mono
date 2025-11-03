@@ -914,14 +914,6 @@ export default function SupplierDetail() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {filteredProducts.slice(0, 6).map((product) => {
                             // Debug: Log product structure
-                            console.log('Product debug:', {
-                              id: product.id,
-                              name: product.name,
-                              image: product.image,
-                              has_image: product.has_image,
-                              images: product.images,
-                              allKeys: Object.keys(product)
-                            });
                             
                             return (
                               <div key={product.id} className="border border-secondary-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200">

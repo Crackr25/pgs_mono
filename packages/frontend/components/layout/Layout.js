@@ -124,6 +124,34 @@ export default function Layout({ children }) {
     );
   }
 
+  // Role-based redirect logic - prevent buyers from accessing seller portal
+  if (isAuthenticated && user?.usertype === 'buyer' && !router.pathname.startsWith('/buyer')) {
+    // Redirect buyers to buyer portal if they try to access seller routes
+    router.push('/buyer');
+    return (
+      <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          <p className="mt-4 text-secondary-600">Redirecting to buyer portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Role-based redirect logic - prevent sellers from accessing buyer portal
+  if (isAuthenticated && user?.usertype === 'seller' && router.pathname.startsWith('/buyer')) {
+    // Redirect sellers to seller portal if they try to access buyer routes
+    router.push('/');
+    return (
+      <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          <p className="mt-4 text-secondary-600">Redirecting to seller portal...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Layout for seller pages (existing functionality)
   return (
     <div className="min-h-screen bg-secondary-50 flex">

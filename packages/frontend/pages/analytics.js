@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { 
   Package, 
-  FileText, 
   ShoppingCart, 
   DollarSign, 
   Eye, 
@@ -427,14 +426,6 @@ export default function Analytics() {
       color: 'blue'
     },
     {
-      title: 'Total Quotes',
-      value: analyticsData.totalQuotes,
-      change: '+8%',
-      changeType: 'increase',
-      icon: FileText,
-      color: 'green'
-    },
-    {
       title: 'Total Orders',
       value: analyticsData.totalOrders,
       change: '+23%',
@@ -562,7 +553,7 @@ export default function Analytics() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {performanceMetrics.map((metric, index) => (
             <DashboardCard key={index} {...metric} />
           ))}
@@ -607,9 +598,9 @@ export default function Analytics() {
                     <div className="font-medium text-secondary-900">{product.name}</div>
                     <div className="text-secondary-600">{product.category || 'Uncategorized'}</div>
                     <div className="text-xs text-secondary-500 mt-1 flex justify-between">
-                      <span>{product.quotes_count || 0} quotes</span>
-                      {product.last_quote_date !== 'No quotes yet' && (
-                        <span className="text-green-600">Last: {product.last_quote_date}</span>
+                      <span>{product.orders_count || 0} orders</span>
+                      {product.last_order_date !== 'No orders yet' && (
+                        <span className="text-green-600">Last: {product.last_order_date}</span>
                       )}
                     </div>
                   </div>
@@ -823,7 +814,7 @@ export default function Analytics() {
                       <h5 className="text-sm font-medium text-purple-800 mb-2">Trending Categories</h5>
                       {trends.trending_categories?.map((cat, index) => (
                         <div key={index} className="text-sm text-purple-700">
-                          {cat.category}: {cat.total_quotes} quotes
+                          {cat.category}: {cat.total_orders} orders
                         </div>
                       ))}
                     </div>

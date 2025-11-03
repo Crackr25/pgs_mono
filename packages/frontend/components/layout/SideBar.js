@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { 
   Home, 
   Package, 
-  FileText, 
   ShoppingCart, 
   MessageSquare, 
   BarChart3, 
@@ -22,12 +21,11 @@ export default function SideBar({ isOpen, onClose }) {
   const navigation = [
     { name: translate('dashboard'), href: '/', icon: Home },
     { name: translate('products'), href: '/products', icon: Package },
-    { name: translate('quotes'), href: '/quotes', icon: FileText },
     { name: translate('orders'), href: '/orders', icon: ShoppingCart },
     { name: translate('messages'), href: '/chat', icon: MessageSquare },
     { name: translate('analytics'), href: '/analytics', icon: BarChart3 },
     { name: translate('payments'), href: '/payments', icon: CreditCard },
-    { name: translate('tools'), href: '/tools', icon: Settings },
+    // { name: translate('tools'), href: '/tools', icon: Settings },
     { name: translate('support'), href: '/support', icon: HelpCircle },
     { name: translate('reputation'), href: '/reputation', icon: Star },
   ];

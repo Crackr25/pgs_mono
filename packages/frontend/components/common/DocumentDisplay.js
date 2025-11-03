@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileText, Image, Video, Download, Edit, Trash2, Eye, X } from 'lucide-react';
 import Button from './Button';
+import { getImageUrl } from '../../lib/imageUtils';
 
 export default function DocumentDisplay({ 
   documents, 
@@ -47,10 +48,6 @@ export default function DocumentDisplay({
     return filePath.split('/').pop();
   };
 
-  const getPublicUrl = (filePath) => {
-    // Convert storage path to public URL
-    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${filePath}`;
-  };
 
   const isImage = (filePath) => {
     if (!filePath || typeof filePath !== 'string') return false;
@@ -69,13 +66,13 @@ export default function DocumentDisplay({
       setPreviewFile(filePath);
     } else {
       // For PDFs and other documents, open in new tab
-      window.open(getPublicUrl(filePath), '_blank');
+      window.open(getImageUrl(filePath), '_blank');
     }
   };
 
   const handleDownload = (filePath) => {
     const link = document.createElement('a');
-    link.href = getPublicUrl(filePath);
+    link.href = getImageUrl(filePath);
     link.download = getFileName(filePath);
     document.body.appendChild(link);
     link.click();
@@ -99,7 +96,7 @@ export default function DocumentDisplay({
           
           const Icon = getFileIcon(filePath);
           const fileName = documentName || getFileName(filePath);
-          const publicUrl = getPublicUrl(filePath);
+          const publicUrl = getImageUrl(filePath);
 
           return (
             <div key={index} className="relative group bg-white border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -193,13 +190,13 @@ export default function DocumentDisplay({
             
             {isImage(previewFile) ? (
               <img
-                src={getPublicUrl(previewFile)}
+                src={getImageUrl(previewFile)}
                 alt="Preview"
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
             ) : isVideo(previewFile) ? (
               <video
-                src={getPublicUrl(previewFile)}
+                src={getImageUrl(previewFile)}
                 controls
                 className="max-w-full max-h-full rounded-lg"
               >

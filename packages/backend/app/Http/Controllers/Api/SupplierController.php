@@ -112,6 +112,10 @@ class SupplierController extends Controller
             $search = $request->get('search', '');
             
             $productsQuery = $company->products()
+                ->with([
+                    'company:user_id,id,name,location,verified',
+                    'mainImage:id,product_id,image_path'
+                ])
                 ->when($search, function ($query, $search) {
                     return $query->where(function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%")
@@ -123,7 +127,53 @@ class SupplierController extends Controller
 
             $products = $productsQuery->paginate($perPage);
 
-            return response()->json($products);
+            // Transform the data to include only one image and add placeholder if none
+            $products->getCollection()->transform(function ($product) {
+                // Get the main image or first available image
+                $image = $product->mainImage;
+                if (!$image) {
+                    $image = $product->images()->first();
+                }
+                
+                // Set image URL or placeholder
+                $imageUrl = $image ? asset('storage/' . $image->image_path) : null;
+                
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'unit' => $product->unit,
+                    'moq' => $product->moq,
+                    'category' => $product->category,
+                    'lead_time' => $product->lead_time,
+                    'stock_quantity' => $product->stock_quantity,
+                    'image' => $imageUrl,
+                    'has_image' => !is_null($imageUrl),
+                    'company' => [
+                        'id' => $product->company->id,
+                        'user_id' => $product->company->user_id,
+                        'name' => $product->company->name,
+                        'location' => $product->company->location,
+                        'verified' => $product->company->verified ?? false,
+                    ],
+                    'created_at' => $product->created_at,
+                    'updated_at' => $product->updated_at,
+                ];
+            });
+
+            return response()->json([
+                'data' => $products->items(),
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+                'from' => $products->firstItem(),
+                'to' => $products->lastItem(),
+                'path' => $products->path(),
+                'next_page_url' => $products->nextPageUrl(),
+                'prev_page_url' => $products->previousPageUrl(),
+            ]);
 
         } catch (ModelNotFoundException $e) {
             return response()->json([
