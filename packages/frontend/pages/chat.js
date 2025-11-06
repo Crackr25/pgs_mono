@@ -60,16 +60,16 @@ export default function Chat() {
       setCurrentUser(userData);
 
       // Connect WebSocket
-      const pusherInstance = websocketService.connect(token);
+      // const pusherInstance = websocketService.connect(token);
       
-      // Only subscribe if WebSocket connection was successful
-      if (pusherInstance && userData?.id) {
-        websocketService.subscribeToUserChannel(userData.id, {
-          onMessageNotification: handleNewMessageNotification
-        });
-      } else if (!pusherInstance) {
-        console.warn('WebSocket not available. Real-time features will be disabled.');
-      }
+      // // Only subscribe if WebSocket connection was successful
+      // if (pusherInstance && userData?.id) {
+      //   websocketService.subscribeToUserChannel(userData.id, {
+      //     onMessageNotification: handleNewMessageNotification
+      //   });
+      // } else if (!pusherInstance) {
+      //   console.warn('WebSocket not available. Real-time features will be disabled.');
+      // }
 
       // Fetch conversations
       await fetchConversations();
