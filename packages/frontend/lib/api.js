@@ -1112,11 +1112,13 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({
         recipient_id: messageData.supplier_id,
-        recipient_type: 'user',
+        recipient_type: 'company',
         message: messageData.message,
         message_type: 'product_inquiry',
         product_id: messageData.product_id,
-        product_context: messageData.product_context
+        product_context: messageData.product_context,
+        inquiry_type: messageData.inquiry_type,
+        quantity_of_interest: messageData.quantity_of_interest
       }),
     });
   }

@@ -73,12 +73,11 @@ export default function ProductDetail() {
   const [variationPrice, setVariationPrice] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [quoteQuantity, setQuoteQuantity] = useState('');
-  const [targetPrice, setTargetPrice] = useState('');
-  const [quoteDeadline, setQuoteDeadline] = useState('');
-  const [quoteMessage, setQuoteMessage] = useState('');
-  const [submittingQuote, setSubmittingQuote] = useState(false);
+  const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [inquiryType, setInquiryType] = useState('');
+  const [inquiryQuantity, setInquiryQuantity] = useState('');
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastConfig, setToastConfig] = useState({});
   const [showImageZoom, setShowImageZoom] = useState(false);
@@ -233,84 +232,95 @@ export default function ProductDetail() {
     );
   };
 
-  const handleQuoteRequest = async () => {
-    if (submittingQuote) return;
+  const handleInquirySubmit = async () => {
+    if (submittingInquiry) return;
 
     // Validation
-    if (!quoteQuantity || quoteQuantity < 1) {
-      showToastNotification('error', 'Invalid Quantity', 'Please enter a valid quantity');
+    if (!inquiryType) {
+      showToastNotification('error', 'Missing Inquiry Type', 'Please select an inquiry type');
       return;
     }
 
-    // MOQ validation - like Alibaba
-    const minQuantity = getCurrentMOQ();
-    if (parseInt(quoteQuantity) < minQuantity) {
-      showToastNotification(
-        'warning', 
-        'Minimum Order Quantity', 
-        `Quantity must be at least ${minQuantity} ${product.unit} (Minimum Order Quantity). Please adjust your quantity.`
-      );
-      return;
-    }
-    
-    if (!quoteDeadline) {
-      showToastNotification('error', 'Missing Deadline', 'Please select a deadline');
-      return;
-    }
-
-    if (!quoteMessage.trim()) {
+    if (!inquiryMessage.trim()) {
       showToastNotification('error', 'Missing Message', 'Please enter a message');
       return;
     }
 
     try {
-      setSubmittingQuote(true);
+      setSubmittingInquiry(true);
 
-      const quoteData = {
-        product_id: product.id,
-        company_id: product.company.id,
-        buyer_name: user?.name || user?.full_name || 'Anonymous Buyer',
-        buyer_email: user?.email || '',
-        buyer_company: user?.company_name || user?.company || '',
-        quantity: parseInt(quoteQuantity),
-        target_price: targetPrice ? parseFloat(targetPrice) : null,
-        deadline: quoteDeadline,
-        message: quoteMessage.trim()
+      // Create message content with product context
+      const productContext = `
+
+--- Product Details ---
+Product: ${product.name}
+Price: $${getCurrentPrice().toFixed(2)} per ${product.unit}
+MOQ: ${getCurrentMOQ()} ${product.unit}
+Category: ${product.category}
+Supplier: ${product.company.name}
+Product Link: ${window.location.href}`;
+
+      const messagePayload = {
+        supplier_id: product.company.user_id || product.company.id,
+        product_id: parseInt(id),
+        message: inquiryMessage.trim() + productContext,
+        inquiry_type: inquiryType,
+        quantity_of_interest: inquiryQuantity ? parseInt(inquiryQuantity) : null,
+        product_context: {
+          // Fields for ProductMessageHeader component
+          id: product.id,
+          name: product.name,
+          image: product.images && product.images.length > 0 ? product.images[0] : null,
+          has_image: product.images && product.images.length > 0,
+          price: getCurrentPrice().toString(),
+          unit: product.unit,
+          company_name: product.company.name,
+          // Additional context fields
+          product_id: product.id,
+          product_name: product.name,
+          product_price: getCurrentPrice(),
+          product_unit: product.unit,
+          product_moq: getCurrentMOQ(),
+          product_category: product.category,
+          product_subcategory: product.subcategory,
+          product_description: product.description,
+          product_stock: getCurrentStock(),
+          supplier_name: product.company.name,
+          supplier_id: product.company.id,
+          supplier_location: product.company.location || 'Philippines',
+          product_url: window.location.href,
+          inquiry_timestamp: new Date().toISOString()
+        }
       };
-
-      console.log('User object:', user); // Debug log
-      console.log('Sending quote data:', quoteData); // Debug log
-
-      const response = await apiService.createQuote(quoteData);
       
-      console.log('Quote response:', response); // Debug log
+      console.log('Sending inquiry payload:', messagePayload);
       
-      if (response.success !== false) {
-        showToastNotification(
-          'quote',
-          'Quote request submitted successfully!',
-          'The supplier will respond soon. You can track your quote requests in your dashboard.',
-          6000
-        );
-        setShowQuoteModal(false);
-        // Reset form
-        setQuoteQuantity('');
-        setTargetPrice('');
-        setQuoteDeadline('');
-        setQuoteMessage('');
-      } else {
-        throw new Error(response.message || 'Failed to submit quote request');
-      }
-
+      const response = await apiService.sendProductMessage(messagePayload);
+      
+      console.log('Inquiry response:', response);
+      
+      showToastNotification(
+        'success',
+        'Inquiry sent successfully!',
+        'The supplier will respond to your inquiry soon. You can track responses in your messages.',
+        5000
+      );
+      
+      setShowInquiryModal(false);
+      // Reset form
+      setInquiryType('');
+      setInquiryQuantity('');
+      setInquiryMessage('');
+      
+      
     } catch (error) {
-      console.error('Error submitting quote request:', error);
+      console.error('Error sending inquiry:', error);
       
-      // More detailed error handling for Laravel validation
+      // Better error handling
       if (error.response?.data) {
         const errorData = error.response.data;
         
         if (errorData.errors) {
-          // Laravel validation errors
           const errorMessages = Object.values(errorData.errors).flat();
           showToastNotification(
             'error',
@@ -322,8 +332,8 @@ export default function ProductDetail() {
         } else {
           showToastNotification(
             'error',
-            'Request Failed',
-            'Failed to submit quote request. Please try again.'
+            'Inquiry Failed',
+            'Failed to send inquiry. Please try again.'
           );
         }
       } else if (error.message) {
@@ -332,32 +342,38 @@ export default function ProductDetail() {
         showToastNotification(
           'error',
           'Network Error',
-          'Failed to submit quote request. Please check your connection and try again.'
+          'Failed to send inquiry. Please check your connection and try again.'
         );
       }
     } finally {
-      setSubmittingQuote(false);
+      setSubmittingInquiry(false);
     }
   };
 
-  const openQuoteModal = () => {
-    // Use requireAuth to check if user is logged in before allowing quote request
+  const openInquiryModal = () => {
+    // Use requireAuth to check if user is logged in before allowing inquiry
     requireAuth(
       () => {
-        // Pre-populate form with product details
-        setQuoteQuantity(getCurrentMOQ());
-        setQuoteMessage(`Hi, I'm interested in getting a quote for your ${product.name}. Please provide your best pricing and terms.`);
+        // Pre-populate form with default inquiry type
+        setInquiryType('price_inquiry');
+        setInquiryQuantity('');
         
-        // Set default deadline to tomorrow (Laravel requires after:today)
-        const defaultDeadline = new Date();
-        defaultDeadline.setDate(defaultDeadline.getDate() + 1); // Tomorrow, not today
-        setQuoteDeadline(defaultDeadline.toISOString().split('T')[0]);
+        // Set default message based on price inquiry template
+        const template = inquiryTemplates.find(t => t.id === 'price_inquiry');
+        if (template) {
+          setInquiryMessage(
+            template.template
+              .replace('{product_name}', product.name)
+              .replace('{quantity}', '[quantity]')
+              .replace('{unit}', product.unit || 'units')
+          );
+        }
         
-        setShowQuoteModal(true);
+        setShowInquiryModal(true);
       },
       {
         title: "Login Required",
-        message: "You need to log in to request quotes from suppliers.",
+        message: "You need to log in to send inquiries to suppliers.",
         actionText: `Send inquiry for "${product?.name}"`
       }
     );
@@ -1135,31 +1151,15 @@ Product Link: ${window.location.href}`;
                       Chat now
                     </Button>
                     <Button 
-                      onClick={openQuoteModal}
+                      onClick={openInquiryModal}
                       variant="success"
                       size="sm"
                       className="flex-1"
                     >
-                      <DollarSign className="w-4 h-4 mr-1" />
+                      <MessageSquare className="w-4 h-4 mr-1" />
                       Send inquiry
                     </Button>
                   </div>
-                  <Button 
-                    onClick={() => requireAuth(
-                      () => setShowMessageForm(true),
-                      {
-                        title: "Login Required",
-                        message: "You need to log in to send messages to suppliers.",
-                        actionText: `Send message to ${product?.company?.name}`
-                      }
-                    )}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <Mail className="w-4 h-4 mr-1" />
-                    Send Message
-                  </Button>
                 </div>
               </div>
 
@@ -1426,15 +1426,15 @@ Product Link: ${window.location.href}`;
           </div>
         )}
 
-        {/* Quote Request Modal */}
-        {showQuoteModal && (
+        {/* Inquiry Modal */}
+        {showInquiryModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h3 className="text-xl font-semibold text-secondary-900">Send Inquiry</h3>
                 <button
-                  onClick={() => setShowQuoteModal(false)}
+                  onClick={() => setShowInquiryModal(false)}
                   className="text-secondary-400 hover:text-secondary-600 transition-colors"
                 >
                   <X className="w-6 h-6" />
@@ -1501,79 +1501,75 @@ Product Link: ${window.location.href}`;
               </div>
 
               <div className="p-6">
-
-                <form onSubmit={(e) => { e.preventDefault(); handleQuoteRequest(); }} className="space-y-6">
-                  {/* Quantity */}
+                <form onSubmit={(e) => { e.preventDefault(); handleInquirySubmit(); }} className="space-y-6">
+                  {/* Inquiry Type */}
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Quantity *
+                      Inquiry Type *
+                    </label>
+                    <select
+                      value={inquiryType}
+                      onChange={(e) => {
+                        setInquiryType(e.target.value);
+                        const template = inquiryTemplates.find(t => t.id === e.target.value);
+                        if (template && template.template) {
+                          setInquiryMessage(
+                            template.template
+                              .replace('{product_name}', product.name)
+                              .replace('{quantity}', inquiryQuantity || '[quantity]')
+                              .replace('{unit}', product.unit || 'units')
+                          );
+                        } else if (e.target.value === 'custom') {
+                          setInquiryMessage('');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                    >
+                      <option value="">Select inquiry type...</option>
+                      {inquiryTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Quantity of Interest (Optional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-1">
+                      Quantity of Interest (Optional)
                     </label>
                     <div className="relative">
                       <input
                         type="number"
-                        value={quoteQuantity}
-                        onChange={(e) => setQuoteQuantity(e.target.value)}
-                        min={product?.moq || 1}
-                        placeholder={`Min: ${product?.moq || 1} ${product?.unit}`}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          quoteQuantity && parseInt(quoteQuantity) < (product?.moq || 1)
-                            ? 'border-red-300 bg-red-50'
-                            : 'border-secondary-300'
-                        }`}
-                        required
+                        value={inquiryQuantity}
+                        onChange={(e) => {
+                          setInquiryQuantity(e.target.value);
+                          // Update message template with new quantity
+                          if (inquiryType && inquiryType !== 'custom') {
+                            const template = inquiryTemplates.find(t => t.id === inquiryType);
+                            if (template && template.template) {
+                              setInquiryMessage(
+                                template.template
+                                  .replace('{product_name}', product.name)
+                                  .replace('{quantity}', e.target.value || '[quantity]')
+                                  .replace('{unit}', product.unit || 'units')
+                              );
+                            }
+                          }
+                        }}
+                        min="1"
+                        placeholder={`e.g., ${product?.moq || 100}`}
+                        className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                       <span className="absolute right-3 top-2 text-sm text-secondary-500">
                         {product?.unit}
                       </span>
                     </div>
-                    <div className="mt-1 space-y-1">
-                      <p className="text-xs text-secondary-500">
-                        Minimum order: {product?.moq} {product?.unit}
-                      </p>
-                      {quoteQuantity && parseInt(quoteQuantity) < (product?.moq || 1) && (
-                        <p className="text-xs text-red-600 flex items-center">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Quantity must be at least {product?.moq} {product?.unit}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Target Price (Optional) */}
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Target Price per {product?.unit} (Optional)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-secondary-500">$</span>
-                      <input
-                        type="number"
-                        value={targetPrice}
-                        onChange={(e) => setTargetPrice(e.target.value)}
-                        step="0.01"
-                        placeholder="Enter your target price"
-                        className="w-full pl-8 pr-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Deadline */}
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Response Deadline *
-                    </label>
-                    <input
-                      type="date"
-                      value={quoteDeadline}
-                      onChange={(e) => setQuoteDeadline(e.target.value)}
-                      min={(() => {
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        return tomorrow.toISOString().split('T')[0];
-                      })()}
-                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      required
-                    />
+                    <p className="text-xs text-secondary-500 mt-1">
+                      This helps the supplier provide more accurate information
+                    </p>
                   </div>
 
                   {/* Message */}
@@ -1582,39 +1578,27 @@ Product Link: ${window.location.href}`;
                       Message *
                     </label>
                     <textarea
-                      value={quoteMessage}
-                      onChange={(e) => setQuoteMessage(e.target.value)}
-                      rows={4}
-                      placeholder="Please provide details about your requirements..."
+                      value={inquiryMessage}
+                      onChange={(e) => setInquiryMessage(e.target.value)}
+                      rows={5}
+                      placeholder="Please provide details about your inquiry..."
                       className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                       required
                     />
+                    {inquiryType && inquiryType !== 'custom' && (
+                      <p className="text-xs text-secondary-500 mt-1">
+                        💡 Message auto-filled based on inquiry type. Feel free to customize it.
+                      </p>
+                    )}
                   </div>
 
-                  {/* Helper message when form is invalid */}
-                  {(quoteQuantity && parseInt(quoteQuantity) < (product?.moq || 1)) && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-orange-800">
-                          <p className="font-medium">Cannot proceed with current quantity</p>
-                          <p className="mt-1">
-                            This supplier requires a minimum order of <strong>{product?.moq} {product?.unit}</strong>. 
-                            Please adjust your quantity to meet the minimum requirement.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-3 pt-6 border-t border-gray-100">
+                  {/* Submit Buttons */}
+                  <div className="flex space-x-3">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setShowQuoteModal(false)}
+                      onClick={() => setShowInquiryModal(false)}
                       className="flex-1"
-                      disabled={submittingQuote}
                     >
                       Cancel
                     </Button>
@@ -1623,21 +1607,19 @@ Product Link: ${window.location.href}`;
                       variant="success"
                       className="flex-1"
                       disabled={
-                        submittingQuote || 
-                        !quoteQuantity || 
-                        parseInt(quoteQuantity) < (product?.moq || 1) ||
-                        !quoteDeadline ||
-                        !quoteMessage.trim()
+                        submittingInquiry || 
+                        !inquiryType || 
+                        !inquiryMessage.trim()
                       }
                     >
-                      {submittingQuote ? (
+                      {submittingInquiry ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                           Sending...
                         </>
                       ) : (
                         <>
-                          <DollarSign className="w-4 h-4 mr-2" />
+                          <MessageSquare className="w-4 h-4 mr-2" />
                           Send Inquiry
                         </>
                       )}

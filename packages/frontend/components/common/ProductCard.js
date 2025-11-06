@@ -215,18 +215,6 @@ export default function ProductCard({
                 <MessageSquare className="w-4 h-4 mr-1" />
                 Message
               </Button>
-              <Button 
-                variant="primary" 
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onQuote(product);
-                }}
-              >
-                <DollarSign className="w-4 h-4 mr-1" />
-                Quote
-              </Button>
             </div>
           </div>
         </div>
@@ -338,19 +326,6 @@ export default function ProductCard({
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Message
-          </Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            className="flex-1"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onQuote(product);
-            }}
-          >
-            <DollarSign className="w-4 h-4 mr-1" />
-            Quote
           </Button>
         </div>
       </div>
