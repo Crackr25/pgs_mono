@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { CheckCircle, Upload, Building, FileText, User, Camera } from 'lucide-react';
+import { CheckCircle, Upload, Building, FileText, User, Camera, LogOut } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Form, { FormField } from '../components/common/Form';
@@ -34,7 +34,7 @@ export default function Onboarding() {
   });
 
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const steps = [
     { id: 1, name: 'Company Profile', icon: Building, completed: false },
@@ -174,7 +174,53 @@ export default function Onboarding() {
         return;
       }
       
-      setError(error.message || 'An error occurred during onboarding');
+      // Handle specific validation errors
+      let errorMessage = 'An error occurred during onboarding';
+      
+      if (error.response?.data?.errors) {
+        // Laravel validation errors
+        const validationErrors = error.response.data.errors;
+        const errorMessages = [];
+        
+        Object.keys(validationErrors).forEach(field => {
+          const fieldErrors = validationErrors[field];
+          fieldErrors.forEach(msg => {
+            switch(field) {
+              case 'name':
+                errorMessages.push(`Company Name: ${msg}`);
+                break;
+              case 'registration':
+                errorMessages.push(`Registration Number: ${msg}`);
+                break;
+              case 'location':
+                errorMessages.push(`Location: ${msg}`);
+                break;
+              case 'year_established':
+                errorMessages.push(`Year Established: ${msg}`);
+                break;
+              case 'employees':
+                errorMessages.push(`Number of Employees: ${msg}`);
+                break;
+              case 'website':
+                errorMessages.push(`Website: ${msg}`);
+                break;
+              case 'email':
+                errorMessages.push(`Email: ${msg}`);
+                break;
+              default:
+                errorMessages.push(`${field}: ${msg}`);
+            }
+          });
+        });
+        
+        errorMessage = errorMessages.length > 0 ? errorMessages.join(', ') : error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -568,18 +614,40 @@ export default function Onboarding() {
   return (
     <>
       <Head>
-        <title>Onboarding - SupplierHub</title>
+        <title>Onboarding - Pinoy Global Supply</title>
       </Head>
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-secondary-900">
-            Welcome to SupplierHub
-          </h1>
-          <p className="mt-2 text-secondary-600">
-            Complete your profile to start connecting with buyers worldwide
-          </p>
+        <div className="relative">
+          {/* Logout Button */}
+          <div className="absolute top-0 right-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await logout();
+                  router.push('/auth/login');
+                } catch (error) {
+                  console.error('Logout failed:', error);
+                }
+              }}
+              className="flex items-center gap-2 text-secondary-600 hover:text-secondary-800"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-secondary-900">
+              Welcome to Pinoy Global Supply System
+            </h1>
+            <p className="mt-2 text-secondary-600">
+              Complete your profile to start connecting with buyers worldwide
+            </p>
+          </div>
         </div>
 
         {/* Progress Steps */}
@@ -633,6 +701,35 @@ export default function Onboarding() {
           </nav>
         </Card>
 
+        {/* Error Display */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-red-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800">
+                  Validation Error
+                </h3>
+                <p className="mt-1 text-sm text-red-700">
+                  {error}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setError(null)}
+                  className="mt-2 text-red-600 border-red-300 hover:bg-red-100"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Step Content */}
         {renderStepContent()}
 
@@ -649,7 +746,7 @@ export default function Onboarding() {
                 Need Help?
               </h3>
               <p className="mt-1 text-sm text-secondary-600">
-                Contact our support team at support@supplierhub.com or call +63-2-123-4567 
+                Contact our support team at support@pinoyglobalsupply.com or call +63-2-123-4567 
                 for assistance with the onboarding process.
               </p>
             </div>

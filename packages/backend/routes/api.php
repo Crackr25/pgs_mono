@@ -26,6 +26,8 @@ use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\SellerPayoutController;
+use App\Http\Controllers\AgentController;
+use App\Http\Controllers\TestAgentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -265,4 +267,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/payments', [AdminPaymentController::class, 'index']);
     Route::get('/admin/payments/statistics', [AdminPaymentController::class, 'statistics']);
     Route::get('/admin/payments/{payment}', [AdminPaymentController::class, 'show']);
+
+    // Agent Management routes - for sellers to manage their agents
+    Route::prefix('agents')->group(function () {
+        Route::get('/', [AgentController::class, 'index']);
+        Route::post('/', [AgentController::class, 'store']);
+        Route::get('/roles', [AgentController::class, 'getRoles']);
+        Route::get('/statistics', [AgentController::class, 'statistics']);
+        Route::get('/{agent}', [AgentController::class, 'show']);
+        Route::put('/{agent}', [AgentController::class, 'update']);
+        Route::delete('/{agent}', [AgentController::class, 'destroy']);
+        Route::post('/assign-conversation', [AgentController::class, 'assignConversation']);
+    });
+
+    // Public agent invitation acceptance (no auth required)
+
+
+    // Test agent routes (development only)
+ 
 });
+    Route::post('/agents/accept-invitation', [AgentController::class, 'acceptInvitation']);
+
+    Route::prefix('test/agents')->group(function () {
+            Route::get('/create', [TestAgentController::class, 'createTestAgent']);
+            Route::get('/pending', [TestAgentController::class, 'getPendingInvitations']);
+            Route::delete('/cleanup', [TestAgentController::class, 'cleanupTestAgents']);
+    });

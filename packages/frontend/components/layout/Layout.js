@@ -32,8 +32,8 @@ export default function Layout({ children }) {
   };
 
   // Layout for unauthenticated users
-  // Only use minimal layout for login page, not for buyer pages
-  if (!isAuthenticated && router.pathname === '/login') {
+  // Only use minimal layout for login page and agent invitation pages, not for buyer pages
+  if (!isAuthenticated && (router.pathname === '/login' || router.pathname.startsWith('/agent/accept-invitation'))) {
     return (
       <div className="min-h-screen bg-secondary-50">
         {children}

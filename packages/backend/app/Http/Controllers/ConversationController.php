@@ -13,16 +13,33 @@ use Illuminate\Support\Facades\DB;
 class ConversationController extends Controller
 {
     /**
-     * Get all conversations for the authenticated seller
+     * Get all conversations for the authenticated user (seller, agent, or buyer)
      */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-
-        
-        $conversations = Conversation::forSeller($user->id)
-            ->with(['buyer', 'latestMessage', 'order'])
+        // Handle different user types
+        if ($user->usertype === 'agent') {
+            // For agents, get conversations assigned to them or unassigned conversations for their company
+            $companyAgent = $user->companyAgent;
+            if (!$companyAgent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Agent not associated with any company'
+                ], 403);
+            }
+            
+            $conversations = Conversation::where(function($query) use ($user, $companyAgent) {
+                // Conversations assigned to this agent
+                $query->where('assigned_agent_id', $user->id)
+                      // OR unassigned conversations for their company
+                      ->orWhere(function($q) use ($companyAgent) {
+                          $q->where('seller_id', $companyAgent->company->user_id)
+                            ->whereNull('assigned_agent_id');
+                      });
+            })
+            ->with(['buyer', 'latestMessage', 'order', 'assignedAgent'])
             ->orderBy('last_message_at', 'desc')
             ->get()
             ->map(function ($conversation) use ($user) {
@@ -41,9 +58,39 @@ class ConversationController extends Controller
                         'message' => $conversation->latestMessage->message,
                         'sender_id' => $conversation->latestMessage->sender_id,
                         'created_at' => $conversation->latestMessage->created_at
+                    ] : null,
+                    'assigned_agent' => $conversation->assignedAgent ? [
+                        'id' => $conversation->assignedAgent->id,
+                        'name' => $conversation->assignedAgent->name
                     ] : null
                 ];
             });
+        } else {
+            // For sellers and buyers, use existing logic
+            $conversations = Conversation::forSeller($user->id)
+                ->with(['buyer', 'latestMessage', 'order'])
+                ->orderBy('last_message_at', 'desc')
+                ->get()
+                ->map(function ($conversation) use ($user) {
+                    return [
+                        'id' => $conversation->id,
+                        'buyer' => [
+                            'id' => $conversation->buyer->id,
+                            'name' => $conversation->buyer->name,
+                            'email' => $conversation->buyer->email
+                        ],
+                        'order_id' => $conversation->order_id,
+                        'status' => $conversation->status,
+                        'last_message_at' => $conversation->last_message_at,
+                        'unread_count' => $conversation->unreadMessagesCount($user->id),
+                        'latest_message' => $conversation->latestMessage ? [
+                            'message' => $conversation->latestMessage->message,
+                            'sender_id' => $conversation->latestMessage->sender_id,
+                            'created_at' => $conversation->latestMessage->created_at
+                        ] : null
+                    ];
+                });
+        }
 
         return response()->json([
             'success' => true,
@@ -58,11 +105,24 @@ class ConversationController extends Controller
     {
         $user = Auth::user();
         
-        $conversation = Conversation::with(['chatMessages.sender', 'buyer', 'seller'])
+        $conversation = Conversation::with(['chatMessages.sender', 'buyer', 'seller', 'assignedAgent'])
             ->where('id', $id)
             ->where(function ($query) use ($user) {
-                $query->where('seller_id', $user->id)
-                      ->orWhere('buyer_id', $user->id);
+                if ($user->usertype === 'agent') {
+                    // Agents can view conversations assigned to them or unassigned conversations for their company
+                    $companyAgent = $user->companyAgent;
+                    if ($companyAgent) {
+                        $query->where('assigned_agent_id', $user->id)
+                              ->orWhere(function($q) use ($companyAgent) {
+                                  $q->where('seller_id', $companyAgent->company->user_id)
+                                    ->whereNull('assigned_agent_id');
+                              });
+                    }
+                } else {
+                    // Sellers and buyers use existing logic
+                    $query->where('seller_id', $user->id)
+                          ->orWhere('buyer_id', $user->id);
+                }
             })
             ->first();
 

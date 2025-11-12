@@ -50,4 +50,65 @@ class User extends Authenticatable
     {
         return $this->hasOne(Company::class);
     }
+
+    /**
+     * Get the company agent record for this user.
+     */
+    public function companyAgent()
+    {
+        return $this->hasOne(CompanyAgent::class);
+    }
+
+    /**
+     * Get all companies where this user is an agent.
+     */
+    public function agentCompanies()
+    {
+        return $this->belongsToMany(Company::class, 'company_agents')
+                    ->withPivot(['role', 'permissions', 'is_active', 'joined_at'])
+                    ->withTimestamps();
+    }
+
+    /**
+     * Check if user is an agent for any company.
+     */
+    public function isAgent()
+    {
+        return $this->usertype === 'agent' || $this->companyAgent()->exists();
+    }
+
+    /**
+     * Check if user is a seller (owns a company).
+     */
+    public function isSeller()
+    {
+        return $this->usertype === 'seller' && $this->company()->exists();
+    }
+
+    /**
+     * Check if user is a buyer.
+     */
+    public function isBuyer()
+    {
+        return $this->usertype === 'buyer';
+    }
+
+    /**
+     * Get the active company context for the user.
+     * For sellers, returns their own company.
+     * For agents, returns the company they work for.
+     */
+    public function getActiveCompany()
+    {
+        if ($this->isSeller()) {
+            return $this->company;
+        }
+
+        if ($this->isAgent()) {
+            $agentRecord = $this->companyAgent()->active()->first();
+            return $agentRecord ? $agentRecord->company : null;
+        }
+
+        return null;
+    }
 }

@@ -1324,6 +1324,76 @@ class ApiService {
   async getPaymentDetails(paymentId) {
     return this.request(`/admin/payments/${paymentId}`);
   }
+
+  // ===== AGENT MANAGEMENT METHODS =====
+
+  // Get all agents for the company
+  async getAgents(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/agents?${queryString}` : '/agents';
+    return this.request(endpoint);
+  }
+
+  // Create a new agent
+  async createAgent(agentData) {
+    return this.request('/agents', {
+      method: 'POST',
+      data: agentData
+    });
+  }
+
+  // Get a specific agent
+  async getAgent(agentId) {
+    return this.request(`/agents/${agentId}`);
+  }
+
+  // Update an agent
+  async updateAgent(agentId, agentData) {
+    return this.request(`/agents/${agentId}`, {
+      method: 'PUT',
+      data: agentData
+    });
+  }
+
+  // Delete an agent
+  async deleteAgent(agentId) {
+    return this.request(`/agents/${agentId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Get agent statistics
+  async getAgentStatistics() {
+    return this.request('/agents/statistics');
+  }
+
+  // Get available roles and permissions
+  async getAgentRoles() {
+    return this.request('/agents/roles');
+  }
+
+  // Assign a conversation to an agent
+  async assignConversationToAgent(conversationId, agentId) {
+    return this.request('/agents/assign-conversation', {
+      method: 'POST',
+      data: {
+        conversation_id: conversationId,
+        agent_id: agentId
+      }
+    });
+  }
+
+  // Accept agent invitation (public endpoint)
+  async acceptAgentInvitation(token, password, passwordConfirmation) {
+    return this.request('/agents/accept-invitation', {
+      method: 'POST',
+      data: {
+        token,
+        password,
+        password_confirmation: passwordConfirmation
+      }
+    });
+  }
 }
 
 const apiService = new ApiService();

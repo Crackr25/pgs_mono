@@ -184,24 +184,30 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
                     <div className="py-1">
-                      <button
-                        onClick={() => {
-                          router.push('/company-profile');
-                          setIsProfileOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Company Profile
-                      </button>
-                      <button
-                        onClick={() => {
-                          router.push('/merchant/onboarding/stripe');
-                          setIsProfileOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Stripe Setup
-                      </button>
+                      {/* Hide Company Profile for agents - they don't own the company */}
+                      {user?.usertype !== 'agent' && (
+                        <button
+                          onClick={() => {
+                            router.push('/company-profile');
+                            setIsProfileOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Company Profile
+                        </button>
+                      )}
+                      {/* Hide Stripe Setup for agents */}
+                      {user?.usertype !== 'agent' && (
+                        <button
+                          onClick={() => {
+                            router.push('/merchant/onboarding/stripe');
+                            setIsProfileOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Stripe Setup
+                        </button>
+                      )}
                       <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         {translate('profile')}
                       </a>

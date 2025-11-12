@@ -28,14 +28,20 @@ const OnboardingGuard = ({ children }) => {
         pathname: router.pathname
       });
       
-      // Skip onboarding for buyers - they don't need company setup
-      if (user.usertype === 'buyer') {
-        console.log('Buyer detected, setting hasCompany to true');
+      // Skip onboarding for buyers and agents - they don't need company setup
+      if (user.usertype === 'buyer' || user.usertype === 'agent') {
+        console.log(`${user.usertype} detected, setting hasCompany to true`);
         setHasCompany(true);
-        // Redirect buyers to buyer dashboard if they're on onboarding page
+        // Redirect to appropriate dashboard if they're on onboarding page
         if (router.pathname === '/onboarding') {
-          console.log('Redirecting buyer from onboarding to /buyer');
-          router.push('/buyer');
+          let redirectPath = '/';
+          if (user.usertype === 'buyer') {
+            redirectPath = '/buyer';
+          } else if (user.usertype === 'agent') {
+            redirectPath = '/agent/dashboard';
+          }
+          console.log(`Redirecting ${user.usertype} from onboarding to ${redirectPath}`);
+          router.push(redirectPath);
           return;
         }
         return;
@@ -58,14 +64,15 @@ const OnboardingGuard = ({ children }) => {
     } catch (error) {
       console.error('Error checking user company:', error);
       // If there's an error with sellers, assume no company and redirect to onboarding
-      if (user.usertype !== 'buyer') {
+      // But skip onboarding for buyers and agents
+      if (user.usertype !== 'buyer' && user.usertype !== 'agent') {
         setHasCompany(false);
         if (router.pathname !== '/onboarding') {
           router.push('/onboarding');
           return;
         }
       } else {
-        // For buyers, just set hasCompany to true
+        // For buyers and agents, just set hasCompany to true
         setHasCompany(true);
       }
     } finally {
@@ -97,7 +104,12 @@ const OnboardingGuard = ({ children }) => {
 
   // If user has company but is on onboarding page, redirect to appropriate dashboard
   if (hasCompany === true && router.pathname === '/onboarding') {
-    const redirectPath = user?.usertype === 'buyer' ? '/buyer' : '/';
+    let redirectPath = '/';
+    if (user?.usertype === 'buyer') {
+      redirectPath = '/buyer';
+    } else if (user?.usertype === 'agent') {
+      redirectPath = '/agent/dashboard';
+    }
     router.push(redirectPath);
     return null;
   }

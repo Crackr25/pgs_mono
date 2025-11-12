@@ -14,11 +14,15 @@ class Conversation extends Model
         'buyer_id',
         'order_id',
         'status',
-        'last_message_at'
+        'last_message_at',
+        'assigned_agent_id',
+        'assigned_at',
+        'assignment_type'
     ];
 
     protected $casts = [
-        'last_message_at' => 'datetime'
+        'last_message_at' => 'datetime',
+        'assigned_at' => 'datetime'
     ];
 
     // Relationships
@@ -35,6 +39,11 @@ class Conversation extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function assignedAgent()
+    {
+        return $this->belongsTo(User::class, 'assigned_agent_id');
     }
 
     public function chatMessages()
@@ -65,5 +74,22 @@ class Conversation extends Model
     public function scopeForBuyer($query, $buyerId)
     {
         return $query->where('buyer_id', $buyerId);
+    }
+
+    // Scope for agent conversations
+    public function scopeForAgent($query, $agentId)
+    {
+        return $query->where('assigned_agent_id', $agentId);
+    }
+
+    // Scope for company conversations (seller or assigned agents)
+    public function scopeForCompany($query, $sellerId, $agentIds = [])
+    {
+        return $query->where(function($q) use ($sellerId, $agentIds) {
+            $q->where('seller_id', $sellerId);
+            if (!empty($agentIds)) {
+                $q->orWhereIn('assigned_agent_id', $agentIds);
+            }
+        });
     }
 }

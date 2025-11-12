@@ -37,8 +37,21 @@ class ChatMessageController extends Controller
         // Verify user is part of this conversation
         $conversation = Conversation::where('id', $request->conversation_id)
             ->where(function ($query) use ($user) {
-                $query->where('seller_id', $user->id)
-                      ->orWhere('buyer_id', $user->id);
+                if ($user->usertype === 'agent') {
+                    // Agents can send messages in conversations assigned to them or unassigned conversations for their company
+                    $companyAgent = $user->companyAgent;
+                    if ($companyAgent) {
+                        $query->where('assigned_agent_id', $user->id)
+                              ->orWhere(function($q) use ($companyAgent) {
+                                  $q->where('seller_id', $companyAgent->company->user_id)
+                                    ->whereNull('assigned_agent_id');
+                              });
+                    }
+                } else {
+                    // Sellers and buyers use existing logic
+                    $query->where('seller_id', $user->id)
+                          ->orWhere('buyer_id', $user->id);
+                }
             })
             ->first();
 
@@ -50,9 +63,24 @@ class ChatMessageController extends Controller
         }
 
         // Determine receiver
-        $receiverId = $conversation->seller_id === $user->id 
-            ? $conversation->buyer_id 
-            : $conversation->seller_id;
+        if ($user->usertype === 'agent') {
+            // For agents, always send to the buyer (agents represent the company/seller)
+            $receiverId = $conversation->buyer_id;
+            
+            // Auto-assign conversation to this agent if not already assigned
+            if (!$conversation->assigned_agent_id) {
+                $conversation->update([
+                    'assigned_agent_id' => $user->id,
+                    'assigned_at' => now(),
+                    'assignment_type' => 'auto'
+                ]);
+            }
+        } else {
+            // For sellers and buyers, use existing logic
+            $receiverId = $conversation->seller_id === $user->id 
+                ? $conversation->buyer_id 
+                : $conversation->seller_id;
+        }
 
         // Handle file attachment if present
         $attachmentData = null;
@@ -135,8 +163,21 @@ class ChatMessageController extends Controller
         // Verify user is part of this conversation
         $conversation = Conversation::where('id', $request->conversation_id)
             ->where(function ($query) use ($user) {
-                $query->where('seller_id', $user->id)
-                      ->orWhere('buyer_id', $user->id);
+                if ($user->usertype === 'agent') {
+                    // Agents can mark messages as read in conversations assigned to them or unassigned conversations for their company
+                    $companyAgent = $user->companyAgent;
+                    if ($companyAgent) {
+                        $query->where('assigned_agent_id', $user->id)
+                              ->orWhere(function($q) use ($companyAgent) {
+                                  $q->where('seller_id', $companyAgent->company->user_id)
+                                    ->whereNull('assigned_agent_id');
+                              });
+                    }
+                } else {
+                    // Sellers and buyers use existing logic
+                    $query->where('seller_id', $user->id)
+                          ->orWhere('buyer_id', $user->id);
+                }
             })
             ->first();
 

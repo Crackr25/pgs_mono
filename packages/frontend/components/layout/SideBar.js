@@ -10,7 +10,8 @@ import {
   Settings, 
   HelpCircle, 
   Star,
-  UserCheck
+  UserCheck,
+  Users
 } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 
@@ -23,6 +24,7 @@ export default function SideBar({ isOpen, onClose }) {
     { name: translate('products'), href: '/products', icon: Package },
     { name: translate('orders'), href: '/orders', icon: ShoppingCart },
     { name: translate('messages'), href: '/chat', icon: MessageSquare },
+    { name: 'Agents', href: '/agents', icon: Users },
     { name: translate('analytics'), href: '/analytics', icon: BarChart3 },
     { name: translate('payments'), href: '/payments', icon: CreditCard },
     // { name: translate('tools'), href: '/tools', icon: Settings },

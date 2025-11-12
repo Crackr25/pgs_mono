@@ -93,6 +93,23 @@ class Company extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function companyAgents()
+    {
+        return $this->hasMany(CompanyAgent::class);
+    }
+
+    public function agents()
+    {
+        return $this->belongsToMany(User::class, 'company_agents')
+                    ->withPivot(['role', 'permissions', 'is_active', 'joined_at'])
+                    ->withTimestamps();
+    }
+
+    public function activeAgents()
+    {
+        return $this->agents()->wherePivot('is_active', true)->whereNotNull('joined_at');
+    }
+
     public function sellerPayouts()
     {
         return $this->hasMany(SellerPayout::class);
