@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Company;
-// use App\Events\MessageSent;
+use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -234,7 +234,7 @@ class BuyerMessageController extends Controller
         }
 
         // Broadcast the message
-        // broadcast(new MessageSent($message));
+        broadcast(new MessageSent($message));
 
         return response()->json([
             'success' => true,
@@ -326,7 +326,7 @@ class BuyerMessageController extends Controller
         $message->load('sender', 'receiver');
 
         // Broadcast the message
-        // broadcast(new MessageSent($message));
+        broadcast(new MessageSent($message));
 
         return response()->json([
             'success' => true,
@@ -405,6 +405,64 @@ class BuyerMessageController extends Controller
         return response()->json([
             'success' => true,
             'updated_count' => $updatedCount
+        ]);
+    }
+
+    /**
+     * Get messages after a specific timestamp for polling (buyer-specific)
+     */
+    public function getMessagesAfter(Request $request, $conversationId)
+    {
+        $user = Auth::user();
+        $timestamp = $request->query('timestamp');
+
+        if (!$timestamp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Timestamp parameter is required'
+            ], 400);
+        }
+
+        // Check if buyer has access to this conversation
+        $conversation = Conversation::where('id', $conversationId)
+            ->where('buyer_id', $user->id)
+            ->first();
+
+        if (!$conversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Conversation not found or access denied'
+            ], 404);
+        }
+
+        // Get messages created after the timestamp
+        $messages = ChatMessage::with(['sender'])
+            ->where('conversation_id', $conversationId)
+            ->where('created_at', '>', $timestamp)
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'conversation_id' => $message->conversation_id,
+                    'sender_id' => $message->sender_id,
+                    'receiver_id' => $message->receiver_id,
+                    'message' => $message->message,
+                    'message_type' => $message->message_type,
+                    'attachments' => $message->attachments,
+                    'created_at' => $message->created_at->toISOString(),
+                    'read' => $message->read,
+                    'sender' => [
+                        'id' => $message->sender->id,
+                        'name' => $message->sender->name,
+                        'email' => $message->sender->email
+                    ]
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'messages' => $messages
         ]);
     }
 }

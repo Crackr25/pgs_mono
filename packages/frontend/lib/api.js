@@ -520,6 +520,10 @@ class ApiService {
     return this.request(`/conversations/${id}`);
   }
 
+  async getMessagesAfter(conversationId, timestamp) {
+    return this.request(`/conversations/${conversationId}/messages/after?timestamp=${encodeURIComponent(timestamp)}`);
+  }
+
   async sendMessage(conversationId, message, attachment = null) {
     const formData = new FormData();
     formData.append('message', message || '');
@@ -573,42 +577,9 @@ class ApiService {
   }
 
 
-  // Mark messages as read
-  async markMessagesAsRead(conversationId, messageIds = null) {
-    const body = { conversation_id: conversationId };
-    if (messageIds) {
-      body.message_ids = messageIds;
-    }
-
-    return this.request('/messages/mark-read', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  }
-
   // Get unread message count
   async getUnreadCount() {
     return this.request('/chat/unread-count');
-  }
-
-  async sendMessage(conversationId, message, attachment = null) {
-    const formData = new FormData();
-    formData.append('conversation_id', conversationId);
-    formData.append('message', message);
-    formData.append('message_type', attachment ? (attachment.type.startsWith('image/') ? 'image' : 'file') : 'text');
-    
-    if (attachment) {
-      formData.append('attachment', attachment);
-    }
-
-    return this.request('/chat/send', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // Don't set Content-Type for FormData, let browser set it
-        'Authorization': `Bearer ${this.token}`,
-      },
-    });
   }
 
   // Buyer-specific message methods
@@ -618,6 +589,10 @@ class ApiService {
 
   async getBuyerConversationMessages(conversationId) {
     return this.request(`/buyer/conversations/${conversationId}`);
+  }
+
+  async getBuyerMessagesAfter(conversationId, timestamp) {
+    return this.request(`/buyer/conversations/${conversationId}/messages/after?timestamp=${encodeURIComponent(timestamp)}`);
   }
 
   async sendBuyerMessage(messageData) {

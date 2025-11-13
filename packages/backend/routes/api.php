@@ -28,6 +28,8 @@ use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\SellerPayoutController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\TestAgentController;
+use App\Http\Controllers\BroadcastingAuthController;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +41,10 @@ use App\Http\Controllers\TestAgentController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Broadcasting authorization routes (custom implementation)
+Route::post('/broadcasting/auth', [BroadcastingAuthController::class, 'authenticate'])
+    ->middleware('auth:sanctum');
 
 // Authentication routes (public)
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -153,6 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Real-time chat routes
     Route::get('/conversations', [ConversationController::class, 'index']);
     Route::get('/conversations/{id}', [ConversationController::class, 'show']);
+    Route::get('/conversations/{id}/messages/after', [ConversationController::class, 'getMessagesAfter']);
     Route::post('/conversations', [ConversationController::class, 'store']);
     Route::post('/chat/send', [ChatMessageController::class, 'store']);
     Route::post('/chat/mark-read', [ChatMessageController::class, 'markAsRead']);
@@ -161,6 +168,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Buyer-specific message routes
     Route::get('/buyer/conversations', [BuyerMessageController::class, 'getConversations']);
     Route::get('/buyer/conversations/{id}', [BuyerMessageController::class, 'getConversationMessages']);
+    Route::get('/buyer/conversations/{id}/messages/after', [BuyerMessageController::class, 'getMessagesAfter']);
     Route::post('/buyer/messages/send', [BuyerMessageController::class, 'sendMessage']);
     Route::post('/buyer/messages/send-attachment', [BuyerMessageController::class, 'sendAttachment']);
     Route::post('/buyer/messages/mark-read', [BuyerMessageController::class, 'markAsRead']);

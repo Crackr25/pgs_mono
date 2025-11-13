@@ -12,6 +12,14 @@ class WebSocketService {
       this.disconnect();
     }
 
+    console.log('🔌 Connecting to WebSocket with config:', {
+      key: process.env.NEXT_PUBLIC_PUSHER_KEY,
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      host: process.env.NEXT_PUBLIC_PUSHER_HOST,
+      port: process.env.NEXT_PUBLIC_PUSHER_PORT,
+      scheme: process.env.NEXT_PUBLIC_PUSHER_SCHEME
+    });
+
     this.pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
       wsHost: process.env.NEXT_PUBLIC_PUSHER_HOST,
@@ -19,6 +27,7 @@ class WebSocketService {
       wssPort: process.env.NEXT_PUBLIC_PUSHER_PORT,
       forceTLS: process.env.NEXT_PUBLIC_PUSHER_SCHEME === 'https',
       enabledTransports: ['ws', 'wss'],
+      authEndpoint: `${process.env.NEXT_PUBLIC_API_URL}/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -27,17 +36,21 @@ class WebSocketService {
     });
 
     this.pusher.connection.bind('connected', () => {
-      console.log('WebSocket connected');
+      console.log('✅ WebSocket connected successfully!');
       this.isConnected = true;
     });
 
     this.pusher.connection.bind('disconnected', () => {
-      console.log('WebSocket disconnected');
+      console.log('❌ WebSocket disconnected');
       this.isConnected = false;
     });
 
     this.pusher.connection.bind('error', (error) => {
-      console.error('WebSocket error:', error);
+      console.error('❌ WebSocket connection error:', error);
+    });
+
+    this.pusher.connection.bind('state_change', (states) => {
+      console.log('🔄 WebSocket state change:', states.previous, '→', states.current);
     });
 
     return this.pusher;
@@ -57,22 +70,28 @@ class WebSocketService {
 
   subscribeToConversation(conversationId, callbacks = {}) {
     if (!this.pusher) {
-      console.error('WebSocket not connected');
+      console.error('❌ WebSocket not connected - cannot subscribe to conversation');
       return null;
     }
 
     const channelName = `private-conversation.${conversationId}`;
+    console.log('📡 Subscribing to conversation channel:', channelName);
     
     if (this.channels.has(channelName)) {
+      console.log('✅ Already subscribed to conversation:', conversationId);
       return this.channels.get(channelName);
     }
 
     const channel = this.pusher.subscribe(channelName);
     
     channel.bind('message.sent', (data) => {
-      console.log('New message received:', data);
+      console.log('🔔 WebSocket Service - New message received:', data);
+      console.log('🔔 WebSocket Service - Callback exists:', !!callbacks.onMessageReceived);
       if (callbacks.onMessageReceived) {
+        console.log('🔔 WebSocket Service - Calling onMessageReceived callback');
         callbacks.onMessageReceived(data);
+      } else {
+        console.log('⚠️ WebSocket Service - No onMessageReceived callback provided');
       }
     });
 
@@ -96,13 +115,15 @@ class WebSocketService {
 
   subscribeToUserChannel(userId, callbacks = {}) {
     if (!this.pusher) {
-      console.error('WebSocket not connected');
+      console.error('❌ WebSocket not connected - cannot subscribe to user channel');
       return null;
     }
 
     const channelName = `private-user.${userId}`;
+    console.log('👤 Subscribing to user channel:', channelName);
     
     if (this.channels.has(channelName)) {
+      console.log('✅ Already subscribed to user channel:', userId);
       return this.channels.get(channelName);
     }
 

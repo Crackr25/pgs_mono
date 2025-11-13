@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\User;
-// use App\Events\MessageSent;
+use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -229,7 +229,7 @@ class ConversationController extends Controller
             $message->load('sender', 'receiver');
 
             // Broadcast the message
-            // broadcast(new MessageSent($message));
+            broadcast(new MessageSent($message));
 
             DB::commit();
 
@@ -246,5 +246,86 @@ class ConversationController extends Controller
                 'message' => 'Failed to create conversation'
             ], 500);
         }
+    }
+
+    /**
+     * Get messages after a specific timestamp for polling
+     */
+    public function getMessagesAfter(Request $request, $id)
+    {
+        $user = Auth::user();
+        $timestamp = $request->query('timestamp');
+
+        if (!$timestamp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Timestamp parameter is required'
+            ], 400);
+        }
+
+        // Check if user has access to this conversation
+        $conversation = Conversation::where('id', $id);
+
+        if ($user->usertype === 'agent') {
+            $companyAgent = $user->companyAgent;
+            if (!$companyAgent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Agent not associated with any company'
+                ], 403);
+            }
+
+            $conversation->where(function($query) use ($user, $companyAgent) {
+                $query->where('assigned_agent_id', $user->id)
+                      ->orWhere(function($q) use ($companyAgent) {
+                          $q->where('seller_id', $companyAgent->company->user_id)
+                            ->whereNull('assigned_agent_id');
+                      });
+            });
+        } else {
+            $conversation->where(function($query) use ($user) {
+                $query->where('seller_id', $user->id)
+                      ->orWhere('buyer_id', $user->id);
+            });
+        }
+
+        $conversation = $conversation->first();
+
+        if (!$conversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Conversation not found or access denied'
+            ], 404);
+        }
+
+        // Get messages created after the timestamp
+        $messages = ChatMessage::with(['sender'])
+            ->where('conversation_id', $id)
+            ->where('created_at', '>', $timestamp)
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'conversation_id' => $message->conversation_id,
+                    'sender_id' => $message->sender_id,
+                    'receiver_id' => $message->receiver_id,
+                    'message' => $message->message,
+                    'message_type' => $message->message_type,
+                    'attachments' => $message->attachments,
+                    'created_at' => $message->created_at->toISOString(),
+                    'read' => $message->read,
+                    'sender' => [
+                        'id' => $message->sender->id,
+                        'name' => $message->sender->name,
+                        'email' => $message->sender->email
+                    ]
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'messages' => $messages
+        ]);
     }
 }

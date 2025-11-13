@@ -11,7 +11,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MessageSent // implements ShouldBroadcast
+class MessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -23,6 +23,14 @@ class MessageSent // implements ShouldBroadcast
     public function __construct(ChatMessage $chatMessage)
     {
         $this->chatMessage = $chatMessage;
+        
+        // Log for debugging
+        \Log::info('MessageSent event created', [
+            'message_id' => $chatMessage->id,
+            'conversation_id' => $chatMessage->conversation_id,
+            'sender_id' => $chatMessage->sender_id,
+            'receiver_id' => $chatMessage->receiver_id
+        ]);
     }
 
     /**

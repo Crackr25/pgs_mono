@@ -20,6 +20,8 @@ export default function SimpleFloatingChat({
   const [sending, setSending] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
   
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
@@ -50,6 +52,31 @@ export default function SimpleFloatingChat({
     scrollToBottom();
   }, [messages]);
 
+  // Start polling when a conversation is selected
+  useEffect(() => {
+    if (conversation && conversation.id && user) {
+      // Clear any existing polling interval
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+      
+      // Start polling for new messages every 2 seconds
+      const interval = setInterval(() => {
+        pollForNewMessages(conversation.id);
+      }, 2000);
+      
+      setPollingInterval(interval);
+    }
+    
+    return () => {
+      // Clean up polling interval
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+    };
+  }, [conversation, user]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -74,6 +101,13 @@ export default function SimpleFloatingChat({
       // Load messages for selected conversation
       const messagesResponse = await apiService.getBuyerConversationMessages(selectedConversation.id);
       setMessages(messagesResponse.messages || []);
+      
+      // Update last message timestamp for polling
+      if (messagesResponse.messages && messagesResponse.messages.length > 0) {
+        const latestMessage = messagesResponse.messages[messagesResponse.messages.length - 1];
+        setLastMessageTimestamp(latestMessage.created_at);
+        console.log('📅 Updated last message timestamp:', latestMessage.created_at);
+      }
       
       // Hide sidebar on mobile after selection
       if (isMobile) {
@@ -105,6 +139,14 @@ export default function SimpleFloatingChat({
         setConversation(existingConversation);
         const messagesResponse = await apiService.getBuyerConversationMessages(existingConversation.id);
         setMessages(messagesResponse.messages || []);
+        
+        // Update last message timestamp for polling
+        if (messagesResponse.messages && messagesResponse.messages.length > 0) {
+          const latestMessage = messagesResponse.messages[messagesResponse.messages.length - 1];
+          setLastMessageTimestamp(latestMessage.created_at);
+          console.log('📅 Updated last message timestamp:', latestMessage.created_at);
+        }
+        
         console.log('Loaded existing conversation with', messagesResponse.messages?.length || 0, 'messages');
       } else {
         // No existing conversation - just set up for new conversation
@@ -123,6 +165,76 @@ export default function SimpleFloatingChat({
       console.error('Error initializing conversation:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const pollForNewMessages = async (conversationId) => {
+    if (!lastMessageTimestamp) {
+      return; // No timestamp to compare against
+    }
+    
+    try {
+      console.log('🔄 Polling for new messages since:', lastMessageTimestamp);
+      
+      // Get messages after the last timestamp
+      const response = await apiService.getBuyerMessagesAfter(conversationId, lastMessageTimestamp);
+      
+      if (response.success) {
+        if (response.messages && response.messages.length > 0) {
+          console.log('📨 Found', response.messages.length, 'new messages');
+          
+          // Filter out messages that already exist to prevent duplicates
+          setMessages(prev => {
+            const existingMessageIds = new Set(prev.map(msg => msg.id));
+            const newMessages = response.messages.filter(msg => !existingMessageIds.has(msg.id));
+            
+            if (newMessages.length > 0) {
+              console.log('✅ Adding', newMessages.length, 'truly new messages');
+              const updatedMessages = [...prev, ...newMessages];
+              console.log('📝 Total messages now:', updatedMessages.length);
+              return updatedMessages;
+            } else {
+              console.log('⚠️ All messages were duplicates, not adding any');
+              return prev;
+            }
+          });
+          
+          // Update last message timestamp only if we have new messages
+          const latestMessage = response.messages[response.messages.length - 1];
+          if (latestMessage.created_at > lastMessageTimestamp) {
+            setLastMessageTimestamp(latestMessage.created_at);
+            console.log('📅 Updated timestamp to:', latestMessage.created_at);
+          }
+          
+          // Mark new messages as read if user is viewing this conversation
+          const newMessageIds = response.messages.map(msg => msg.id);
+          await apiService.markBuyerMessagesAsRead({
+            conversation_id: conversationId,
+            message_ids: newMessageIds
+          });
+          
+          // Update conversations list with latest message
+          const latestMessageData = response.messages[response.messages.length - 1];
+          setConversations(prev => 
+            prev.map(conv => {
+              if (conv.id === conversationId) {
+                return {
+                  ...conv,
+                  latest_message: {
+                    message: latestMessageData.message,
+                    sender_id: latestMessageData.sender_id,
+                    created_at: latestMessageData.created_at
+                  },
+                  last_message_at: latestMessageData.created_at
+                };
+              }
+              return conv;
+            })
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to poll for new messages:', error);
     }
   };
 
@@ -158,9 +270,32 @@ export default function SimpleFloatingChat({
         const response = await apiService.sendBuyerMessage(messagePayload);
         
         if (response.success !== false) {
-          // Refresh messages to get the latest
-          const messagesResponse = await apiService.getBuyerConversationMessages(conversation.id);
-          setMessages(messagesResponse.messages || []);
+          // Immediately add the sent message to prevent polling duplicates
+          if (response.message) {
+            setMessages(prev => {
+              const messageExists = prev.some(msg => msg.id === response.message.id);
+              if (!messageExists) {
+                console.log('✅ Adding sent message to local state');
+                return [...prev, response.message];
+              }
+              return prev;
+            });
+            
+            // Update timestamp to prevent polling from fetching this message again
+            setLastMessageTimestamp(response.message.created_at);
+            console.log('📅 Updated timestamp after sending message:', response.message.created_at);
+          } else {
+            // Fallback: Refresh messages to get the latest
+            const messagesResponse = await apiService.getBuyerConversationMessages(conversation.id);
+            setMessages(messagesResponse.messages || []);
+            
+            // Update timestamp
+            if (messagesResponse.messages && messagesResponse.messages.length > 0) {
+              const latestMessage = messagesResponse.messages[messagesResponse.messages.length - 1];
+              setLastMessageTimestamp(latestMessage.created_at);
+            }
+          }
+          
           setNewMessage('');
           
           // Refresh conversations list to update last message
@@ -212,6 +347,13 @@ export default function SimpleFloatingChat({
                 setConversation(newConversation);
                 const newMessagesResponse = await apiService.getBuyerConversationMessages(newConversation.id);
                 setMessages(newMessagesResponse.messages || []);
+                
+                // Update timestamp for new conversation
+                if (newMessagesResponse.messages && newMessagesResponse.messages.length > 0) {
+                  const latestMessage = newMessagesResponse.messages[newMessagesResponse.messages.length - 1];
+                  setLastMessageTimestamp(latestMessage.created_at);
+                  console.log('📅 Updated timestamp for new conversation:', latestMessage.created_at);
+                }
               }
             } catch (refreshError) {
               console.error('Error refreshing conversation:', refreshError);

@@ -177,7 +177,7 @@ export default function Login() {
                               <h4 className={`font-semibold ${
                                 formData.usertype === 'buyer' ? 'text-[#0046ad]' : 'text-gray-700'
                               }`}>
-                                Buyer
+                                American Buyer
                               </h4>
                               <p className="text-xs text-gray-500 mt-1">
                                 I want to purchase products
@@ -207,7 +207,7 @@ export default function Login() {
                               <h4 className={`font-semibold ${
                                 formData.usertype === 'seller' ? 'text-[#0046ad]' : 'text-gray-700'
                               }`}>
-                                Seller
+                                Philippine Factory
                               </h4>
                               <p className="text-xs text-gray-500 mt-1">
                                 I want to sell products

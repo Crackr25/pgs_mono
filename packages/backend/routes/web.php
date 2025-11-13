@@ -17,6 +17,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
+
 // Include test email routes (remove in production)
 if (app()->environment(['local', 'development'])) {
     require __DIR__.'/test-email.php';
