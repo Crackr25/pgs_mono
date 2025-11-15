@@ -19,7 +19,6 @@ export default function Chat() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
-  const [pollingInterval, setPollingInterval] = useState(null);
   const { user } = useAuth();
 
   // Initialize WebSocket connection and fetch data
@@ -34,35 +33,17 @@ export default function Chat() {
     };
   }, []);
 
-  // Subscribe to conversation when selected and start polling
+  // Subscribe to conversation when selected
   useEffect(() => {
     if (selectedConversation && currentUser) {
-      // Clear any existing polling interval
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-      
       // Fetch initial messages
       fetchMessages(selectedConversation.id);
       
-      // Start polling for new messages every 2 seconds
-      const interval = setInterval(() => {
-        pollForNewMessages(selectedConversation.id);
-      }, 2000);
-      
-      setPollingInterval(interval);
-      
-      // Keep WebSocket as backup (but don't rely on it)
+      // Subscribe to WebSocket for real-time messages
       subscribeToConversation(selectedConversation.id);
     }
     
     return () => {
-      // Clean up polling interval
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
-      }
-      
       // Clean up WebSocket subscription
       if (selectedConversation) {
         websocketService.unsubscribeFromConversation(selectedConversation.id);
