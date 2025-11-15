@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { 
   MessageSquare, 
@@ -17,10 +18,16 @@ import MessageTemplates from '../components/messaging/MessageTemplates';
 import { messages } from '../lib/dummyData';
 
 export default function Messages() {
+  const router = useRouter();
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
+
+  // Redirect to real chat system
+  useEffect(() => {
+    router.replace('/chat');
+  }, [router]);
 
   const filteredMessages = messages.filter(message =>
     message.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -331,7 +331,7 @@ export default function Dashboard() {
             <Button 
               variant="outline" 
               className="h-20 flex-col"
-              onClick={() => router.push('/messages')}
+              onClick={() => router.push('/chat')}
             >
               <Users className="w-6 h-6 mb-2" />
               Message Buyers
