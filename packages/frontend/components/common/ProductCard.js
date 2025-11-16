@@ -22,23 +22,42 @@ export default function ProductCard({
     const supplierWebsite = product.company?.website || product.supplier?.website;
     const supplierId = product.company?.id || product.supplier?.id;
 
-    // Priority 1: External website (like Alibaba's behavior)
-    if (supplierWebsite && supplierWebsite.startsWith('http')) {
-      return (
-        <a
-          href={supplierWebsite}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary-600 hover:text-primary-700 hover:underline font-medium cursor-pointer transition-all duration-200"
-          onClick={(e) => e.stopPropagation()}
-          title={`Visit ${supplierName}'s website`}
-        >
-          {supplierName}
-        </a>
-      );
+    // Priority 1: Website link (could be external website OR storefront)
+    if (supplierWebsite) {
+      // Check if it's a storefront URL (internal) or external website
+      const isStorefront = supplierWebsite.includes('/store/');
+      
+      if (isStorefront) {
+        // For storefronts, use Next.js Link for better performance
+        return (
+          <Link href={supplierWebsite.replace(process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000', '')}>
+            <span 
+              className="text-primary-600 hover:text-primary-700 hover:underline font-medium cursor-pointer transition-all duration-200"
+              onClick={(e) => e.stopPropagation()}
+              title={`Visit ${supplierName}'s storefront`}
+            >
+              {supplierName}
+            </span>
+          </Link>
+        );
+      } else if (supplierWebsite.startsWith('http')) {
+        // External website - open in new tab
+        return (
+          <a
+            href={supplierWebsite}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-600 hover:text-primary-700 hover:underline font-medium cursor-pointer transition-all duration-200"
+            onClick={(e) => e.stopPropagation()}
+            title={`Visit ${supplierName}'s website`}
+          >
+            {supplierName}
+          </a>
+        );
+      }
     }
 
-    // Priority 2: Internal supplier page
+    // Priority 2: Internal supplier page (OLD LOGIC - kept as fallback)
     if (supplierId) {
       return (
         <Link href={`/buyer/suppliers/${supplierId}`}>

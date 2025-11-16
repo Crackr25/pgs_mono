@@ -675,6 +675,7 @@ Product Link: ${window.location.href}`;
                 <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
                   <Shield className="w-3 h-3 text-primary-600" />
                 </div>
+                {/* OLD LOGIC (kept for reference, hidden):
                 {product.company?.id ? (
                   <Link 
                     href={`/buyer/suppliers/${encodeURIComponent(product.company.id)}`}
@@ -690,14 +691,29 @@ Product Link: ${window.location.href}`;
                 ) : (
                   <span className="text-primary-600 font-medium">
                     {product.company?.name || 'Unknown Company'}
+                  </span>
+                )}
+                */}
+                {/* NEW LOGIC: Redirect to manufacturer's website */}
+                {product.company?.website ? (
+                  <a
+                    href={product.company.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 hover:underline font-medium transition-colors cursor-pointer"
+                    title={`Visit ${product.company.name}'s website`}
+                    onClick={() => {
+                      console.log('Opening manufacturer website:', product.company.website);
+                    }}
+                  >
+                    {product.company.name}
+                  </a>
+                ) : (
+                  <span className="text-primary-600 font-medium">
+                    {product.company?.name || 'Unknown Company'}
                     {process.env.NODE_ENV === 'development' && (
-                      <div className="block text-xs text-red-500 mt-1">
-                        No company ID available
-                        {product.company && (
-                          <div className="mt-1 p-2 bg-gray-100 text-black text-xs rounded">
-                            Company data: {JSON.stringify(product.company, null, 2)}
-                          </div>
-                        )}
+                      <div className="block text-xs text-orange-500 mt-1">
+                        No company website available
                       </div>
                     )}
                   </span>
@@ -1090,6 +1106,7 @@ Product Link: ${window.location.href}`;
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
+                      {/* OLD LOGIC (kept for reference, hidden):
                       {product.company?.id ? (
                         <Link 
                           href={`/buyer/suppliers/${encodeURIComponent(product.company.id)}`}
@@ -1104,9 +1121,29 @@ Product Link: ${window.location.href}`;
                       ) : (
                         <h3 className="font-semibold text-secondary-900">
                           {product.company?.name || 'Unknown Company'}
+                        </h3>
+                      )}
+                      */}
+                      {/* NEW LOGIC: Redirect to manufacturer's website */}
+                      {product.company?.website ? (
+                        <a
+                          href={product.company.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-secondary-900 hover:text-primary-600 hover:underline cursor-pointer transition-colors"
+                          title={`Visit ${product.company.name}'s website`}
+                          onClick={() => {
+                            console.log('Opening manufacturer website (sidebar):', product.company.website);
+                          }}
+                        >
+                          {product.company.name}
+                        </a>
+                      ) : (
+                        <h3 className="font-semibold text-secondary-900">
+                          {product.company?.name || 'Unknown Company'}
                           {process.env.NODE_ENV === 'development' && (
-                            <div className="text-xs text-red-500 mt-1">
-                              No company ID available
+                            <div className="text-xs text-orange-500 mt-1">
+                              No company website available
                             </div>
                           )}
                         </h3>

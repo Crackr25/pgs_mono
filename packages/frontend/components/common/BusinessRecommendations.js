@@ -49,8 +49,9 @@ export default function BusinessRecommendations({
       ) || [];
       
       // Fetch personalized recommendations (random products excluding current)
-      const personalizedResponse = await fetch('/api/marketplace/products?limit=4');
-      const personalizedData = await personalizedResponse.json();
+      const personalizedData = await apiService.getMarketplaceProducts({ 
+        limit: 4 
+      });
       
       // Filter out current product from all recommendations
       const filterCurrentProduct = (products) => 

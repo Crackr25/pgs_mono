@@ -41,6 +41,15 @@ export default function Layout({ children }) {
     );
   }
 
+  // Layout for storefront pages - completely standalone, no nav/sidebar
+  if (router.pathname.startsWith('/store/')) {
+    return (
+      <div className="min-h-screen bg-white">
+        {children}
+      </div>
+    );
+  }
+
   // Layout for onboarding page (authenticated but no sidenav)
   if (router.pathname === '/onboarding') {
     return (
