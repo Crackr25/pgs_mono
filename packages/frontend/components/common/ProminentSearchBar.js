@@ -297,6 +297,51 @@ export default function ProminentSearchBar({ className = "" }) {
     router.push(`/buyer/search?${params.toString()}`);
   };
 
+  // Handle company name click - redirect to manufacturer's website
+  const handleCompanyClick = (e, suggestion) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('=== COMPANY CLICK DEBUG ===');
+    console.log('Full suggestion object:', suggestion);
+    console.log('Company object:', suggestion.company);
+    
+    // Check if company has a website URL
+    if (suggestion.company && suggestion.company.website) {
+      // Check if it's a storefront URL (internal) or external website
+      const websiteUrl = suggestion.company.website;
+      
+      console.log('Company clicked:', suggestion.company.name);
+      console.log('Website URL:', websiteUrl);
+      console.log('Current location:', window.location.href);
+      
+      if (websiteUrl.includes('/store/')) {
+        // It's an internal storefront - use Next.js router to navigate
+        const storefrontPath = websiteUrl.split('/store/')[1];
+        const targetUrl = `/store/${storefrontPath}`;
+        console.log('Navigating to storefront:', targetUrl);
+        console.log('Using window.location.href');
+        
+        // Use window.location for public pages to ensure proper navigation
+        window.location.href = targetUrl;
+      } else {
+        // It's an external website - open in new tab
+        console.log('Opening external website in new tab');
+        window.open(websiteUrl, '_blank', 'noopener,noreferrer');
+      }
+    } else if (suggestion.company && suggestion.company.id) {
+      // Fallback: redirect to company profile page if no website
+      // OLD LOGIC (kept for reference but not used):
+      // router.push(`/buyer/company/${suggestion.company.id}`);
+      
+      // For now, if no website, show alert
+      console.log('Company website not available for:', suggestion.company.name);
+      console.warn('No website URL found!');
+    }
+    
+    setShowSuggestions(false);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     setShowSuggestions(false);
@@ -441,15 +486,16 @@ export default function ProminentSearchBar({ className = "" }) {
                       </div>
                     )}
                     {suggestions.map((suggestion, index) => (
-                    <button
+                    <div
                       key={index}
-                      type="button"
-                      onClick={() => selectSuggestion(suggestion)}
-                      className={`w-full text-left px-4 py-3 hover:bg-secondary-50 focus:bg-secondary-50 border-b border-secondary-100 last:border-b-0 transition-colors ${
+                      className={`w-full text-left px-4 py-3 hover:bg-secondary-50 border-b border-secondary-100 last:border-b-0 transition-colors ${
                         index === selectedSuggestionIndex ? 'bg-primary-50 border-primary-200' : ''
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
+                      <div 
+                        className="flex items-center space-x-3 cursor-pointer"
+                        onClick={() => selectSuggestion(suggestion)}
+                      >
                         <div className="flex-shrink-0">
                           <Package className="w-4 h-4 text-primary-600" />
                         </div>
@@ -476,9 +522,17 @@ export default function ProminentSearchBar({ className = "" }) {
                               )}
                             </div>
                             {suggestion.company && (
-                              <span className="text-xs text-secondary-500 truncate">
-                                by {suggestion.company.name}
-                              </span>
+                              <div className="flex items-center space-x-1">
+                                <span className="text-xs text-secondary-500">by</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCompanyClick(e, suggestion)}
+                                  className="text-xs text-primary-600 hover:text-primary-700 hover:underline font-medium truncate"
+                                  title={suggestion.company.website ? `Visit ${suggestion.company.name}'s website` : `View ${suggestion.company.name}`}
+                                >
+                                  {suggestion.company.name}
+                                </button>
+                              </div>
                             )}
                             {suggestion.price && (
                               <span className="text-xs text-primary-600 font-medium">
@@ -494,7 +548,7 @@ export default function ProminentSearchBar({ className = "" }) {
                           <Search className="w-3 h-3 text-secondary-300" />
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                   </>
                 )}

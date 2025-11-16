@@ -182,7 +182,7 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-[9999]">
                     <div className="py-1">
                       {/* Hide Company Profile for agents - they don't own the company */}
                       {user?.usertype !== 'agent' && (
@@ -206,6 +206,18 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           Stripe Setup
+                        </button>
+                      )}
+                      {/* Storefront Settings */}
+                      {user?.usertype !== 'agent' && (
+                        <button
+                          onClick={() => {
+                            router.push('/dashboard/storefront');
+                            setIsProfileOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Storefront Settings
                         </button>
                       )}
                       <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

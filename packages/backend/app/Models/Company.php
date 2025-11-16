@@ -125,6 +125,11 @@ class Company extends Model
         return $this->hasMany(SellerPayout::class)->where('status', 'completed');
     }
 
+    public function storefront()
+    {
+        return $this->hasOne(CompanyStorefront::class);
+    }
+
     // Helper methods for payout management
     public function getTotalPendingPayouts()
     {

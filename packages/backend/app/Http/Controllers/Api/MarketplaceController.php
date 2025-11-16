@@ -22,6 +22,7 @@ class MarketplaceController extends Controller
         // Get random products with their company and main image
         $query = Product::with([
             'company:user_id,id,name,location,verified',
+            'company.storefront:id,company_id,slug,is_active',
             'mainImage:id,product_id,image_path'
         ])
         ->where('active', true)
@@ -86,6 +87,9 @@ class MarketplaceController extends Controller
                     'name' => $product->company->name,
                     'location' => $product->company->location,
                     'verified' => $product->company->verified ?? false,
+                    'website' => $product->company->storefront && $product->company->storefront->is_active 
+                        ? env('FRONTEND_URL', 'http://localhost:3000') . "/store/{$product->company->storefront->slug}" 
+                        : null,
                 ],
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
@@ -176,6 +180,7 @@ class MarketplaceController extends Controller
         try {
             $product = Product::with([
                 'company:user_id,id,name,location,verified,description,year_established,email,phone,website',
+                'company.storefront:id,company_id,slug,is_active',
                 'images:id,product_id,image_path,is_main,sort_order,alt_text'
             ])
             ->where('active', 1)
@@ -252,6 +257,9 @@ class MarketplaceController extends Controller
                     'established' => $product->company->year_established ?? '2015',
                     'response_time' => '< 2 hours',
                     'about' => $product->company->description ?? 'Leading manufacturer with years of experience.',
+                    'website' => $product->company->storefront && $product->company->storefront->is_active 
+                        ? env('FRONTEND_URL', 'http://localhost:3000') . "/store/{$product->company->storefront->slug}" 
+                        : $product->company->website,
                     'contact' => [
                         'email' => $product->company->email,
                         'phone' => $product->company->phone,

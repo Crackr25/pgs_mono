@@ -301,3 +301,35 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/pending', [TestAgentController::class, 'getPendingInvitations']);
             Route::delete('/cleanup', [TestAgentController::class, 'cleanupTestAgents']);
     });
+
+// Storefront routes (protected - company owners manage their storefronts)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/storefronts', [\App\Http\Controllers\Api\StorefrontController::class, 'index']);
+    Route::post('/storefronts', [\App\Http\Controllers\Api\StorefrontController::class, 'store']);
+    Route::put('/storefronts/{id}', [\App\Http\Controllers\Api\StorefrontController::class, 'update']);
+    Route::delete('/storefronts/{id}', [\App\Http\Controllers\Api\StorefrontController::class, 'destroy']);
+    Route::post('/storefronts/{id}/upload-banner', [\App\Http\Controllers\Api\StorefrontController::class, 'uploadBanner']);
+    Route::apiResource('/storefront-sections', \App\Http\Controllers\Api\StorefrontSectionController::class)->except(['index', 'show']);
+    
+    // Storefront Pages (Dynamic-style page management)
+    Route::get('/storefront/pages', [\App\Http\Controllers\Api\StorefrontPageController::class, 'index']);
+    Route::post('/storefront/pages', [\App\Http\Controllers\Api\StorefrontPageController::class, 'store']);
+    Route::get('/storefront/pages/{slug}', [\App\Http\Controllers\Api\StorefrontPageController::class, 'show']);
+    Route::put('/storefront/pages/{id}', [\App\Http\Controllers\Api\StorefrontPageController::class, 'update']);
+    Route::delete('/storefront/pages/{id}', [\App\Http\Controllers\Api\StorefrontPageController::class, 'destroy']);
+    
+    // Storefront Menu Items (Custom navigation builder)
+    Route::get('/storefront/menu', [\App\Http\Controllers\Api\StorefrontMenuController::class, 'index']);
+    Route::post('/storefront/menu', [\App\Http\Controllers\Api\StorefrontMenuController::class, 'store']);
+    Route::put('/storefront/menu/{id}', [\App\Http\Controllers\Api\StorefrontMenuController::class, 'update']);
+    Route::delete('/storefront/menu/{id}', [\App\Http\Controllers\Api\StorefrontMenuController::class, 'destroy']);
+    Route::post('/storefront/menu/reorder', [\App\Http\Controllers\Api\StorefrontMenuController::class, 'reorder']);
+});
+
+// Public storefront view (no auth required)
+Route::get('/storefront-themes', [\App\Http\Controllers\Api\StorefrontThemeController::class, 'index']);
+Route::get('/storefront-themes/{id}', [\App\Http\Controllers\Api\StorefrontThemeController::class, 'show']);
+Route::get('/public/storefront/{slug}', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'show']);
+Route::get('/public/storefront/{slug}/menu', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'getMenu']);
+Route::get('/public/storefront/{slug}/products', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'getProducts']);
+Route::get('/public/storefront/{slug}/page/{pageSlug}', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'showPage']);
