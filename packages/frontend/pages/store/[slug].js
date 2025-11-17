@@ -737,8 +737,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
 
   if (section_type === 'about') {
     return (
-      <section id="about" className="mb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section id="about" className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h2 className="text-3xl font-bold mb-6 text-gray-900">{title || 'About Us'}</h2>
           <div className="bg-white rounded-lg shadow-md p-8">
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
@@ -750,8 +750,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
 
   if (section_type === 'heading') {
     return (
-      <section className="mb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow-md p-8">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-900" style={{ color: primaryColor }}>
               {title}
@@ -794,8 +794,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
         };
 
     return (
-      <section className="mb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white shadow-md p-8" style={backgroundStyle}>
             {bgImage && <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg"></div>}
             <div className={`${bgImage ? 'relative z-10' : ''} ${textAlign === 'center' ? 'mx-auto' : ''}`}>
@@ -832,8 +832,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
 
   if (section_type === 'gallery' && images && images.length > 0) {
     return (
-      <section className="mb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h2 className="text-3xl font-bold mb-6 text-gray-900">{title || 'Gallery'}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {images.map((img, idx) => (
@@ -928,8 +928,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     });
     
     return (
-      <section id="products" className="mb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section id="products" className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Our Products'}</h2>
           {content && (
             <p className="text-gray-700 mb-8">{content}</p>
@@ -1001,8 +1001,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     
     if (loadingProducts) {
       return (
-        <section id="featured-products" className="mb-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <section id="featured-products" className="mb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
@@ -1014,8 +1014,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     }
     
     return (
-      <section id="featured-products" className="mb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section id="featured-products" className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
           {content && (
             <p className="text-gray-700 mb-8">{content}</p>
