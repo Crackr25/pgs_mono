@@ -88,7 +88,7 @@ class MarketplaceController extends Controller
                     'location' => $product->company->location,
                     'verified' => $product->company->verified ?? false,
                     'website' => $product->company->storefront && $product->company->storefront->is_active 
-                        ? env('FRONTEND_URL', 'http://localhost:3000') . "/store/{$product->company->storefront->slug}" 
+                        ? $this->getStorefrontUrl($product->company->storefront)
                         : null,
                 ],
                 'created_at' => $product->created_at,
@@ -258,7 +258,7 @@ class MarketplaceController extends Controller
                     'response_time' => '< 2 hours',
                     'about' => $product->company->description ?? 'Leading manufacturer with years of experience.',
                     'website' => $product->company->storefront && $product->company->storefront->is_active 
-                        ? env('FRONTEND_URL', 'http://localhost:3000') . "/store/{$product->company->storefront->slug}" 
+                        ? $this->getStorefrontUrl($product->company->storefront)
                         : $product->company->website,
                     'contact' => [
                         'email' => $product->company->email,
@@ -328,5 +328,21 @@ class MarketplaceController extends Controller
                 'message' => 'Failed to submit inquiry. Please try again.'
             ], 500);
         }
+    }
+
+    /**
+     * Get the storefront URL, with /homepage appended if a homepage exists
+     */
+    private function getStorefrontUrl($storefront)
+    {
+        $baseUrl = config('app.frontend_url') . "/store/{$storefront->slug}";
+        
+        // Check if storefront has a homepage (page with slug 'homepage', 'home', or 'home-page')
+        $hasHomepage = $storefront->pages()
+            ->whereIn('slug', ['homepage', 'home', 'home-page'])
+            ->where('is_visible', true)
+            ->exists();
+        
+        return $hasHomepage ? $baseUrl . '/homepage' : $baseUrl;
     }
 }
