@@ -116,7 +116,7 @@ export default function StorefrontPage() {
         {page.meta_keywords && <meta name="keywords" content={page.meta_keywords} />}
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         {/* Header Navigation */}
         <header className="bg-white shadow-sm sticky top-0 z-50">
           {/* Company Info Bar */}
@@ -389,8 +389,8 @@ function StorefrontSection({ section, primaryColor, company, products }) {
   if (section_type === 'hero') {
     if (parsedImages && parsedImages.length > 0) {
       return (
-        <section className="mb-0">
-          <div className="relative h-96 md:h-[500px] overflow-hidden">
+        <section className="mb-16 w-full">
+          <div className="relative h-96 md:h-[600px] overflow-hidden w-full">
             {parsedImages.map((img, idx) => (
               <div
                 key={idx}
@@ -417,16 +417,22 @@ function StorefrontSection({ section, primaryColor, company, products }) {
             {parsedImages.length > 1 && (
               <>
                 <button
-                  onClick={() => setCurrentSlide((prev) => (prev - 1 + parsedImages.length) % parsedImages.length)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide((prev) => (prev - 1 + parsedImages.length) % parsedImages.length);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 <button
-                  onClick={() => setCurrentSlide((prev) => (prev + 1) % parsedImages.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide((prev) => (prev + 1) % parsedImages.length);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -436,11 +442,14 @@ function StorefrontSection({ section, primaryColor, company, products }) {
             )}
             
             {parsedImages.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 {parsedImages.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setCurrentSlide(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentSlide(idx);
+                    }}
                     className={`w-3 h-3 rounded-full transition ${
                       idx === currentSlide ? 'bg-white' : 'bg-white bg-opacity-50'
                     }`}
@@ -456,10 +465,12 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'about') {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-3xl font-bold mb-6">{title || 'About Us'}</h2>
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h2 className="text-3xl font-bold mb-6">{title || 'About Us'}</h2>
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
+          </div>
         </div>
       </section>
     );
@@ -467,10 +478,12 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'text') {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          {title && <h2 className="text-3xl font-bold mb-6 text-gray-900">{title}</h2>}
-          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-lg">{content}</p>
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-lg shadow-sm p-8">
+            {title && <h2 className="text-3xl font-bold mb-6 text-gray-900">{title}</h2>}
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-lg">{content}</p>
+          </div>
         </div>
       </section>
     );
@@ -478,18 +491,20 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'gallery' && parsedImages && parsedImages.length > 0) {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {title && <h2 className="text-3xl font-bold mb-6">{title}</h2>}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {parsedImages.map((img, idx) => (
-            <img 
-              key={idx}
-              src={getImageUrl(img)}
-              alt={`Gallery image ${idx + 1}`}
-              onClick={handleImageClick}
-              className="w-full h-64 object-cover rounded-lg shadow-md hover:shadow-xl transition cursor-pointer transform hover:scale-105"
-            />
-          ))}
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {title && <h2 className="text-3xl font-bold mb-6">{title}</h2>}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {parsedImages.map((img, idx) => (
+              <img 
+                key={idx}
+                src={getImageUrl(img)}
+                alt={`Gallery image ${idx + 1}`}
+                onClick={handleImageClick}
+                className="w-full h-64 object-cover rounded-lg shadow-md hover:shadow-xl transition cursor-pointer transform hover:scale-105"
+              />
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -497,20 +512,22 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'image' && parsedImages && parsedImages.length > 0) {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {title && <h2 className="text-3xl font-bold mb-6">{title}</h2>}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <img 
-            src={getImageUrl(parsedImages[0])}
-            alt={title || 'Section image'}
-            onClick={handleImageClick}
-            className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition"
-          />
-          {content && (
-            <div className="p-6">
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
-            </div>
-          )}
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {title && <h2 className="text-3xl font-bold mb-6">{title}</h2>}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <img 
+              src={getImageUrl(parsedImages[0])}
+              alt={title || 'Section image'}
+              onClick={handleImageClick}
+              className="w-full h-auto object-cover cursor-pointer hover:opacity-90 transition"
+            />
+            {content && (
+              <div className="p-6">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
     );
@@ -522,8 +539,8 @@ function StorefrontSection({ section, primaryColor, company, products }) {
     
     if (allMedia.length > 0) {
       return (
-        <section className="mb-0">
-          <div className="relative h-96 md:h-[500px] overflow-hidden bg-gray-900">
+        <section className="mb-16 w-full">
+          <div className="relative h-96 md:h-[600px] overflow-hidden bg-gray-900 w-full">
             {allMedia.map((media, idx) => {
               const isVideo = videos.includes(media);
               
@@ -568,7 +585,10 @@ function StorefrontSection({ section, primaryColor, company, products }) {
             {allMedia.length > 1 && (
               <>
                 <button
-                  onClick={() => setCurrentSlide((prev) => (prev - 1 + allMedia.length) % allMedia.length)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide((prev) => (prev - 1 + allMedia.length) % allMedia.length);
+                  }}
                   className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -576,7 +596,10 @@ function StorefrontSection({ section, primaryColor, company, products }) {
                   </svg>
                 </button>
                 <button
-                  onClick={() => setCurrentSlide((prev) => (prev + 1) % allMedia.length)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide((prev) => (prev + 1) % allMedia.length);
+                  }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,7 +611,10 @@ function StorefrontSection({ section, primaryColor, company, products }) {
                   {allMedia.map((_, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setCurrentSlide(idx)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentSlide(idx);
+                      }}
                       className={`w-3 h-3 rounded-full transition ${
                         idx === currentSlide ? 'bg-white' : 'bg-white bg-opacity-50'
                       }`}
@@ -610,95 +636,16 @@ function StorefrontSection({ section, primaryColor, company, products }) {
     const displayProducts = productsLimit === 0 ? availableProducts : availableProducts.slice(0, productsLimit);
     
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-3xl font-bold mb-8">{title || 'Our Products'}</h2>
-        {content && (
-          <p className="text-gray-600 mb-6">{content}</p>
-        )}
-        
-        {displayProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {displayProducts.map((product) => {
-              const productImage = product.main_image?.image_path 
-                ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.main_image.image_path}`
-                : product.images?.[0]?.image_path
-                  ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.images[0].image_path}`
-                  : null;
-
-              return (
-                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
-                  {productImage ? (
-                    <img 
-                      src={productImage}
-                      alt={product.name}
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-400">No image</span>
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-2 truncate">{product.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{product.category}</p>
-                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">{product.description || product.specs}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold" style={{ color: primaryColor }}>
-                        ${product.price}
-                      </span>
-                      <span className="text-xs text-gray-500">MOQ: {product.moq}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p className="text-lg font-semibold mb-2">No products available</p>
-            <p className="text-sm">Add products to your catalog to display them here</p>
-          </div>
-        )}
-        
-        {productsLimit > 0 && availableProducts.length > productsLimit && (
-          <div className="text-center mt-8">
-            <p className="text-gray-600">
-              Showing {productsLimit} of {availableProducts.length} products
-            </p>
-          </div>
-        )}
-      </section>
-    );
-  }
-
-  if (section_type === 'featured_products') {
-    // Manual selection of specific products
-    if (loadingProducts) {
-      return (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h2 className="text-3xl font-bold mb-8">{title || 'Featured Products'}</h2>
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
-            <p className="text-gray-600 mt-2">Loading products...</p>
-          </div>
-        </section>
-      );
-    }
-    
-    return (
-      <>
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h2 className="text-3xl font-bold mb-8">{title || 'Featured Products'}</h2>
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Our Products'}</h2>
           {content && (
-            <p className="text-gray-600 mb-6">{content}</p>
+            <p className="text-gray-700 mb-8">{content}</p>
           )}
           
-          {featuredProducts.length > 0 ? (
+          {displayProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => {
+              {displayProducts.map((product) => {
                 const productImage = product.main_image?.image_path 
                   ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.main_image.image_path}`
                   : product.images?.[0]?.image_path
@@ -706,28 +653,26 @@ function StorefrontSection({ section, primaryColor, company, products }) {
                     : null;
 
                 return (
-                  <div 
-                    key={product.id} 
-                    onClick={() => setSelectedProductId(product.id)}
-                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition cursor-pointer"
-                  >
+                  <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group cursor-pointer" onClick={() => window.open(`/buyer/products/${product.id}`, '_blank')}>
                     {productImage ? (
                       <img 
                         src={productImage}
                         alt={product.name}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400">No image</span>
+                      <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
+                        <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
                     )}
                     <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-2 truncate">{product.name}</h3>
+                      <h3 className="font-semibold text-lg mb-2 line-clamp-1">{product.name}</h3>
                       <p className="text-sm text-gray-600 mb-2">{product.category}</p>
                       <p className="text-sm text-gray-500 mb-3 line-clamp-2">{product.description || product.specs}</p>
                       <div className="flex justify-between items-center">
-                        <span className="font-bold" style={{ color: primaryColor }}>
+                        <span className="font-bold text-lg" style={{ color: primaryColor }}>
                           ${product.price}
                         </span>
                         <span className="text-xs text-gray-500">MOQ: {product.moq}</span>
@@ -742,13 +687,64 @@ function StorefrontSection({ section, primaryColor, company, products }) {
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
+              <p className="text-lg font-semibold mb-2">No products available</p>
+              <p className="text-sm">Add products to your catalog to display them here</p>
+            </div>
+          )}
+          
+          {productsLimit > 0 && availableProducts.length > productsLimit && (
+            <div className="text-center mt-8">
+              <p className="text-gray-700">
+                Showing {productsLimit} of {availableProducts.length} products
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  if (section_type === 'featured_products') {
+    // Manual selection of specific products
+    if (loadingProducts) {
+      return (
+        <section className="mb-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
+              <p className="text-gray-700 mt-2">Loading products...</p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+    
+    return (
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
+          {content && (
+            <p className="text-gray-700 mb-8">{content}</p>
+          )}
+          
+          {featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} primaryColor={primaryColor} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
               <p className="text-lg font-semibold mb-2">No products selected</p>
               <p className="text-sm">Please select products to feature in the page builder</p>
             </div>
           )}
-        </section>
-
-      </>
+        </div>
+      </section>
     );
   }
 
@@ -790,7 +786,7 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
     return (
       <section 
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${paddingClass} ${bgImage ? 'relative' : ''}`}
+        className={`mb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${paddingClass} ${bgImage ? 'relative' : ''}`}
         style={backgroundStyle}
       >
         {bgImage && <div className="absolute inset-0 bg-black bg-opacity-30"></div>}
@@ -838,4 +834,140 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   // Render nothing extra - navigation happens via router.push
   return null;
+}
+
+// Component to render individual product card with image carousel
+function ProductCard({ product, primaryColor }) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = product.images || [];
+  const hasMultipleImages = images.length > 1;
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  // Use the SAME working pattern - check main_image first, then images array
+  const productImage = product.main_image?.image_path 
+    ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.main_image.image_path}`
+    : product.images?.[currentImageIndex]?.image_path
+      ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.images[currentImageIndex].image_path}`
+      : null;
+
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group">
+      <div className="relative h-48 bg-gray-100 overflow-hidden">
+        {productImage ? (
+          <>
+            <img 
+              src={productImage}
+              alt={`${product.name} - Image ${currentImageIndex + 1}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+              onClick={() => window.open(`/buyer/products/${product.id}`, '_blank')}
+              onError={(e) => {
+                console.error('❌ Image failed to load:', productImage);
+                e.target.style.display = 'none';
+                e.target.parentElement.querySelector('.fallback-icon')?.classList.remove('hidden');
+              }}
+            />
+            <div className="fallback-icon hidden w-full h-full absolute inset-0 flex items-center justify-center text-gray-400">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            
+            {/* Image navigation arrows for multiple images */}
+            {hasMultipleImages && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Previous image"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Next image"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+            
+            {/* Image counter badge */}
+            {hasMultipleImages && (
+              <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                {currentImageIndex + 1}/{images.length}
+              </div>
+            )}
+            
+            {/* Dot indicators for multiple images */}
+            {hasMultipleImages && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(idx);
+                    }}
+                    className={`w-2 h-2 rounded-full transition ${
+                      idx === currentImageIndex 
+                        ? 'bg-white' 
+                        : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+                    }`}
+                    aria-label={`Go to image ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-4">
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+        {product.description && (
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+        )}
+        <div className="flex items-center justify-between">
+          <div>
+            {product.price && (
+              <p className="text-lg font-bold" style={{ color: primaryColor }}>
+                ${parseFloat(product.price).toFixed(2)}
+              </p>
+            )}
+          </div>
+          <button 
+            className="px-4 py-2 rounded text-white text-sm font-semibold hover:opacity-90 transition"
+            style={{ backgroundColor: primaryColor }}
+            onClick={() => window.open(`/buyer/products/${product.id}`, '_blank')}
+          >
+            View Details
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

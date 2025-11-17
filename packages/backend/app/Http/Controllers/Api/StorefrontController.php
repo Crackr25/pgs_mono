@@ -86,6 +86,7 @@ class StorefrontController extends Controller
 
         $validated = $request->validate([
             'theme_id' => 'nullable|exists:storefront_themes,id',
+            'landing_page_id' => 'nullable|exists:storefront_pages,id',
             'tagline' => 'nullable|string|max:255',
             'about_us' => 'nullable|string',
             'primary_color' => 'nullable|string|max:7',

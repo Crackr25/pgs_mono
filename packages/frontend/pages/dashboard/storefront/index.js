@@ -7,6 +7,7 @@ export default function StorefrontBuilder() {
   const [storefront, setStorefront] = useState(null);
   const [loading, setLoading] = useState(true);
   const [themes, setThemes] = useState([]);
+  const [pages, setPages] = useState([]);
   const [formData, setFormData] = useState({
     tagline: '',
     about_us: '',
@@ -14,12 +15,14 @@ export default function StorefrontBuilder() {
     secondary_color: '#000000',
     accent_color: '#333333',
     theme_id: null,
+    landing_page_id: null,
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchStorefront();
     fetchThemes();
+    fetchPages();
   }, []);
 
   const fetchStorefront = async () => {
@@ -39,6 +42,7 @@ export default function StorefrontBuilder() {
           secondary_color: response.data.secondary_color,
           accent_color: response.data.accent_color,
           theme_id: response.data.theme_id,
+          landing_page_id: response.data.landing_page_id || null,
         });
       } else {
         console.log('No storefront found (data is null or empty)');
@@ -61,6 +65,16 @@ export default function StorefrontBuilder() {
     }
   };
 
+  const fetchPages = async () => {
+    try {
+      const response = await storefrontAPI.getPages();
+      setPages(response.data || []);
+    } catch (error) {
+      console.error('Error fetching pages:', error);
+      setPages([]);
+    }
+  };
+
   const handleCreate = async () => {
     try {
       setSaving(true);
@@ -77,6 +91,7 @@ export default function StorefrontBuilder() {
           secondary_color: response.data.secondary_color,
           accent_color: response.data.accent_color,
           theme_id: response.data.theme_id,
+          landing_page_id: response.data.landing_page_id || null,
         });
       }
       
@@ -210,15 +225,22 @@ export default function StorefrontBuilder() {
             <p className="text-sm text-gray-700 mb-2">Your storefront is live at:</p>
             <div className="flex items-center gap-3">
               <a 
-                href={`/store/${storefront.slug}`}
+                href={formData.landing_page_id 
+                  ? `/store/${storefront.slug}/${pages.find(p => p.id === formData.landing_page_id)?.slug || ''}` 
+                  : `/store/${storefront.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-lg font-semibold text-blue-600 hover:underline break-all flex-1"
               >
                 {typeof window !== 'undefined' ? window.location.origin : ''}/store/{storefront.slug}
+                {formData.landing_page_id && pages.find(p => p.id === formData.landing_page_id) && (
+                  <>/{pages.find(p => p.id === formData.landing_page_id)?.slug}</>
+                )}
               </a>
               <a 
-                href={`/store/${storefront.slug}`}
+                href={formData.landing_page_id 
+                  ? `/store/${storefront.slug}/${pages.find(p => p.id === formData.landing_page_id)?.slug || ''}` 
+                  : `/store/${storefront.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition whitespace-nowrap"
@@ -226,6 +248,11 @@ export default function StorefrontBuilder() {
                 🔗 Visit Store
               </a>
             </div>
+            {formData.landing_page_id && (
+              <p className="text-xs text-green-700 mt-2">
+                ✅ Landing page set: Visitors will see "{pages.find(p => p.id === formData.landing_page_id)?.title}" when clicking company name
+              </p>
+            )}
           </div>
 
           {/* Edit Form */}
@@ -300,6 +327,28 @@ export default function StorefrontBuilder() {
                   </select>
                 </div>
               )}
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Landing Page (WordPress-style) 
+                  <span className="ml-2 text-xs text-gray-500">🏠 Homepage redirect</span>
+                </label>
+                <select
+                  className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={formData.landing_page_id || ''}
+                  onChange={(e) => handleInputChange('landing_page_id', e.target.value ? parseInt(e.target.value) : null)}
+                >
+                  <option value="">No landing page (show default homepage)</option>
+                  {pages.map((page) => (
+                    <option key={page.id} value={page.id}>
+                      {page.title} ({page.slug})
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-600">
+                  When visitors click your company name, they'll go to: /store/{storefront?.slug}/{pages.find(p => p.id === formData.landing_page_id)?.slug || ''}
+                </p>
+              </div>
 
               <button 
                 onClick={handleUpdate}

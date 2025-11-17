@@ -141,20 +141,29 @@ export const getImageUrl = (path) => {
   
   // Handle object with path property (for product images: {id, image_path, ...} or {id, path, ...})
   if (typeof path === 'object') {
+    // Check if the object has image_url (from Laravel accessor) first
+    if (path.image_url) {
+      // Remove double slashes from the URL (except after protocol)
+      return path.image_url.replace(/([^:]\/)\/+/g, '$1');
+    }
     path = path.image_path || path.path || path;
   }
   
   // Convert to string if it's not already
   path = String(path);
   
-  // If already a full URL, return as-is
+  // If already a full URL, clean up double slashes and return
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
+    // Remove double slashes except after protocol (https://)
+    return path.replace(/([^:]\/)\/+/g, '$1');
   }
   
   // Clean up any malformed paths that might contain domain fragments
   // Remove any leading domain-like patterns (e.g., ".pinoyglobalsupply.com/api/")
   path = path.replace(/^\.?[^\/]*pinoyglobalsupply\.com\/?(api\/)?/, '');
+  
+  // Remove any double slashes in storage path
+  path = path.replace(/^\/+storage\//, 'storage/');
   
   // Remove any leading "storage/" if it exists (we'll add it back)
   path = path.replace(/^storage\//, '');
@@ -168,5 +177,7 @@ export const getImageUrl = (path) => {
   // Ensure storage URL doesn't end with slash and path doesn't start with slash
   const cleanStorageUrl = storageUrl.replace(/\/$/, '');
   
-  return `${cleanStorageUrl}/${path}`;
+  // Construct final URL and remove any double slashes
+  const finalUrl = `${cleanStorageUrl}/${path}`;
+  return finalUrl.replace(/([^:]\/)\/+/g, '$1');
 };

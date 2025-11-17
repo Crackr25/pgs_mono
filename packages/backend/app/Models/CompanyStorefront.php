@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 class CompanyStorefront extends Model
 {
     protected $fillable = [
-        'company_id', 'slug', 'theme_id', 'banner_image', 'tagline', 'about_us',
+        'company_id', 'slug', 'theme_id', 'landing_page_id', 'banner_image', 'tagline', 'about_us',
         'primary_color', 'secondary_color', 'accent_color', 'font_family', 
         'header_layout', 'custom_css', 'meta_title', 'meta_description', 
         'meta_keywords', 'is_active', 'show_contact_form', 'show_products', 
@@ -52,6 +52,14 @@ class CompanyStorefront extends Model
     public function pages()
     {
         return $this->hasMany(StorefrontPage::class, 'storefront_id');
+    }
+
+    /**
+     * Get the landing page for the storefront
+     */
+    public function landingPage()
+    {
+        return $this->belongsTo(StorefrontPage::class, 'landing_page_id');
     }
 
     /**

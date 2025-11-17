@@ -20,6 +20,7 @@ class PublicStorefrontController extends Controller
                 },
                 'company.user',
                 'theme',
+                'landingPage', // Include landing page relationship
                 'pages' => function($query) {
                     $query->where('is_active', true);
                 },

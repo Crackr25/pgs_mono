@@ -108,10 +108,10 @@ export default function PublicStorefront() {
 
   if (!storefront) return null;
 
-  const { company, sections, primary_color, secondary_color, banner_image, tagline, pages } = storefront;
+  const { company, sections, primary_color, secondary_color, banner_image, tagline, pages, landing_page } = storefront;
 
-  // Find the homepage - look for a page with slug 'homepage', 'home', or 'home-page'
-  const homePage = pages?.find(p => {
+  // Find the homepage - use landing_page if set, otherwise look for a page with slug 'homepage', 'home', or 'home-page'
+  const homePage = landing_page || pages?.find(p => {
     const slug = p.slug.toLowerCase();
     return slug === 'homepage' || slug === 'home' || slug === 'home-page';
   });
@@ -146,14 +146,17 @@ export default function PublicStorefront() {
         {storefront.meta_keywords && <meta name="keywords" content={storefront.meta_keywords} />}
       </Head>
 
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-white">
         {/* Header Navigation */}
         <header className="bg-white shadow-sm sticky top-0 z-50">
           {/* Company Info Bar */}
           <div className="bg-white border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+                <Link 
+                  href={landing_page ? `/store/${slug}/${landing_page.slug}` : `/store/${slug}`} 
+                  className="flex items-center space-x-4 cursor-pointer"
+                >
                   {company.logo && (
                     <img 
                       src={getImageUrl(company.logo)} 
@@ -163,9 +166,8 @@ export default function PublicStorefront() {
                   )}
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
-                    {tagline && <p className="text-sm text-gray-600">{tagline}</p>}
                   </div>
-                </div>
+                </Link>
                 <div className="hidden md:flex items-center space-x-4">
                   <button 
                     className="px-6 py-2 rounded text-white font-semibold hover:opacity-90 transition"
@@ -195,14 +197,13 @@ export default function PublicStorefront() {
                           onMouseEnter={() => setOpenDropdown(item.id)}
                           onMouseLeave={() => setOpenDropdown(null)}
                         >
-                          {/* Parent Menu Item */}
                           {item.type === 'page' ? (
                             <Link
                               href={`/store/${slug}/${item.target}`}
                               className="text-sm hover:text-gray-300 transition-colors flex items-center gap-1 cursor-pointer"
                             >
                               {item.label}
-                              {(item.show_dropdown || hasChildren) && (
+                              {hasChildren && (
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -214,7 +215,7 @@ export default function PublicStorefront() {
                               className="text-sm hover:text-gray-300 transition-colors flex items-center gap-1 cursor-pointer"
                             >
                               {item.label}
-                              {(item.show_dropdown || hasChildren) && (
+                              {hasChildren && (
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -228,7 +229,7 @@ export default function PublicStorefront() {
                               className="text-sm hover:text-gray-300 transition-colors flex items-center gap-1 cursor-pointer"
                             >
                               {item.label}
-                              {(item.show_dropdown || hasChildren) && (
+                              {hasChildren && (
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -368,7 +369,7 @@ export default function PublicStorefront() {
 
         {/* Sections - Only show old homepage sections if they exist */}
         {sortedSections.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div>
             {sortedSections.map((section) => (
               <StorefrontSection 
                 key={section.id} 
@@ -461,8 +462,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     // If has images, show as carousel/slider
     if (images && images.length > 0) {
       return (
-        <section className="mb-0 -mt-12">
-          <div className="relative h-96 md:h-[500px] overflow-hidden">
+        <section className="mb-0 -mt-12 w-full">
+          <div className="relative h-96 md:h-[600px] overflow-hidden w-full">
             {/* Slides */}
             {images.map((img, idx) => (
               <div
@@ -491,16 +492,22 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
             {images.length > 1 && (
               <>
                 <button
-                  onClick={() => setCurrentSlide((prev) => (prev - 1 + images.length) % images.length)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide((prev) => (prev - 1 + images.length) % images.length);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 <button
-                  onClick={() => setCurrentSlide((prev) => (prev + 1) % images.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide((prev) => (prev + 1) % images.length);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -511,11 +518,14 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
             
             {/* Dots indicator */}
             {images.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 {images.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setCurrentSlide(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentSlide(idx);
+                    }}
                     className={`w-3 h-3 rounded-full transition ${
                       idx === currentSlide ? 'bg-white' : 'bg-white bg-opacity-50'
                     }`}
@@ -621,8 +631,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     if (slides.length === 0) return null;
     
     return (
-      <section className="mb-0 -mt-12">
-        <div className="relative h-96 md:h-[500px] overflow-hidden bg-black">
+      <section className="mb-0 -mt-12 w-full">
+        <div className="relative h-96 md:h-[600px] overflow-hidden bg-black w-full">
           {/* Slides */}
           {slides.map((slide, idx) => (
             <div
@@ -674,7 +684,10 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
           {slides.length > 1 && (
             <>
               <button
-                onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+                }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -682,7 +695,10 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
                 </svg>
               </button>
               <button
-                onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentSlide((prev) => (prev + 1) % slides.length);
+                }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition z-10"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -698,7 +714,10 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
               {slides.map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setCurrentSlide(idx)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlide(idx);
+                  }}
                   className={`w-3 h-3 rounded-full transition ${
                     idx === currentSlide ? 'bg-white' : 'bg-white bg-opacity-50'
                   }`}
@@ -718,10 +737,12 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
 
   if (section_type === 'about') {
     return (
-      <section id="about" className="mb-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
+      <section id="about" className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-3xl font-bold mb-6 text-gray-900">{title || 'About Us'}</h2>
-          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
+          </div>
         </div>
       </section>
     );
@@ -729,16 +750,18 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
 
   if (section_type === 'heading') {
     return (
-      <section className="mb-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-900" style={{ color: primaryColor }}>
-            {title}
-          </h2>
-          {content && (
-            <p className="text-xl text-center text-gray-700 max-w-3xl mx-auto">
-              {content}
-            </p>
-          )}
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-900" style={{ color: primaryColor }}>
+              {title}
+            </h2>
+            {content && (
+              <p className="text-xl text-center text-gray-700 max-w-3xl mx-auto">
+                {content}
+              </p>
+            )}
+          </div>
         </div>
       </section>
     );
@@ -771,34 +794,36 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
         };
 
     return (
-      <section className="mb-8">
-        <div className="bg-white shadow-md p-8" style={backgroundStyle}>
-          {bgImage && <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg"></div>}
-          <div className={`${bgImage ? 'relative z-10' : ''} ${textAlign === 'center' ? 'mx-auto' : ''}`}>
-            {title && (
-              <h2 
-                className="text-3xl font-bold mb-6"
-                style={{ 
-                  color: textColor,
-                  textAlign: textAlign,
-                  fontWeight: fontWeight
-                }}
-              >
-                {title}
-              </h2>
-            )}
-            {content && (
-              <div 
-                className="prose prose-lg max-w-none"
-                style={{ 
-                  color: textColor,
-                  fontSize: fontSize,
-                  textAlign: textAlign,
-                  fontWeight: fontWeight
-                }}
-                dangerouslySetInnerHTML={{ __html: content }}
-              />
-            )}
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white shadow-md p-8" style={backgroundStyle}>
+            {bgImage && <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg"></div>}
+            <div className={`${bgImage ? 'relative z-10' : ''} ${textAlign === 'center' ? 'mx-auto' : ''}`}>
+              {title && (
+                <h2 
+                  className="text-3xl font-bold mb-6"
+                  style={{ 
+                    color: textColor,
+                    textAlign: textAlign,
+                    fontWeight: fontWeight
+                  }}
+                >
+                  {title}
+                </h2>
+              )}
+              {content && (
+                <div 
+                  className="prose prose-lg max-w-none"
+                  style={{ 
+                    color: textColor,
+                    fontSize: fontSize,
+                    textAlign: textAlign,
+                    fontWeight: fontWeight
+                  }}
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -807,8 +832,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
 
   if (section_type === 'gallery' && images && images.length > 0) {
     return (
-      <section className="mb-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
+      <section className="mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-3xl font-bold mb-6 text-gray-900">{title || 'Gallery'}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {images.map((img, idx) => (
@@ -893,12 +918,21 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     const productsLimit = settings?.products_limit || 8;
     const displayProducts = productsLimit === 0 ? products : products.slice(0, productsLimit);
     
+    // Debug logging for products_showcase
+    console.log('🛍️ Products Showcase Debug:', {
+      totalProducts: products.length,
+      displayCount: displayProducts.length,
+      firstProduct: displayProducts[0],
+      firstProductImages: displayProducts[0]?.images,
+      firstProductMainImage: displayProducts[0]?.main_image
+    });
+    
     return (
-      <section id="products" className="mb-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
+      <section id="products" className="mb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Our Products'}</h2>
           {content && (
-            <p className="text-gray-700 mb-6">{content}</p>
+            <p className="text-gray-700 mb-8">{content}</p>
           )}
           
           {displayProducts.length > 0 ? (
@@ -908,7 +942,7 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
               ))}
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-12 text-center text-gray-500">
+            <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
@@ -967,8 +1001,8 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     
     if (loadingProducts) {
       return (
-        <section id="featured-products" className="mb-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
+        <section id="featured-products" className="mb-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
@@ -980,11 +1014,11 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
     }
     
     return (
-      <section id="featured-products" className="mb-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">{title || 'Featured Products'}</h2>
+      <section id="featured-products" className="mb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
           {content && (
-            <p className="text-gray-700 mb-6">{content}</p>
+            <p className="text-gray-700 mb-8">{content}</p>
           )}
         
           {featuredProducts.length > 0 ? (
@@ -994,7 +1028,7 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
               ))}
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-12 text-center text-gray-500">
+            <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
@@ -1082,6 +1116,16 @@ function ProductCard({ product, primaryColor }) {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const images = product.images || [];
   const hasMultipleImages = images.length > 1;
+  
+  // Debug logging
+  console.log('🖼️ ProductCard Debug:', {
+    productName: product.name,
+    productId: product.id,
+    imagesCount: images.length,
+    images: images,
+    firstImage: images[0],
+    imageUrl: images[0] ? getImageUrl(images[0]) : 'No images'
+  });
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -1091,18 +1135,25 @@ function ProductCard({ product, primaryColor }) {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  // Use the SAME working pattern as [page].js - check main_image first, then images array
+  const productImage = product.main_image?.image_path 
+    ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.main_image.image_path}`
+    : product.images?.[currentImageIndex]?.image_path
+      ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.images[currentImageIndex].image_path}`
+      : null;
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group">
       <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {images.length > 0 ? (
+        {productImage ? (
           <>
             <img 
-              src={getImageUrl(images[currentImageIndex])}
+              src={productImage}
               alt={`${product.name} - Image ${currentImageIndex + 1}`}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
               onClick={() => window.open(`/buyer/products/${product.id}`, '_blank')}
               onError={(e) => {
-                console.error('Image failed to load:', getImageUrl(images[currentImageIndex]));
+                console.error('❌ Image failed to load:', productImage);
                 e.target.style.display = 'none';
                 e.target.parentElement.querySelector('.fallback-icon')?.classList.remove('hidden');
               }}
