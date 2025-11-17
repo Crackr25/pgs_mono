@@ -147,12 +147,26 @@ export const getImageUrl = (path) => {
   // Convert to string if it's not already
   path = String(path);
   
-  if (path.startsWith('http')) return path;
+  // If already a full URL, return as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
   
-  // For cloud/production: API_URL is https://api.pinoyglobalsupply.com/api
-  // Storage URL should be https://api.pinoyglobalsupply.com/storage/
-  // For local: API_URL is http://localhost:8000/api
-  // Storage URL should be http://localhost:8000/storage/
-  const baseUrl = API_URL.replace('/api', '');
-  return `${baseUrl}/storage/${path}`;
+  // Clean up any malformed paths that might contain domain fragments
+  // Remove any leading domain-like patterns (e.g., ".pinoyglobalsupply.com/api/")
+  path = path.replace(/^\.?[^\/]*pinoyglobalsupply\.com\/?(api\/)?/, '');
+  
+  // Remove any leading "storage/" if it exists (we'll add it back)
+  path = path.replace(/^storage\//, '');
+  
+  // Remove any leading slashes
+  path = path.replace(/^\/+/, '');
+  
+  // Use NEXT_PUBLIC_STORAGE_URL if available, otherwise construct from API_URL
+  const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || API_URL.replace('/api', '') + '/storage';
+  
+  // Ensure storage URL doesn't end with slash and path doesn't start with slash
+  const cleanStorageUrl = storageUrl.replace(/\/$/, '');
+  
+  return `${cleanStorageUrl}/${path}`;
 };
