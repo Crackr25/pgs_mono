@@ -1135,11 +1135,11 @@ function ProductCard({ product, primaryColor }) {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  // Use the SAME working pattern as [page].js - check main_image first, then images array
-  const productImage = product.main_image?.image_path 
-    ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.main_image.image_path}`
-    : product.images?.[currentImageIndex]?.image_path
-      ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${product.images[currentImageIndex].image_path}`
+  // Use getImageUrl helper function to construct proper image URLs
+  const productImage = product.main_image 
+    ? getImageUrl(product.main_image)
+    : product.images?.[currentImageIndex]
+      ? getImageUrl(product.images[currentImageIndex])
       : null;
 
   return (
