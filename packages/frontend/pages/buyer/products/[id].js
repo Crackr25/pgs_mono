@@ -48,6 +48,34 @@ import { useLoginPrompt } from '../../../hooks/useLoginPrompt';
 import apiService from '../../../lib/api';
 import { getImageUrl } from '../../../lib/imageUtils';
 
+// Helper function to get the correct company website URL
+const getCompanyWebsiteUrl = (companyWebsite) => {
+  if (!companyWebsite) return null;
+  
+  // If it's a localhost URL, convert it to production URL
+  if (companyWebsite.includes('localhost')) {
+    // Extract the path from localhost URL (e.g., /store/anrabess)
+    const urlObj = new URL(companyWebsite);
+    const path = urlObj.pathname;
+    
+    // Use the current domain (production or staging)
+    return `${window.location.origin}${path}`;
+  }
+  
+  // If it's already a full URL with http/https, return as is
+  if (companyWebsite.startsWith('http://') || companyWebsite.startsWith('https://')) {
+    return companyWebsite;
+  }
+  
+  // If it's a relative path, prepend current domain
+  if (companyWebsite.startsWith('/')) {
+    return `${window.location.origin}${companyWebsite}`;
+  }
+  
+  // Otherwise, assume it's an external domain and add https
+  return `https://${companyWebsite}`;
+};
+
 export default function ProductDetail() {
   const router = useRouter();
   const { id } = router.query;
@@ -697,13 +725,13 @@ Product Link: ${window.location.href}`;
                 {/* NEW LOGIC: Redirect to manufacturer's website */}
                 {product.company?.website ? (
                   <a
-                    href={product.company.website}
+                    href={getCompanyWebsiteUrl(product.company.website)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary-600 hover:text-primary-700 hover:underline font-medium transition-colors cursor-pointer"
                     title={`Visit ${product.company.name}'s website`}
                     onClick={() => {
-                      console.log('Opening manufacturer website:', product.company.website);
+                      console.log('Opening manufacturer website:', getCompanyWebsiteUrl(product.company.website));
                     }}
                   >
                     {product.company.name}
@@ -1127,13 +1155,13 @@ Product Link: ${window.location.href}`;
                       {/* NEW LOGIC: Redirect to manufacturer's website */}
                       {product.company?.website ? (
                         <a
-                          href={product.company.website}
+                          href={getCompanyWebsiteUrl(product.company.website)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-semibold text-secondary-900 hover:text-primary-600 hover:underline cursor-pointer transition-colors"
                           title={`Visit ${product.company.name}'s website`}
                           onClick={() => {
-                            console.log('Opening manufacturer website (sidebar):', product.company.website);
+                            console.log('Opening manufacturer website (sidebar):', getCompanyWebsiteUrl(product.company.website));
                           }}
                         >
                           {product.company.name}
