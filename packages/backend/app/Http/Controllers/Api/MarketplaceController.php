@@ -180,7 +180,8 @@ class MarketplaceController extends Controller
         try {
             $product = Product::with([
                 'company:user_id,id,name,location,verified,description,year_established,email,phone,website',
-                'company.storefront:id,company_id,slug,is_active',
+                'company.storefront:id,company_id,slug,is_active,landing_page_id',
+                'company.storefront.landingPage:id,slug,title',
                 'images:id,product_id,image_path,is_main,sort_order,alt_text'
             ])
             ->where('active', 1)
@@ -259,6 +260,7 @@ class MarketplaceController extends Controller
                     'about' => $product->company->description ?? 'Leading manufacturer with years of experience.',
                     'website' => $product->company->storefront && $product->company->storefront->is_active 
                         ? env('FRONTEND_URL', 'http://localhost:3000') . "/store/{$product->company->storefront->slug}" 
+                            . ($product->company->storefront->landingPage ? "/{$product->company->storefront->landingPage->slug}" : '')
                         : $product->company->website,
                     'contact' => [
                         'email' => $product->company->email,
