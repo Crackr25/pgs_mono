@@ -1141,7 +1141,6 @@ function ProductCard({ product, primaryColor }) {
     : product.images?.[currentImageIndex]
       ? getImageUrl(product.images[currentImageIndex])
       : null;
-
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group">
       <div className="relative h-48 bg-gray-100 overflow-hidden">
