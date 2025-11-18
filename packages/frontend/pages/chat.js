@@ -18,7 +18,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false);
   const { user } = useAuth();
 
   // Initialize WebSocket connection and fetch data
@@ -74,11 +74,13 @@ export default function Chat() {
       
       // Only subscribe if WebSocket connection was successful
       if (pusherInstance && userData?.id) {
+        setWsConnected(true);
         websocketService.subscribeToUserChannel(userData.id, {
           onMessageNotification: handleNewMessageNotification
         });
       } else if (!pusherInstance) {
         console.warn('WebSocket not available. Real-time features will be disabled.');
+        setWsConnected(false);
       }
 
       // Fetch conversations
@@ -110,13 +112,6 @@ export default function Chat() {
       if (response.success) {
         console.log(response.messages);
         setMessages(response.messages);
-        
-        // Update last message timestamp for polling
-        if (response.messages.length > 0) {
-          const latestMessage = response.messages[response.messages.length - 1];
-          setLastMessageTimestamp(latestMessage.created_at);
-          console.log('📅 Updated last message timestamp:', latestMessage.created_at);
-        }
         
         // Mark messages as read
         console.log('📖 Marking messages as read for conversation:', conversationId);
@@ -151,116 +146,70 @@ export default function Chat() {
     });
   };
 
-  const pollForNewMessages = async (conversationId) => {
-    if (!lastMessageTimestamp) {
-      return; // No timestamp to compare against
-    }
-    
-    try {
-      console.log('🔄 Polling for new messages since:', lastMessageTimestamp);
-      
-      // Get messages after the last timestamp
-      const response = await chatAPI.getMessagesAfter(conversationId, lastMessageTimestamp);
-      
-      if (response.success) {
-        if (response.messages && response.messages.length > 0) {
-          console.log('📨 Found', response.messages.length, 'new messages');
-          
-          // Filter out messages that already exist to prevent duplicates
-          setMessages(prev => {
-            const existingMessageIds = new Set(prev.map(msg => msg.id));
-            const newMessages = response.messages.filter(msg => !existingMessageIds.has(msg.id));
-            
-            if (newMessages.length > 0) {
-              console.log('✅ Adding', newMessages.length, 'truly new messages');
-              const updatedMessages = [...prev, ...newMessages];
-              console.log('📝 Total messages now:', updatedMessages.length);
-              return updatedMessages;
-            } else {
-              console.log('⚠️ All messages were duplicates, not adding any');
-              return prev;
-            }
-          });
-          
-          // Update last message timestamp only if we have new messages
-          const latestMessage = response.messages[response.messages.length - 1];
-          if (latestMessage.created_at > lastMessageTimestamp) {
-            setLastMessageTimestamp(latestMessage.created_at);
-            console.log('📅 Updated timestamp to:', latestMessage.created_at);
-          }
-          
-          // Mark new messages as read if user is viewing this conversation
-          const newMessageIds = response.messages.map(msg => msg.id);
-          await chatAPI.markMessagesAsRead(conversationId, newMessageIds);
-          
-          // Update conversations list with latest message
-          const latestMessageData = response.messages[response.messages.length - 1];
-          setConversations(prev => 
-            prev.map(conv => {
-              if (conv.id === conversationId) {
-                return {
-                  ...conv,
-                  latest_message: {
-                    message: latestMessageData.message,
-                    sender_id: latestMessageData.sender_id,
-                    created_at: latestMessageData.created_at
-                  },
-                  last_message_at: latestMessageData.created_at
-                };
-              }
-              return conv;
-            })
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Failed to poll for new messages:', error);
-    }
-  };
 
-  const handleNewMessage = useCallback((messageData) => {
-    console.log('🔔 handleNewMessage called with:', messageData);
+  const handleNewMessage = useCallback((data) => {
+    console.log('🔔 Real-time message received:', data);
     console.log('📋 Current selected conversation:', selectedConversation?.id);
     
-    // Add message to current conversation if it matches
-    if (selectedConversation && messageData.conversation_id === selectedConversation.id) {
-      console.log('✅ Adding message to current conversation');
-      setMessages(prev => {
-        const newMessages = [...prev, messageData];
-        console.log('📝 Updated messages count:', newMessages.length);
-        return newMessages;
-      });
+    // Handle different message structures from WebSocket
+    let messageData = data.message || data; // Support both wrapped and direct message format
+    
+    console.log('📋 Message data:', messageData);
+    console.log('📋 Message conversation_id:', messageData.conversation_id);
+    console.log('📋 Current conversation id:', selectedConversation?.id);
+    
+    // Check if message is from current conversation
+    if (messageData && selectedConversation && messageData.conversation_id === selectedConversation.id) {
+      console.log('✅ Message matches current conversation, adding to messages');
       
+      // Check if message already exists to prevent duplicates
+      setMessages(prev => {
+        const messageExists = prev.some(msg => msg.id === messageData.id);
+        if (!messageExists) {
+          console.log('✅ Adding new real-time message to conversation');
+          console.log('📝 Message content:', messageData.message);
+          return [...prev, messageData];
+        } else {
+          console.log('⚠️ Message already exists, skipping duplicate');
+          return prev;
+        }
+      });
+
       // Mark as read if the user is viewing this conversation
       if (messageData.receiver_id === currentUser?.id) {
         console.log('📖 Marking message as read');
         chatAPI.markMessagesAsRead(messageData.conversation_id, [messageData.id]);
       }
     } else {
-      console.log('⚠️ Message not added - conversation mismatch or no selected conversation');
+      console.log('⚠️ Message not added - reason:');
+      console.log('   - Has messageData:', !!messageData);
+      console.log('   - Has selectedConversation:', !!selectedConversation);
+      console.log('   - Conversation IDs match:', messageData?.conversation_id === selectedConversation?.id);
     }
     
     // Update conversations list
-    setConversations(prev => 
-      prev.map(conv => {
-        if (conv.id === messageData.conversation_id) {
-          return {
-            ...conv,
-            latest_message: {
-              message: messageData.message,
-              sender_id: messageData.sender_id,
-              created_at: messageData.created_at
-            },
-            last_message_at: messageData.created_at,
-            unread_count: messageData.receiver_id === currentUser?.id && 
-                         (!selectedConversation || selectedConversation.id !== messageData.conversation_id)
-                         ? conv.unread_count + 1 
-                         : conv.unread_count
-          };
-        }
-        return conv;
-      })
-    );
+    if (messageData) {
+      setConversations(prev => 
+        prev.map(conv => {
+          if (conv.id === messageData.conversation_id) {
+            return {
+              ...conv,
+              latest_message: {
+                message: messageData.message,
+                sender_id: messageData.sender_id,
+                created_at: messageData.created_at
+              },
+              last_message_at: messageData.created_at,
+              unread_count: messageData.receiver_id === currentUser?.id && 
+                           (!selectedConversation || selectedConversation.id !== messageData.conversation_id)
+                           ? conv.unread_count + 1 
+                           : conv.unread_count
+            };
+          }
+          return conv;
+        })
+      );
+    }
   }, [selectedConversation, currentUser]);
 
   const handleNewMessageNotification = useCallback((messageData) => {
@@ -268,8 +217,11 @@ export default function Chat() {
     if (!selectedConversation || messageData.conversation_id !== selectedConversation.id) {
       // Show browser notification if supported
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`New message from ${messageData.sender.name}`, {
-          body: messageData.message,
+        const senderName = messageData.sender?.name || messageData.message?.sender?.name || 'Someone';
+        const messageText = messageData.message?.message || messageData.message || 'New message';
+        
+        new Notification(`New message from ${senderName}`, {
+          body: messageText,
           icon: '/favicon.ico'
         });
       }
@@ -289,19 +241,15 @@ export default function Chat() {
       if (response.success) {
         console.log('Message sent successfully');
         
-        // Immediately add the sent message to prevent polling duplicates
+        // Immediately add the sent message for instant UI update
         setMessages(prev => {
           const messageExists = prev.some(msg => msg.id === response.message.id);
           if (!messageExists) {
-            console.log('✅ Adding sent message to local state');
+            console.log('✅ Adding sent message to local state immediately');
             return [...prev, response.message];
           }
           return prev;
         });
-        
-        // Update timestamp to prevent polling from fetching this message again
-        setLastMessageTimestamp(response.message.created_at);
-        console.log('📅 Updated timestamp after sending message:', response.message.created_at);
         
         // Update conversations list
         setConversations(prev => 

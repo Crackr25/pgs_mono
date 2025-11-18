@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getImageUrl } from '../../lib/imageUtils';
 import apiService from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import websocketService from '../../lib/websocket';
 
 export default function SimpleFloatingChat({ 
   isOpen, 
@@ -22,6 +23,8 @@ export default function SimpleFloatingChat({
   const [showSidebar, setShowSidebar] = useState(true);
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
   const [pollingInterval, setPollingInterval] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [currentChannel, setCurrentChannel] = useState(null);
   
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
@@ -37,48 +40,214 @@ export default function SimpleFloatingChat({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Initialize conversations when modal opens
+  // Initialize WebSocket connection and conversations when modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
+      // Initialize WebSocket connection
+      initializeWebSocket();
       loadConversations();
       if (product) {
         initializeConversation();
       }
+    } else if (!isOpen) {
+      // Clean up WebSocket connection when modal closes
+      cleanupWebSocket();
     }
-  }, [isOpen, product]);
+  }, [isOpen, product, user]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Start polling when a conversation is selected
+  // Subscribe to WebSocket conversation channel when a conversation is selected
   useEffect(() => {
-    if (conversation && conversation.id && user) {
-      // Clear any existing polling interval
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+    if (conversation && conversation.id && user && wsConnected) {
+      subscribeToConversation(conversation.id);
+    } else if (!conversation || !conversation.id) {
+      // Unsubscribe from current channel if no conversation
+      if (currentChannel) {
+        websocketService.unsubscribeFromConversation(currentChannel);
+        setCurrentChannel(null);
       }
-      
-      // Start polling for new messages every 2 seconds
-      const interval = setInterval(() => {
-        pollForNewMessages(conversation.id);
-      }, 2000);
-      
-      setPollingInterval(interval);
     }
     
     return () => {
-      // Clean up polling interval
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
+      // Clean up WebSocket subscription
+      if (currentChannel) {
+        websocketService.unsubscribeFromConversation(currentChannel);
+        setCurrentChannel(null);
       }
     };
-  }, [conversation, user]);
+  }, [conversation, user, wsConnected]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      // Clean up WebSocket connections and polling when component unmounts
+      if (currentChannel) {
+        websocketService.unsubscribeFromConversation(currentChannel);
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const initializeWebSocket = async () => {
+    try {
+      // Get auth token from localStorage or API service
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.warn('No auth token found, cannot initialize WebSocket');
+        return;
+      }
+
+      console.log('🔌 Initializing WebSocket connection...');
+      const pusherInstance = websocketService.connect(token);
+      
+      if (pusherInstance) {
+        console.log('✅ WebSocket service connected successfully');
+        setWsConnected(true);
+        
+        // Add connection event listeners for debugging
+        pusherInstance.connection.bind('connected', () => {
+          console.log('🔗 Pusher connection established');
+        });
+        
+        pusherInstance.connection.bind('disconnected', () => {
+          console.log('❌ Pusher connection lost');
+          setWsConnected(false);
+        });
+        
+        pusherInstance.connection.bind('error', (error) => {
+          console.error('❌ Pusher connection error:', error);
+          setWsConnected(false);
+        });
+      } else {
+        console.error('❌ Failed to initialize WebSocket service');
+        setWsConnected(false);
+      }
+    } catch (error) {
+      console.error('Failed to initialize WebSocket:', error);
+      setWsConnected(false);
+    }
+  };
+
+  const cleanupWebSocket = () => {
+    console.log('🧹 Cleaning up WebSocket connection...');
+    if (currentChannel) {
+      websocketService.unsubscribeFromConversation(currentChannel);
+      setCurrentChannel(null);
+    }
+    setWsConnected(false);
+  };
+
+  const subscribeToConversation = (conversationId) => {
+    if (!conversationId || currentChannel === conversationId) {
+      return; // Already subscribed to this conversation
+    }
+
+    // Unsubscribe from previous conversation if any
+    if (currentChannel) {
+      websocketService.unsubscribeFromConversation(currentChannel);
+    }
+
+    console.log('📡 Subscribing to conversation:', conversationId);
+    
+    const channel = websocketService.subscribeToConversation(conversationId, {
+      onMessageReceived: (data) => {
+        console.log('🔔 WebSocket message received in SimpleFloatingChat:', data);
+        console.log('🔔 Message type:', typeof data);
+        console.log('🔔 Message keys:', Object.keys(data || {}));
+        handleRealTimeMessage(data);
+      },
+      onSubscribed: () => {
+        console.log('✅ Successfully subscribed to conversation:', conversationId);
+        console.log('✅ WebSocket channel active for conversation');
+      },
+      onError: (error) => {
+        console.error('❌ Failed to subscribe to conversation:', error);
+        // Fallback to polling if WebSocket fails
+        startPollingFallback(conversationId);
+      }
+    });
+
+    setCurrentChannel(conversationId);
+  };
+
+  const handleRealTimeMessage = (data) => {
+    console.log('📨 Processing real-time message:', data);
+    console.log('📋 Current conversation:', conversation);
+    console.log('📋 Data structure:', JSON.stringify(data, null, 2));
+    
+    // Handle different message structures from WebSocket
+    let messageData = data.message || data; // Support both wrapped and direct message format
+    
+    console.log('📋 Message data:', messageData);
+    console.log('📋 Message conversation_id:', messageData.conversation_id);
+    console.log('📋 Current conversation id:', conversation?.id);
+    
+    // Check if message is from current conversation
+    if (messageData && conversation && messageData.conversation_id === conversation.id) {
+      console.log('✅ Message matches current conversation, adding to messages');
+      
+      // Check if message already exists to prevent duplicates
+      setMessages(prev => {
+        const messageExists = prev.some(msg => msg.id === messageData.id);
+        if (!messageExists) {
+          console.log('✅ Adding new real-time message to conversation');
+          console.log('📝 Message content:', messageData.message);
+          return [...prev, messageData];
+        } else {
+          console.log('⚠️ Message already exists, skipping duplicate');
+          return prev;
+        }
+      });
+
+      // Update conversations list with latest message
+      setConversations(prev => 
+        prev.map(conv => {
+          if (conv.id === messageData.conversation_id) {
+            return {
+              ...conv,
+              latest_message: {
+                message: messageData.message,
+                sender_id: messageData.sender_id,
+                created_at: messageData.created_at
+              },
+              last_message_at: messageData.created_at
+            };
+          }
+          return conv;
+        })
+      );
+    } else {
+      console.log('⚠️ Message not added - reason:');
+      console.log('   - Has messageData:', !!messageData);
+      console.log('   - Has conversation:', !!conversation);
+      console.log('   - Conversation IDs match:', messageData?.conversation_id === conversation?.id);
+    }
+  };
+
+  const startPollingFallback = (conversationId) => {
+    console.log('🔄 Starting polling fallback for conversation:', conversationId);
+    
+    // Clear any existing polling interval
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+    
+    // Start polling for new messages every 3 seconds as fallback
+    const interval = setInterval(() => {
+      pollForNewMessages(conversationId);
+    }, 3000);
+    
+    setPollingInterval(interval);
   };
 
   const loadConversations = async () => {
@@ -270,18 +439,18 @@ export default function SimpleFloatingChat({
         const response = await apiService.sendBuyerMessage(messagePayload);
         
         if (response.success !== false) {
-          // Immediately add the sent message to prevent polling duplicates
+          // Immediately add the sent message to local state for instant UI update
           if (response.message) {
             setMessages(prev => {
               const messageExists = prev.some(msg => msg.id === response.message.id);
               if (!messageExists) {
-                console.log('✅ Adding sent message to local state');
+                console.log('✅ Adding sent message to local state immediately');
                 return [...prev, response.message];
               }
               return prev;
             });
             
-            // Update timestamp to prevent polling from fetching this message again
+            // Update timestamp for polling fallback
             setLastMessageTimestamp(response.message.created_at);
             console.log('📅 Updated timestamp after sending message:', response.message.created_at);
           } else {
@@ -330,7 +499,34 @@ export default function SimpleFloatingChat({
         console.log('New conversation response:', response); // Debug log
         
         if (response.success !== false) {
-          // Refresh to get the new conversation and messages
+          // Clear the message input immediately for better UX
+          setNewMessage('');
+          
+          // If we get the message back immediately, add it to state
+          if (response.message) {
+            // Create a temporary conversation object if we don't have one yet
+            if (!conversation.id) {
+              setConversation(prev => ({
+                ...prev,
+                id: response.message.conversation_id
+              }));
+            }
+            
+            // Add the sent message immediately
+            setMessages(prev => {
+              const messageExists = prev.some(msg => msg.id === response.message.id);
+              if (!messageExists) {
+                console.log('✅ Adding sent message to new conversation immediately');
+                return [...prev, response.message];
+              }
+              return prev;
+            });
+            
+            // Update timestamp
+            setLastMessageTimestamp(response.message.created_at);
+          }
+          
+          // Refresh to get the complete conversation data
           setTimeout(async () => {
             try {
               // Refresh conversations list
@@ -345,22 +541,25 @@ export default function SimpleFloatingChat({
               
               if (newConversation) {
                 setConversation(newConversation);
-                const newMessagesResponse = await apiService.getBuyerConversationMessages(newConversation.id);
-                setMessages(newMessagesResponse.messages || []);
                 
-                // Update timestamp for new conversation
-                if (newMessagesResponse.messages && newMessagesResponse.messages.length > 0) {
-                  const latestMessage = newMessagesResponse.messages[newMessagesResponse.messages.length - 1];
-                  setLastMessageTimestamp(latestMessage.created_at);
-                  console.log('📅 Updated timestamp for new conversation:', latestMessage.created_at);
+                // Only refresh messages if we didn't get them immediately
+                if (!response.message) {
+                  const newMessagesResponse = await apiService.getBuyerConversationMessages(newConversation.id);
+                  setMessages(newMessagesResponse.messages || []);
+                  
+                  // Update timestamp for new conversation
+                  if (newMessagesResponse.messages && newMessagesResponse.messages.length > 0) {
+                    const latestMessage = newMessagesResponse.messages[newMessagesResponse.messages.length - 1];
+                    setLastMessageTimestamp(latestMessage.created_at);
+                    console.log('📅 Updated timestamp for new conversation:', latestMessage.created_at);
+                  }
                 }
               }
             } catch (refreshError) {
               console.error('Error refreshing conversation:', refreshError);
             }
-          }, 1000); // Increased delay to allow backend processing
+          }, 500); // Reduced delay since we're showing the message immediately
           
-          setNewMessage('');
         } else {
           console.error('Failed to send message:', response);
         }

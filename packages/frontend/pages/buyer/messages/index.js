@@ -19,7 +19,8 @@ export default function BuyerMessages() {
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [currentChannel, setCurrentChannel] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -43,16 +44,23 @@ export default function BuyerMessages() {
 
   // Subscribe to WebSocket when conversation is selected
   useEffect(() => {
-    if (selectedConversation && user) {
+    if (selectedConversation && user && wsConnected) {
       subscribeToConversation(selectedConversation.id);
+    } else if (!selectedConversation || !selectedConversation.id) {
+      // Unsubscribe from current channel if no conversation
+      if (currentChannel) {
+        websocketService.unsubscribeFromConversation(currentChannel);
+        setCurrentChannel(null);
+      }
     }
     
     return () => {
-      if (selectedConversation) {
-        websocketService.unsubscribeFromConversation(selectedConversation.id);
+      if (currentChannel) {
+        websocketService.unsubscribeFromConversation(currentChannel);
+        setCurrentChannel(null);
       }
     };
-  }, [selectedConversation, user]);
+  }, [selectedConversation, user, wsConnected]);
 
   const fetchConversations = async () => {
     try {
@@ -73,12 +81,6 @@ export default function BuyerMessages() {
       setMessages(response.messages || []);
       setSelectedConversation(response.conversation);
       
-      // Update last message timestamp for polling
-      if (response.messages && response.messages.length > 0) {
-        const latestMessage = response.messages[response.messages.length - 1];
-        setLastMessageTimestamp(latestMessage.created_at);
-        console.log('📅 Updated last message timestamp:', latestMessage.created_at);
-      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -89,85 +91,123 @@ export default function BuyerMessages() {
   const initializeWebSocket = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      if (!token) return;
+      if (!token) {
+        console.warn('No auth token found, cannot initialize WebSocket');
+        return;
+      }
 
-      // Connect WebSocket
-      websocketService.connect(token);
+      console.log('🔌 Initializing WebSocket connection...');
+      const pusherInstance = websocketService.connect(token);
       
-      // Subscribe to user channel for notifications
-      if (user?.id) {
-        websocketService.subscribeToUserChannel(user.id, {
-          onMessageNotification: handleNewMessageNotification
-        });
+      if (pusherInstance) {
+        console.log('✅ WebSocket service connected successfully');
+        setWsConnected(true);
+        
+        // Subscribe to user channel for notifications
+        if (user?.id) {
+          websocketService.subscribeToUserChannel(user.id, {
+            onMessageNotification: handleNewMessageNotification
+          });
+        }
+      } else {
+        console.error('❌ Failed to initialize WebSocket service');
+        setWsConnected(false);
       }
     } catch (error) {
       console.error('Failed to initialize WebSocket:', error);
+      setWsConnected(false);
     }
   };
 
   const subscribeToConversation = (conversationId) => {
+    if (!conversationId || currentChannel === conversationId) {
+      return; // Already subscribed to this conversation
+    }
+
+    // Unsubscribe from previous conversation if any
+    if (currentChannel) {
+      websocketService.unsubscribeFromConversation(currentChannel);
+    }
+
+    console.log('📡 Subscribing to conversation:', conversationId);
+    
     websocketService.subscribeToConversation(conversationId, {
-      onMessageReceived: handleNewMessage,
+      onMessageReceived: (data) => {
+        console.log('🔔 Real-time message received:', data);
+        handleRealTimeMessage(data);
+      },
       onSubscribed: () => {
-        console.log(`Subscribed to conversation ${conversationId}`);
+        console.log('✅ Successfully subscribed to conversation:', conversationId);
       },
       onError: (error) => {
-        console.error('Subscription error:', error);
+        console.error('❌ Failed to subscribe to conversation:', error);
       }
     });
+
+    setCurrentChannel(conversationId);
   };
 
-  const handleNewMessage = useCallback((messageData) => {
-    console.log('🔔 New message received via WebSocket:', messageData);
+  const handleRealTimeMessage = (data) => {
+    console.log('📨 Processing real-time message:', data);
     
-    // Add message to current conversation if it matches
-    if (selectedConversation && messageData.conversation_id === selectedConversation.id) {
+    // Handle different message structures from WebSocket
+    let messageData = data.message || data; // Support both wrapped and direct message format
+    
+    console.log('📋 Message data:', messageData);
+    console.log('📋 Message conversation_id:', messageData.conversation_id);
+    console.log('📋 Current conversation id:', selectedConversation?.id);
+    
+    // Check if message is from current conversation
+    if (messageData && selectedConversation && messageData.conversation_id === selectedConversation.id) {
+      console.log('✅ Message matches current conversation, adding to messages');
+      
+      // Check if message already exists to prevent duplicates
       setMessages(prev => {
         const messageExists = prev.some(msg => msg.id === messageData.id);
         if (!messageExists) {
+          console.log('✅ Adding new real-time message to conversation');
           return [...prev, messageData];
+        } else {
+          console.log('⚠️ Message already exists, skipping duplicate');
+          return prev;
         }
-        return prev;
       });
-      
-      // Mark as read if the user is viewing this conversation
-      if (messageData.receiver_id === user?.id) {
-        apiService.markBuyerMessagesAsRead({
-          conversation_id: messageData.conversation_id,
-          message_ids: [messageData.id]
-        });
-      }
     }
-    
+
     // Update conversations list
-    setConversations(prev => 
-      prev.map(conv => {
-        if (conv.id === messageData.conversation_id) {
-          return {
-            ...conv,
-            latest_message: {
-              message: messageData.message,
-              sender_id: messageData.sender_id,
-              created_at: messageData.created_at
-            },
-            last_message_at: messageData.created_at,
-            unread_count: messageData.receiver_id === user?.id && 
-                         (!selectedConversation || selectedConversation.id !== messageData.conversation_id)
-                         ? conv.unread_count + 1 
-                         : conv.unread_count
-          };
-        }
-        return conv;
-      })
-    );
-  }, [selectedConversation, user]);
+    if (messageData) {
+      setConversations(prev => 
+        prev.map(conv => {
+          if (conv.id === messageData.conversation_id) {
+            return {
+              ...conv,
+              latest_message: {
+                message: messageData.message,
+                sender_id: messageData.sender_id,
+                created_at: messageData.created_at
+              },
+              last_message_at: messageData.created_at,
+              unread_count: messageData.receiver_id === user?.id && 
+                           (!selectedConversation || selectedConversation.id !== messageData.conversation_id)
+                           ? conv.unread_count + 1 
+                           : conv.unread_count
+            };
+          }
+          return conv;
+        })
+      );
+    }
+  };
 
   const handleNewMessageNotification = useCallback((messageData) => {
     // Show browser notification for messages not in current conversation
     if (!selectedConversation || messageData.conversation_id !== selectedConversation.id) {
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`New message from ${messageData.sender.name}`, {
-          body: messageData.message,
+        const senderName = messageData.sender?.name || messageData.message?.sender?.name || 'Someone';
+        const messageText = messageData.message?.message || messageData.message || 'New message';
+        
+        new Notification(`New message from ${senderName}`, {
+          body: messageText,
           icon: '/favicon.ico'
         });
       }
@@ -229,16 +269,17 @@ export default function BuyerMessages() {
   }, [selectedConversation]);
 
   const handleSelectConversation = (conversation) => {
-    // Clear any existing polling interval
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-    
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
     router.push(`/buyer/messages?conversation_id=${conversation.id}`, undefined, { shallow: true });
   };
 
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
 
   return (

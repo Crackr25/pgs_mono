@@ -40,7 +40,8 @@ class MessageSent implements ShouldBroadcast
     {
         return [
             new PrivateChannel('conversation.' . $this->chatMessage->conversation_id),
-            new PrivateChannel('user.' . $this->chatMessage->receiver_id)
+            new PrivateChannel('user.' . $this->chatMessage->receiver_id),
+            new PrivateChannel('user.' . $this->chatMessage->sender_id) // Add sender channel
         ];
     }
 
@@ -50,17 +51,22 @@ class MessageSent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'id' => $this->chatMessage->id,
-            'conversation_id' => $this->chatMessage->conversation_id,
-            'sender_id' => $this->chatMessage->sender_id,
-            'receiver_id' => $this->chatMessage->receiver_id,
-            'message' => $this->chatMessage->message,
-            'created_at' => $this->chatMessage->created_at->toISOString(),
-            'read' => $this->chatMessage->read,
-            'sender' => [
-                'id' => $this->chatMessage->sender->id,
-                'name' => $this->chatMessage->sender->name,
-                'email' => $this->chatMessage->sender->email
+            'message' => [
+                'id' => $this->chatMessage->id,
+                'conversation_id' => $this->chatMessage->conversation_id,
+                'sender_id' => $this->chatMessage->sender_id,
+                'receiver_id' => $this->chatMessage->receiver_id,
+                'message' => $this->chatMessage->message,
+                'message_type' => $this->chatMessage->message_type,
+                'product_id' => $this->chatMessage->product_id,
+                'product_context' => $this->chatMessage->product_context,
+                'created_at' => $this->chatMessage->created_at->toISOString(),
+                'read' => $this->chatMessage->read,
+                'sender' => [
+                    'id' => $this->chatMessage->sender->id,
+                    'name' => $this->chatMessage->sender->name,
+                    'email' => $this->chatMessage->sender->email
+                ]
             ]
         ];
     }
