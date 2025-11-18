@@ -20,6 +20,7 @@ export default function DynamicMenuBuilder() {
     sort_order: 0,
     is_visible: true,
     show_dropdown: false,
+    embed_company_profile: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -80,6 +81,7 @@ export default function DynamicMenuBuilder() {
       sort_order: menuItems.length,
       is_visible: true,
       show_dropdown: false,
+      embed_company_profile: false,
     });
     setErrors({});
     setTouched({});
@@ -96,6 +98,7 @@ export default function DynamicMenuBuilder() {
       sort_order: item.sort_order,
       is_visible: item.is_visible,
       show_dropdown: item.show_dropdown,
+      embed_company_profile: item.embed_company_profile || false,
     });
     setErrors({});
     setTouched({});
@@ -117,7 +120,15 @@ export default function DynamicMenuBuilder() {
         break;
 
       case 'target':
-        if (!value || value.trim() === '') {
+        // If embed_company_profile is checked, target becomes optional
+        if (formData.embed_company_profile && formData.type === 'page') {
+          // Auto-generate a default slug if empty
+          if (!value || value.trim() === '') {
+            const defaultSlug = formData.label ? formData.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : 'company-profile';
+            setFormData(prev => ({ ...prev, target: defaultSlug }));
+          }
+          delete newErrors.target;
+        } else if (!value || value.trim() === '') {
           newErrors.target = 'Target is required';
         } else if (formData.type === 'external' && !value.startsWith('http')) {
           newErrors.target = 'External URL must start with http:// or https://';
@@ -163,6 +174,13 @@ export default function DynamicMenuBuilder() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Auto-generate target slug if embed_company_profile is checked and target is empty
+    if (formData.embed_company_profile && formData.type === 'page' && (!formData.target || formData.target.trim() === '')) {
+      const defaultSlug = formData.label ? formData.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : 'company-profile';
+      setFormData(prev => ({ ...prev, target: defaultSlug }));
+      formData.target = defaultSlug;
+    }
+
     // Validate all fields
     const allTouched = {
       label: true,
@@ -171,7 +189,7 @@ export default function DynamicMenuBuilder() {
     setTouched(allTouched);
 
     const isLabelValid = validateField('label', formData.label);
-    const isTargetValid = validateField('target', formData.target);
+    const isTargetValid = formData.embed_company_profile && formData.type === 'page' ? true : validateField('target', formData.target);
 
     if (!isLabelValid || !isTargetValid) {
       alert('❌ Please fix the validation errors before submitting');
@@ -638,7 +656,12 @@ export default function DynamicMenuBuilder() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     {formData.type === 'page' ? 'Select Page' :
                      formData.type === 'section' ? 'Section ID' : 'External URL'}
-                    <span className="text-red-500">*</span>
+                    {!(formData.embed_company_profile && formData.type === 'page') && (
+                      <span className="text-red-500">*</span>
+                    )}
+                    {formData.embed_company_profile && formData.type === 'page' && (
+                      <span className="text-purple-600 text-xs ml-2">(Optional - auto-generated from label)</span>
+                    )}
                   </label>
 
                   {formData.type === 'page' ? (
@@ -694,7 +717,8 @@ export default function DynamicMenuBuilder() {
                   )}
                   
                   <p className="text-xs text-gray-500 mt-1">
-                    {formData.type === 'page' && 'Choose from your created pages'}
+                    {formData.type === 'page' && !formData.embed_company_profile && 'Choose from your created pages'}
+                    {formData.type === 'page' && formData.embed_company_profile && '✨ Leave empty to auto-generate URL from label (e.g., "Company Profile" → "company-profile")'}
                     {formData.type === 'section' && 'Lowercase, numbers, and hyphens only (e.g., products, about-us)'}
                     {formData.type === 'external' && 'Full URL including http:// or https://'}
                   </p>
@@ -727,6 +751,23 @@ export default function DynamicMenuBuilder() {
                     <div className="flex-1">
                       <span className="font-medium text-gray-900">Visible</span>
                       <p className="text-xs text-gray-500">Show this menu item on the public storefront</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 border-2 border-purple-200 rounded-lg hover:bg-purple-50 cursor-pointer transition bg-purple-50">
+                    <input
+                      type="checkbox"
+                      name="embed_company_profile"
+                      checked={formData.embed_company_profile}
+                      onChange={handleFieldChange}
+                      className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-purple-900 flex items-center gap-2">
+                        🏢 Embed Company Profile
+                        <span className="px-2 py-0.5 text-xs bg-purple-600 text-white rounded-full">NEW</span>
+                      </span>
+                      <p className="text-xs text-purple-700">Load supplier profile page design (like ANRABESS) when this menu is clicked</p>
                     </div>
                   </label>
                 </div>

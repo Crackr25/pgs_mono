@@ -45,6 +45,7 @@ class StorefrontMenuController extends Controller
             'sort_order' => 'integer',
             'is_visible' => 'boolean',
             'show_dropdown' => 'boolean',
+            'embed_company_profile' => 'boolean',
         ], [
             'label.required' => 'Menu label is required',
             'label.min' => 'Menu label must be at least 2 characters',
@@ -80,6 +81,7 @@ class StorefrontMenuController extends Controller
             'sort_order' => 'integer',
             'is_visible' => 'boolean',
             'show_dropdown' => 'boolean',
+            'embed_company_profile' => 'boolean',
         ], [
             'label.min' => 'Menu label must be at least 2 characters',
             'label.max' => 'Menu label must not exceed 50 characters',

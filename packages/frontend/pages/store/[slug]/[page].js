@@ -16,6 +16,7 @@ export default function StorefrontPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [shouldShowEmbeddedProfile, setShouldShowEmbeddedProfile] = useState(false);
 
   useEffect(() => {
     if (slug && pageSlug) {
@@ -27,14 +28,62 @@ export default function StorefrontPage() {
     try {
       setLoading(true);
       setError(null);
+      // Reset embedded profile state when fetching new page data
+      setShouldShowEmbeddedProfile(false);
 
-      // Fetch page data (includes storefront)
-      const pageResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/storefront/${slug}/page/${pageSlug}`);
-      if (!pageResponse.ok) throw new Error('Page not found');
-      const responseData = await pageResponse.json();
+      console.log('🔍 Fetching page data for:', { slug, pageSlug });
+
+      // First, fetch menu items to check if this is an embedded profile page
+      const menuResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/storefront/${slug}/menu`);
+      let isEmbeddedProfile = false;
+      let storefrontData = null;
       
-      setStorefront(responseData.storefront);
-      setPage(responseData.page);
+      if (menuResponse.ok) {
+        const menuData = await menuResponse.json();
+        console.log('📋 Menu data:', menuData);
+        
+        const menuTree = buildMenuTree(menuData);
+        setMenuItems(menuTree);
+        
+        // Check if current page has embed_company_profile enabled
+        const currentMenuItem = menuData.find(item => item.type === 'page' && item.target === pageSlug);
+        console.log('🎯 Current menu item:', currentMenuItem);
+        
+        if (currentMenuItem && currentMenuItem.embed_company_profile) {
+          console.log('✅ This is an embedded profile page!');
+          isEmbeddedProfile = true;
+          setShouldShowEmbeddedProfile(true);
+        }
+      }
+
+      // If this is an embedded profile page, fetch storefront directly
+      if (isEmbeddedProfile) {
+        console.log('📥 Fetching storefront for embedded profile...');
+        const storefrontResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/storefront/${slug}`);
+        if (storefrontResponse.ok) {
+          const data = await storefrontResponse.json();
+          console.log('✅ Storefront data loaded:', data);
+          setStorefront(data);
+          // Create a dummy page object for embedded profile
+          setPage({
+            title: 'Company Profile',
+            slug: pageSlug,
+            meta_description: data.company?.description || '',
+            sections: []
+          });
+        } else {
+          throw new Error('Could not load storefront data');
+        }
+      } else {
+        // Normal page - fetch page data
+        console.log('📄 Fetching normal page data...');
+        const pageResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/storefront/${slug}/page/${pageSlug}`);
+        if (!pageResponse.ok) throw new Error('Page not found');
+        const responseData = await pageResponse.json();
+        
+        setStorefront(responseData.storefront);
+        setPage(responseData.page);
+      }
 
       // Fetch products for the storefront
       const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/storefront/${slug}/products`);
@@ -43,16 +92,8 @@ export default function StorefrontPage() {
         setProducts(productsData);
       }
 
-      // Fetch menu items for navigation
-      const menuResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/storefront/${slug}/menu`);
-      if (menuResponse.ok) {
-        const menuData = await menuResponse.json();
-        const menuTree = buildMenuTree(menuData);
-        setMenuItems(menuTree);
-      }
-
     } catch (err) {
-      console.error('Error fetching page:', err);
+      console.error('❌ Error fetching page:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -116,7 +157,7 @@ export default function StorefrontPage() {
         {page.meta_keywords && <meta name="keywords" content={page.meta_keywords} />}
       </Head>
 
-      <div className="min-h-screen bg-black">
+      <div className={shouldShowEmbeddedProfile ? "min-h-screen bg-white" : "min-h-screen bg-black"}>
         {/* Header Navigation */}
         <header className="bg-white shadow-sm sticky top-0 z-50">
           {/* Company Info Bar */}
@@ -253,44 +294,58 @@ export default function StorefrontPage() {
         </header>
 
         {/* Page Content - Render sections from Page Builder */}
-        <main>
-          {page.sections && page.sections.length > 0 ? (
-            <div>
-              {page.sections.map((section) => (
-                <StorefrontSection 
-                  key={section.id} 
-                  section={section}
-                  primaryColor={primary_color}
-                  company={company}
-                  products={products}
-                />
-              ))}
-            </div>
-          ) : page.content ? (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-              <div className="bg-white rounded-lg shadow-md p-8">
-                <h1 className="text-4xl font-bold mb-6" style={{ color: primary_color }}>
-                  {page.title}
-                </h1>
-                <div className="prose max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: page.content }} />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-              <p className="text-gray-500">No content available for this page yet.</p>
-            </div>
-          )}
-        </main>
-
-        {/* Footer */}
-        <footer className="bg-gray-800 text-white py-8 mt-16">
-          <div className="max-w-7xl mx-auto px-4 text-center">
-            <p>&copy; {new Date().getFullYear()} {company.name}. All rights reserved.</p>
-            <p className="text-sm text-gray-400 mt-2">Powered by Pinoy Global Supply</p>
+        {shouldShowEmbeddedProfile ? (
+          <div className="w-full bg-white" style={{ height: 'calc(100vh - 150px)', overflow: 'hidden' }}>
+            <iframe
+              id="embedded-profile"
+              src={`/buyer/suppliers/${company.id}?embedded=true`}
+              className="w-full h-full border-0"
+              style={{ width: '100%', height: '100%' }}
+              title="Company Profile"
+            />
           </div>
-        </footer>
+        ) : (
+          <>
+            <main>
+              {page.sections && page.sections.length > 0 ? (
+                <div>
+                  {page.sections.map((section) => (
+                    <StorefrontSection 
+                      key={section.id} 
+                      section={section}
+                      primaryColor={primary_color}
+                      company={company}
+                      products={products}
+                    />
+                  ))}
+                </div>
+              ) : page.content ? (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                  <div className="bg-white rounded-lg shadow-md p-8">
+                    <h1 className="text-4xl font-bold mb-6" style={{ color: primary_color }}>
+                      {page.title}
+                    </h1>
+                    <div className="prose max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: page.content }} />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+                  <p className="text-gray-500">No content available for this page yet.</p>
+                </div>
+              )}
+            </main>
+
+            {/* Footer */}
+            <footer className="bg-gray-800 text-white py-8 mt-16">
+              <div className="max-w-7xl mx-auto px-4 text-center">
+                <p>&copy; {new Date().getFullYear()} {company.name}. All rights reserved.</p>
+                <p className="text-sm text-gray-400 mt-2">Powered by Pinoy Global Supply</p>
+              </div>
+            </footer>
+          </>
+        )}
       </div>
     </>
   );

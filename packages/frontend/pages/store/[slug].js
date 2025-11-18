@@ -4,6 +4,7 @@ import { storefrontAPI, getImageUrl } from '../../lib/storefront-api';
 import Head from 'next/head';
 import Link from 'next/link';
 import ProductDetailModal from '../../components/products/ProductDetailModal';
+import EmbeddedSupplierProfile from '../../components/storefront/EmbeddedSupplierProfile';
 
 export default function PublicStorefront() {
   const router = useRouter();
