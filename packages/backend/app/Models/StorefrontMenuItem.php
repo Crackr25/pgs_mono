@@ -18,11 +18,13 @@ class StorefrontMenuItem extends Model
         'sort_order',
         'is_visible',
         'show_dropdown',
+        'embed_company_profile',
     ];
 
     protected $casts = [
         'is_visible' => 'boolean',
         'show_dropdown' => 'boolean',
+        'embed_company_profile' => 'boolean',
     ];
 
     public function storefront()

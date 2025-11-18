@@ -45,8 +45,11 @@ import {
 
 export default function SupplierDetail() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, embedded } = router.query;
   const { user } = useAuth();
+  
+  // Check if page is being embedded (via query param or iframe detection)
+  const isEmbedded = embedded === 'true' || (typeof window !== 'undefined' && window.self !== window.top);
   
   const [supplier, setSupplier] = useState(null);
   const [products, setProducts] = useState([]);
@@ -317,25 +320,26 @@ export default function SupplierDetail() {
       </Head>
 
       <div className="min-h-screen bg-white">
-        {/* Header Section */}
-        <div className="bg-white border-b border-secondary-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              {/* Left: Breadcrumb */}
-              <div className="flex items-center space-x-2 text-sm">
-                <Link href="/buyer" className="text-primary-600 hover:text-primary-700">
-                  Marketplace
-                </Link>
-                <span className="text-secondary-400">/</span>
-                <Link href="/buyer/suppliers" className="text-primary-600 hover:text-primary-700">
-                  Suppliers
-                </Link>
-                <span className="text-secondary-400">/</span>
-                <span className="text-secondary-900 font-medium">{supplier.name}</span>
-              </div>
+        {/* Header Section - Hide when embedded */}
+        {!isEmbedded && (
+          <div className="bg-white border-b border-secondary-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16">
+                {/* Left: Breadcrumb */}
+                <div className="flex items-center space-x-2 text-sm">
+                  <Link href="/buyer" className="text-primary-600 hover:text-primary-700">
+                    Marketplace
+                  </Link>
+                  <span className="text-secondary-400">/</span>
+                  <Link href="/buyer/suppliers" className="text-primary-600 hover:text-primary-700">
+                    Suppliers
+                  </Link>
+                  <span className="text-secondary-400">/</span>
+                  <span className="text-secondary-900 font-medium">{supplier.name}</span>
+                </div>
 
-              {/* Right: Rating and Verification */}
-              <div className="flex items-center space-x-4">
+                {/* Right: Rating and Verification */}
+                <div className="flex items-center space-x-4">
                 <div className="text-right">
                   <div className="flex items-center space-x-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -357,8 +361,10 @@ export default function SupplierDetail() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Navigation Bar */}
+        {/* Navigation Bar - Hide when embedded */}
+        {!isEmbedded && (
         <div className="bg-secondary-50 border-b border-secondary-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-12">
@@ -516,6 +522,7 @@ export default function SupplierDetail() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Banner Section - Show only for home tab */}
         {activeTab === 'home' && (
