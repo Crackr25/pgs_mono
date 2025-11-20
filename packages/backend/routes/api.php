@@ -67,6 +67,7 @@ Route::get('/marketplace/stats', [CompanyController::class, 'getMarketplaceStats
 // Marketplace routes (public - for buyer home page)
 Route::get('/marketplace/products', [MarketplaceController::class, 'getRandomProducts']);
 Route::get('/marketplace/products/{id}', [MarketplaceController::class, 'getProductDetails']);
+Route::get('/marketplace/products/{id}/related', [MarketplaceController::class, 'getRelatedProducts']);
 Route::post('/marketplace/inquiries', [MarketplaceController::class, 'submitInquiry']);
 Route::get('/marketplace/categories', [MarketplaceController::class, 'getCategories']);
 Route::get('/marketplace/locations', [MarketplaceController::class, 'getLocations']);

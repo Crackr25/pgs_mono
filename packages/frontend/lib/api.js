@@ -808,6 +808,10 @@ class ApiService {
     return this.publicRequest(`/marketplace/products/${id}`);
   }
 
+  async getRelatedProducts(productId, limit = 8) {
+    return this.publicRequest(`/marketplace/products/${productId}/related?limit=${limit}`);
+  }
+
   // Search suggestions based on existing products
   async getSearchSuggestions(query, limit = 8) {
     const params = new URLSearchParams({

@@ -287,6 +287,93 @@ class MarketplaceController extends Controller
     }
 
     /**
+     * Get related products based on category and supplier
+     */
+    public function getRelatedProducts($id, Request $request): JsonResponse
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $limit = $request->get('limit', 8);
+            
+            // Get related products from same category, excluding current product
+            $relatedProducts = Product::with([
+                'company:user_id,id,name,location,verified',
+                'company.storefront:id,company_id,slug,is_active',
+                'mainImage:id,product_id,image_path'
+            ])
+            ->where('active', true)
+            ->where('id', '!=', $id)
+            ->where('category', $product->category)
+            ->inRandomOrder()
+            ->limit($limit)
+            ->get();
+            
+            // If not enough products from same category, fill with random products
+            if ($relatedProducts->count() < $limit) {
+                $remainingCount = $limit - $relatedProducts->count();
+                $excludeIds = $relatedProducts->pluck('id')->push($id)->toArray();
+                
+                $additionalProducts = Product::with([
+                    'company:user_id,id,name,location,verified',
+                    'company.storefront:id,company_id,slug,is_active',
+                    'mainImage:id,product_id,image_path'
+                ])
+                ->where('active', true)
+                ->whereNotIn('id', $excludeIds)
+                ->inRandomOrder()
+                ->limit($remainingCount)
+                ->get();
+                
+                $relatedProducts = $relatedProducts->merge($additionalProducts);
+            }
+            
+            // Transform the data to match frontend expectations
+            $transformedProducts = $relatedProducts->map(function ($product) {
+                $image = $product->mainImage;
+                if (!$image) {
+                    $image = $product->images()->first();
+                }
+                
+                $imageUrl = $image ? asset('storage/' . $image->image_path) : null;
+                
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'unit' => $product->unit,
+                    'moq' => $product->moq,
+                    'category' => $product->category,
+                    'lead_time' => $product->lead_time,
+                    'stock_quantity' => $product->stock_quantity,
+                    'image' => $imageUrl,
+                    'has_image' => !is_null($imageUrl),
+                    'company' => [
+                        'id' => $product->company->id,
+                        'user_id' => $product->company->user_id,
+                        'name' => $product->company->name,
+                        'location' => $product->company->location,
+                        'verified' => $product->company->verified ?? false,
+                        'website' => $product->company->storefront && $product->company->storefront->is_active 
+                            ? env('FRONTEND_URL', 'http://localhost:3000') . "/store/{$product->company->storefront->slug}" 
+                            : null,
+                    ],
+                ];
+            });
+            
+            return response()->json([
+                'data' => $transformedProducts
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Product not found',
+                'message' => 'Unable to fetch related products'
+            ], 404);
+        }
+    }
+
+    /**
      * Submit product inquiry
      */
     public function submitInquiry(Request $request): JsonResponse

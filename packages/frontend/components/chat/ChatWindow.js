@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info } from 'lucide-react';
 import ProductMessageHeader from './ProductMessageHeader';
 import Button from '../common/Button';
 import ConfirmationModal from '../common/ConfirmationModal';
+import { getImageUrl, getAttachmentUrl } from '../../lib/imageUtils';
 
-export default function ChatWindow({ 
+const ChatWindow = forwardRef(function ChatWindow({ 
   conversation, 
   messages = [], 
   onSendMessage, 
   currentUser,
   loading = false,
   onMessagesUpdate
-}) {
+}, ref) {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -26,10 +27,22 @@ export default function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Expose scrollToBottom method to parent component
+  useImperativeHandle(ref, () => ({
+    scrollToBottom
+  }));
+
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Scroll to bottom when conversation changes
+  useEffect(() => {
+    if (conversation) {
+      scrollToBottom();
+    }
+  }, [conversation]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -299,6 +312,49 @@ export default function ChatWindow({
     return currentDate !== previousDate;
   };
 
+  const shouldShowProductHeader = (currentMessage, messageIndex, allMessages) => {
+    // Don't show if current message has no product context
+    if (!currentMessage.product_context) return false;
+    
+    // Always show if it's the first message
+    if (messageIndex === 0) return true;
+    
+    const currentProductId = currentMessage.product_context.id;
+    
+    // Look backwards through previous messages to find the last product context
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      const prevMessage = allMessages[i];
+      if (prevMessage.product_context) {
+        const prevProductId = prevMessage.product_context.id;
+        // Show header only if it's a different product
+        return currentProductId !== prevProductId;
+      }
+    }
+    
+    // No previous product context found, show header
+    return true;
+  };
+
+  // Helper function to determine if a message should be treated as "from the same company"
+  const isFromSameCompany = (message) => {
+    // If it's the current user's message, always true
+    if (message.sender_id === currentUser?.id) {
+      return true;
+    }
+    
+    // Since we don't have proper seller/company data in the conversation,
+    // we'll use a simpler approach: treat all non-buyer messages as same company
+    // when the current user is a seller or agent
+    
+    if (currentUser?.usertype === 'seller' || currentUser?.usertype === 'agent') {
+      // In a seller-buyer conversation, if the message is not from the buyer,
+      // it must be from the seller side (company owner or agents)
+      return message.sender_id !== conversation?.buyer?.id;
+    }
+    
+    return false;
+  };
+
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center bg-secondary-50">
@@ -450,8 +506,10 @@ export default function ChatWindow({
         ) : (
           messages.map((message, index) => {
             const isCurrentUser = message.sender_id === currentUser?.id;
+            const isSameCompany = isFromSameCompany(message);
             const previousMessage = index > 0 ? messages[index - 1] : null;
             const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+            const showProductHeader = shouldShowProductHeader(message, index, messages);
 
             return (
               <div key={message.id}>
@@ -463,17 +521,17 @@ export default function ChatWindow({
                   </div>
                 )}
                 
-                {/* Product Message Header */}
-                {message.product_context && (
+                {/* Product Message Header - Only show when product context changes */}
+                {showProductHeader && (
                   <ProductMessageHeader 
                     productContext={message.product_context}
                     messageType={message.message_type || 'message'}
                   />
                 )}
                 
-                <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex ${isSameCompany ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    isCurrentUser 
+                    isSameCompany 
                       ? message.status === 'failed' 
                         ? 'bg-red-100 text-red-900 border border-red-200' 
                         : message.status === 'sending'
@@ -493,13 +551,14 @@ export default function ChatWindow({
                           const isImage = attachment?.type?.startsWith('image/');
                           
                           if (isImage && attachment?.url) {
+                            const imageUrl = getImageUrl(attachment.url);
                             return (
                               <div className="max-w-xs">
                                 <img 
-                                  src={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                  src={imageUrl} 
                                   alt={attachment.name}
                                   className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => window.open(attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`, '_blank')}
+                                  onClick={() => window.open(imageUrl, '_blank')}
                                   onError={(e) => {
                                     e.target.style.display = 'none';
                                     e.target.nextSibling.style.display = 'block';
@@ -512,7 +571,7 @@ export default function ChatWindow({
                                       {attachment.name}
                                     </span>
                                     <a 
-                                      href={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                      href={imageUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="text-xs text-blue-600 hover:text-blue-800"
@@ -527,6 +586,7 @@ export default function ChatWindow({
                               </div>
                             );
                           } else {
+                            const attachmentUrl = getAttachmentUrl(attachment);
                             return (
                               <div className="p-2 bg-secondary-50 rounded border">
                                 <div className="flex items-center space-x-2">
@@ -536,9 +596,9 @@ export default function ChatWindow({
                                   </span>
                                   {attachment?.uploading ? (
                                     <div className="text-xs text-secondary-500">Uploading...</div>
-                                  ) : attachment?.url ? (
+                                  ) : attachmentUrl ? (
                                     <a 
-                                      href={attachment.url?.startsWith('http') ? attachment.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${attachment.url}`} 
+                                      href={attachmentUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="text-xs text-blue-600 hover:text-blue-800"
@@ -560,7 +620,7 @@ export default function ChatWindow({
                     )}
                     
                     <div className={`flex items-center justify-end mt-1 space-x-1 ${
-                      isCurrentUser 
+                      isSameCompany 
                         ? message.status === 'failed' 
                           ? 'text-red-600' 
                           : message.status === 'sending'
@@ -569,7 +629,7 @@ export default function ChatWindow({
                         : 'text-secondary-500'
                     }`}>
                       <span className="text-xs">{formatTime(message.created_at)}</span>
-                      {isCurrentUser && (
+                      {isSameCompany && (
                         <>
                           {message.status === 'sending' && (
                             <Clock className="w-3 h-3 animate-spin" />
@@ -683,4 +743,6 @@ export default function ChatWindow({
       />
     </div>
   );
-}
+});
+
+export default ChatWindow;

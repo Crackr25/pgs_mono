@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Eye, ShoppingCart, TrendingUp, Users, Star, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import apiService from '../../lib/api';
+import { getImageUrl } from '../../lib/imageUtils';
 
 export default function BusinessRecommendations({ 
   currentProduct, 
@@ -111,25 +112,24 @@ export default function BusinessRecommendations({
   const activeData = sections.find(section => section.id === activeSection)?.data || [];
 
   const ProductCard = ({ product }) => {
-    // Use the same image utility function as your other components
-    const getImageUrl = (imagePath) => {
-      if (!imagePath) return '/api/placeholder/200/200';
-      if (imagePath.startsWith('http')) return imagePath;
-      return `/storage/${imagePath}`;
-    };
-
-    // Get the main image from the product
-    const productImage = product.main_image?.image_path || product.images?.[0] || null;
+    // Get the main image from the product - handle different API response formats
+    const productImage = product.image || product.main_image?.image_path || product.images?.[0] || null;
 
     return (
       <Link href={`/buyer/products/${product.id}`}>
         <div className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer">
           <div className="relative">
-            <img
-              src={getImageUrl(productImage)}
-              alt={product.name}
-              className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
-            />
+            {getImageUrl(productImage) ? (
+              <img
+                src={getImageUrl(productImage)}
+                alt={product.name}
+                className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
+              />
+            ) : (
+              <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
+                <ShoppingCart className="w-8 h-8 text-gray-400" />
+              </div>
+            )}
             {product.company?.verified && (
               <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded">
                 ✓

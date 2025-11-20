@@ -74,7 +74,18 @@ class AuthController extends Controller
 
     public function user(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        
+        // Load company information for agents and sellers
+        if ($user->usertype === 'agent') {
+            $user->load('companyAgent.company');
+            $activeCompany = $user->getActiveCompany();
+            $user->active_company = $activeCompany;
+        } elseif ($user->usertype === 'seller') {
+            $user->load('company');
+        }
+        
+        return response()->json($user);
     }
 
     public function getUserCompany(Request $request): JsonResponse

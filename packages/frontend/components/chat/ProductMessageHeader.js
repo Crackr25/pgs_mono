@@ -1,26 +1,14 @@
 import React from 'react';
 import { Package, ShoppingCart } from 'lucide-react';
+import { getImageUrl } from '../../lib/imageUtils';
 
 const ProductMessageHeader = ({ productContext, messageType = 'message' }) => {
   if (!productContext) return null;
 
   const { name, image, has_image, price, unit, company_name } = productContext;
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  const getImageSrc = () => {
-    if (!has_image || !image) return null;
-    
-    // Handle different image path formats
-    if (image.startsWith('http')) {
-      return image;
-    } else if (image.startsWith('/')) {
-      return `${baseURL.replace('/api', '')}${image}`;
-    } else {
-      return `${baseURL.replace('/api', '')}/storage/${image}`;
-    }
-  };
-
-  const imageSrc = getImageSrc();
+  // Use the utility function to get the correct image URL
+  const imageSrc = has_image && image ? getImageUrl(image) : null;
 
   const getMessageTypeIcon = () => {
     switch (messageType) {

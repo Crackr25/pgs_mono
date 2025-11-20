@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { MessageSquare, Users, Settings } from 'lucide-react';
@@ -20,6 +20,7 @@ export default function Chat() {
   const [currentUser, setCurrentUser] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
   const { user } = useAuth();
+  const chatWindowRef = useRef(null);
 
   // Initialize WebSocket connection and fetch data
   useEffect(() => {
@@ -126,6 +127,11 @@ export default function Chat() {
               : conv
           )
         );
+        
+        // Scroll to bottom after messages are loaded
+        setTimeout(() => {
+          chatWindowRef.current?.scrollToBottom?.();
+        }, 100);
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
@@ -329,6 +335,7 @@ export default function Chat() {
 
           {/* Chat Window */}
           <ChatWindow
+            ref={chatWindowRef}
             conversation={selectedConversation}
             messages={messages}
             onSendMessage={handleSendMessage}

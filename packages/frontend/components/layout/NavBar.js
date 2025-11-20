@@ -143,6 +143,16 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Agent Company Indicator */}
+            {isAuthenticated && user?.usertype === 'agent' && user?.active_company && (
+              <div className="hidden md:flex items-center bg-white/10 px-3 py-1 rounded-full">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                <span className="text-sm font-medium text-white">
+                  {user.active_company.name}
+                </span>
+              </div>
+            )}
+            
             {/* Chat Button */}
             {isAuthenticated && (
               <div className="relative">
@@ -178,7 +188,14 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                     <User className="h-5 w-5 text-[#0046ad]" />
                   </div>
-                  <span className="hidden sm:block text-sm font-medium">{user?.name}</span>
+                  <div className="hidden sm:block">
+                    <div className="text-sm font-medium">{user?.name}</div>
+                    {user?.usertype === 'agent' && user?.active_company && (
+                      <div className="text-xs text-gray-200">
+                        {user.active_company.company_name}
+                      </div>
+                    )}
+                  </div>
                 </button>
 
                 {isProfileOpen && (

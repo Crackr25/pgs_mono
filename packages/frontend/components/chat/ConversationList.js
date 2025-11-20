@@ -10,18 +10,25 @@ export default function ConversationList({
   loading = false 
 }) {
   const [filteredConversations, setFilteredConversations] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'unread'
 
   useEffect(() => {
     if (!conversations) return;
     
-    const filtered = conversations.filter(conversation =>
+    // First apply search filter
+    let filtered = conversations.filter(conversation =>
       conversation.buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conversation.buyer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (conversation.latest_message?.message || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
     
+    // Then apply active filter (all or unread)
+    if (activeFilter === 'unread') {
+      filtered = filtered.filter(conversation => conversation.unread_count > 0);
+    }
+    
     setFilteredConversations(filtered);
-  }, [conversations, searchTerm]);
+  }, [conversations, searchTerm, activeFilter]);
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
@@ -41,6 +48,30 @@ export default function ConversationList({
 
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Helper functions to get counts for each filter
+  const getAllConversationsCount = () => {
+    if (!conversations) return 0;
+    return conversations.filter(conversation =>
+      conversation.buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conversation.buyer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (conversation.latest_message?.message || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ).length;
+  };
+
+  const getUnreadConversationsCount = () => {
+    if (!conversations) return 0;
+    return conversations.filter(conversation => {
+      const matchesSearch = conversation.buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        conversation.buyer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (conversation.latest_message?.message || '').toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch && conversation.unread_count > 0;
+    }).length;
+  };
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
   };
 
   if (loading) {
@@ -84,11 +115,25 @@ export default function ConversationList({
 
       {/* Filter Tabs */}
       <div className="flex border-b border-secondary-200">
-        <button className="flex-1 px-4 py-2 text-sm font-medium text-primary-600 border-b-2 border-primary-600">
-          All ({filteredConversations.length})
+        <button 
+          onClick={() => handleFilterChange('all')}
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            activeFilter === 'all' 
+              ? 'text-primary-600 border-b-2 border-primary-600' 
+              : 'text-secondary-500 hover:text-secondary-700 border-b-2 border-transparent hover:border-secondary-300'
+          }`}
+        >
+          All ({getAllConversationsCount()})
         </button>
-        <button className="flex-1 px-4 py-2 text-sm font-medium text-secondary-500 hover:text-secondary-700">
-          Unread ({filteredConversations.filter(c => c.unread_count > 0).length})
+        <button 
+          onClick={() => handleFilterChange('unread')}
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            activeFilter === 'unread' 
+              ? 'text-primary-600 border-b-2 border-primary-600' 
+              : 'text-secondary-500 hover:text-secondary-700 border-b-2 border-transparent hover:border-secondary-300'
+          }`}
+        >
+          Unread ({getUnreadConversationsCount()})
         </button>
       </div>
 
@@ -98,7 +143,12 @@ export default function ConversationList({
           <div className="flex flex-col items-center justify-center h-64 text-secondary-500">
             <MessageSquare className="w-12 h-12 mb-4" />
             <p className="text-sm text-center">
-              {searchTerm ? 'No conversations match your search' : 'No conversations yet'}
+              {searchTerm 
+                ? 'No conversations match your search' 
+                : activeFilter === 'unread' 
+                  ? 'No unread conversations' 
+                  : 'No conversations yet'
+              }
             </p>
           </div>
         ) : (

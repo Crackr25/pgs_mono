@@ -110,6 +110,8 @@ export default function ProductDetail() {
   const [toastConfig, setToastConfig] = useState({});
   const [showImageZoom, setShowImageZoom] = useState(false);
   const [imageHoverZoom, setImageHoverZoom] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
   
   const inquiryTemplates = [
     {
@@ -148,6 +150,7 @@ export default function ProductDetail() {
     if (id) {
       fetchProductDetails();
       checkIfProductSaved();
+      fetchRelatedProducts();
     }
   }, [id]);
 
@@ -189,6 +192,19 @@ export default function ProductDetail() {
       setIsSaved(savedStatus.is_saved);
     } catch (error) {
       console.error('Error checking saved status:', error);
+    }
+  };
+
+  const fetchRelatedProducts = async () => {
+    try {
+      setLoadingRelated(true);
+      const relatedData = await apiService.getRelatedProducts(id, 8);
+      setRelatedProducts(relatedData.data || []);
+    } catch (error) {
+      console.error('Error fetching related products:', error);
+      setRelatedProducts([]);
+    } finally {
+      setLoadingRelated(false);
     }
   };
 
@@ -1693,6 +1709,94 @@ Product Link: ${window.location.href}`;
                 </form>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-12">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-secondary-900 mb-2">
+                Related Products
+              </h2>
+              <p className="text-secondary-600">
+                You might also be interested in these products from the same category
+              </p>
+            </div>
+            
+            {loadingRelated ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-secondary-200 h-48 rounded-lg mb-3"></div>
+                    <div className="h-4 bg-secondary-200 rounded mb-2"></div>
+                    <div className="h-4 bg-secondary-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-secondary-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedProducts.map((relatedProduct) => (
+                  <Link key={relatedProduct.id} href={`/buyer/products/${relatedProduct.id}`}>
+                    <div className="group cursor-pointer bg-white rounded-lg border border-secondary-200 overflow-hidden hover:shadow-lg transition-all duration-200">
+                      {/* Product Image */}
+                      <div className="relative aspect-square bg-secondary-100">
+                        {relatedProduct.has_image ? (
+                          <img
+                            src={getImageUrl(relatedProduct.image)}
+                            alt={relatedProduct.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-12 h-12 text-secondary-400" />
+                          </div>
+                        )}
+                        
+                        {/* Verified Badge */}
+                        {relatedProduct.company?.verified && (
+                          <div className="absolute top-2 left-2">
+                            <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1">
+                              <Shield className="w-3 h-3" />
+                              <span>Verified</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Product Info */}
+                      <div className="p-4">
+                        <h3 className="text-sm font-medium text-secondary-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                          {relatedProduct.name}
+                        </h3>
+                        
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-lg font-bold text-primary-600">
+                            ${parseFloat(relatedProduct.price).toFixed(2)}
+                            {relatedProduct.unit && `/${relatedProduct.unit}`}
+                          </span>
+                          <span className="text-xs text-secondary-500">
+                            MOQ: {relatedProduct.moq}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-1 mb-2">
+                          <MapPin className="w-4 h-4 text-secondary-400 flex-shrink-0" />
+                          <span className="text-sm text-secondary-600 truncate">
+                            {relatedProduct.company?.location || 'Philippines'}
+                          </span>
+                        </div>
+                        
+                        <div className="text-sm text-secondary-600 truncate">
+                          {relatedProduct.company?.name}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
