@@ -47,6 +47,7 @@ export default function PageBuilder() {
     { value: 'featured_products', label: '⭐ Featured Products', description: 'Hand-pick products to feature' },
     { value: 'image', label: '🏞️ Image Section', description: 'Single image with caption' },
     { value: 'gallery', label: '🖼️ Gallery Section', description: 'Multiple images grid' },
+    { value: 'company_reviews', label: '⭐ Company Reviews', description: 'Professional supplier reviews & ratings with statistics' },
     { value: 'contact', label: '📧 Contact Section', description: 'Contact form and info' },
     { value: 'team', label: '👥 Team Section', description: 'Team members grid' },
   ];

@@ -909,6 +909,17 @@ class ApiService {
     return this.publicRequest(`/suppliers/${supplierId}/reviews${queryString ? `?${queryString}` : ''}`);
   }
 
+  async getSupplierReviewStats(supplierId) {
+    return this.publicRequest(`/suppliers/${supplierId}/reviews/stats`);
+  }
+
+  async submitSupplierReview(supplierId, reviewData) {
+    return this.publicRequest(`/suppliers/${supplierId}/reviews`, {
+      method: 'POST',
+      data: reviewData
+    });
+  }
+
   // Starred Suppliers methods
   async getStarredSuppliers(params = {}) {
     const queryString = new URLSearchParams(params).toString();

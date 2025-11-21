@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Product;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -200,25 +201,64 @@ class SupplierController extends Controller
             $perPage = $request->get('per_page', 10);
             $type = $request->get('type', 'all'); // all, company, product
             
-            // Mock reviews data - in a real app, you'd have a reviews table
-            $mockReviews = $this->generateMockReviews($company, $type);
+            // Fetch real reviews from database with product relationship
+            $reviewsQuery = $company->reviews()
+                ->with('product:id,name,category,image')
+                ->orderBy('created_at', 'desc');
             
-            // Simulate pagination
-            $page = $request->get('page', 1);
-            $offset = ($page - 1) * $perPage;
-            $paginatedReviews = array_slice($mockReviews, $offset, $perPage);
+            // Apply filters if needed
+            if ($request->has('rating')) {
+                $reviewsQuery->where('rating', $request->get('rating'));
+            }
             
-            $paginationData = [
-                'data' => $paginatedReviews,
-                'current_page' => $page,
-                'last_page' => ceil(count($mockReviews) / $perPage),
-                'per_page' => $perPage,
-                'total' => count($mockReviews),
-                'from' => $offset + 1,
-                'to' => min($offset + $perPage, count($mockReviews))
-            ];
+            if ($request->has('verified_only') && $request->get('verified_only') === 'true') {
+                $reviewsQuery->where('verified', true);
+            }
+            
+            // Paginate reviews
+            $reviews = $reviewsQuery->paginate($perPage);
+            
+            // Transform reviews to match frontend format
+            $transformedReviews = $reviews->map(function ($review) {
+                $reviewData = [
+                    'id' => $review->id,
+                    'reviewer_name' => $review->reviewer_name,
+                    'reviewer_company' => $review->reviewer_company,
+                    'reviewer_email' => $review->reviewer_email,
+                    'rating' => $review->rating,
+                    'title' => $review->title,
+                    'comment' => $review->comment,
+                    'verified' => $review->verified,
+                    'response' => $review->response,
+                    'response_date' => $review->response_date ? $review->response_date->format('Y-m-d') : null,
+                    'date' => $review->created_at->format('Y-m-d'),
+                    'created_at' => $review->created_at->toIso8601String(),
+                    'formatted_date' => $review->created_at->format('M d, Y'),
+                    'order_id' => $review->order_id,
+                ];
 
-            return response()->json($paginationData);
+                // Include product information if available
+                if ($review->product) {
+                    $reviewData['product'] = [
+                        'id' => $review->product->id,
+                        'name' => $review->product->name,
+                        'category' => $review->product->category,
+                        'image' => $review->product->image,
+                    ];
+                }
+
+                return $reviewData;
+            });
+            
+            return response()->json([
+                'data' => $transformedReviews,
+                'current_page' => $reviews->currentPage(),
+                'last_page' => $reviews->lastPage(),
+                'per_page' => $reviews->perPage(),
+                'total' => $reviews->total(),
+                'from' => $reviews->firstItem(),
+                'to' => $reviews->lastItem()
+            ]);
 
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -229,6 +269,54 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch supplier reviews',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get supplier review statistics.
+     */
+    public function reviewStats(Request $request, $id): JsonResponse
+    {
+        try {
+            $company = Company::findOrFail($id);
+            
+            $totalReviews = $company->reviews()->count();
+            $averageRating = $company->reviews()->avg('rating') ?? 0;
+            $ratingBreakdown = $this->calculateRatingBreakdown($company);
+            
+            // Calculate percentage breakdown
+            $ratingPercentage = [];
+            foreach ($ratingBreakdown as $stars => $count) {
+                $ratingPercentage[$stars] = $totalReviews > 0 
+                    ? round(($count / $totalReviews) * 100, 1) 
+                    : 0;
+            }
+            
+            // Get verified reviews count
+            $verifiedCount = $company->reviews()->where('verified', true)->count();
+            
+            return response()->json([
+                'total_reviews' => $totalReviews,
+                'average_rating' => round($averageRating, 1),
+                'rating_breakdown' => $ratingBreakdown,
+                'rating_percentage' => $ratingPercentage,
+                'verified_reviews' => $verifiedCount,
+                'verified_percentage' => $totalReviews > 0 
+                    ? round(($verifiedCount / $totalReviews) * 100, 1) 
+                    : 0
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch review statistics',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -262,18 +350,90 @@ class SupplierController extends Controller
     }
 
     /**
-     * Calculate rating breakdown for a company (mock calculation).
+     * Calculate rating breakdown for a company from real reviews.
      */
     private function calculateRatingBreakdown(Company $company): array
     {
-        // In a real app, you'd calculate from actual reviews
-        return [
-            5 => rand(40, 60),
-            4 => rand(20, 30),
-            3 => rand(5, 15),
-            2 => rand(2, 8),
-            1 => rand(0, 5)
-        ];
+        // Calculate from actual reviews in database
+        $breakdown = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        
+        $ratings = $company->reviews()
+            ->selectRaw('rating, COUNT(*) as count')
+            ->groupBy('rating')
+            ->pluck('count', 'rating')
+            ->toArray();
+        
+        foreach ($ratings as $rating => $count) {
+            if (isset($breakdown[$rating])) {
+                $breakdown[$rating] = $count;
+            }
+        }
+        
+        return $breakdown;
+    }
+
+    /**
+     * Submit a review for a supplier (public endpoint).
+     */
+    public function submitReview(Request $request, $id): JsonResponse
+    {
+        try {
+            $company = Company::findOrFail($id);
+            
+            // Validate review data
+            $validated = $request->validate([
+                'reviewer_name' => 'required|string|max:255',
+                'reviewer_email' => 'required|email|max:255',
+                'reviewer_company' => 'nullable|string|max:255',
+                'rating' => 'required|integer|min:1|max:5',
+                'title' => 'nullable|string|max:255',
+                'comment' => 'required|string|max:2000',
+                'order_id' => 'nullable|integer|exists:orders,id'
+            ]);
+            
+            // Create the review
+            $review = new Review();
+            $review->company_id = $company->id;
+            $review->reviewer_name = $validated['reviewer_name'];
+            $review->reviewer_email = $validated['reviewer_email'];
+            $review->reviewer_company = $validated['reviewer_company'] ?? null;
+            $review->rating = $validated['rating'];
+            $review->title = $validated['title'] ?? null;
+            $review->comment = $validated['comment'];
+            $review->order_id = $validated['order_id'] ?? null;
+            $review->verified = false; // Reviews are not verified by default
+            $review->save();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Review submitted successfully! It will appear after verification.',
+                'data' => [
+                    'id' => $review->id,
+                    'reviewer_name' => $review->reviewer_name,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'created_at' => $review->created_at->format('Y-m-d H:i:s')
+                ]
+            ], 201);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier not found'
+            ], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit review',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

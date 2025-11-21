@@ -263,7 +263,7 @@ export default function BuyerGlobalTopNav() {
             ) : (
               <>
                 {/* Guest user actions - show login button */}
-                <Link href="/login">
+                <Link href="/login" target="_blank" rel="noopener noreferrer">
                   <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors">
                     Log In
                   </button>
