@@ -11,6 +11,7 @@ class Review extends Model
 
     protected $fillable = [
         'company_id',
+        'product_id',
         'order_id',
         'reviewer_name',
         'reviewer_email',
@@ -19,18 +20,25 @@ class Review extends Model
         'title',
         'comment',
         'verified',
-        'response'
+        'response',
+        'response_date'
     ];
 
     protected $casts = [
         'rating' => 'integer',
-        'verified' => 'boolean'
+        'verified' => 'boolean',
+        'response_date' => 'datetime'
     ];
 
     // Relationships
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function order()
