@@ -125,6 +125,8 @@ export default function ProductGrid({ hideFilters = false }) {
         }
       });
       
+      console.log('Fetching products with filters:', params);
+      
       const response = await apiService.getMarketplaceProducts(params);
       
       if (response && response.data) {

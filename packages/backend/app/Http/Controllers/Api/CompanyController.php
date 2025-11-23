@@ -373,6 +373,78 @@ class CompanyController extends Controller
     }
 
     /**
+     * Upload company logo image
+     */
+    public function uploadLogo(Request $request, Company $company): JsonResponse
+    {
+        // Check if user owns this company
+        if ($company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'logo' => 'required|file|mimes:jpg,jpeg,png,webp,svg|max:5120', // 5MB max
+        ]);
+
+        try {
+            // Delete old logo if exists
+            if ($company->logo && !str_starts_with($company->logo, 'http')) {
+                \Storage::disk('public')->delete($company->logo);
+            }
+
+            // Store new logo
+            $path = $request->file('logo')->store('companies/' . $company->id . '/logo', 'public');
+            
+            // Update company record
+            $company->logo = $path;
+            $company->save();
+
+            return response()->json([
+                'message' => 'Logo uploaded successfully',
+                'logo_path' => $path,
+                'logo_url' => \Storage::disk('public')->url($path),
+                'company' => $company->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to upload logo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete company logo image
+     */
+    public function deleteLogo(Company $company): JsonResponse
+    {
+        // Check if user owns this company
+        if ($company->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            if ($company->logo && !str_starts_with($company->logo, 'http')) {
+                // Delete file from storage
+                \Storage::disk('public')->delete($company->logo);
+            }
+            
+            // Update company record
+            $company->logo = null;
+            $company->save();
+
+            return response()->json([
+                'message' => 'Logo deleted successfully',
+                'company' => $company->fresh()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete logo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get marketplace statistics
      */
     public function getMarketplaceStats(): JsonResponse

@@ -4,6 +4,10 @@ import { getImageUrl } from '../../lib/imageUtils';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import DocumentDisplay from '../common/DocumentDisplay';
+import SimpleFloatingChat from '../common/SimpleFloatingChat';
+import LoginPromptModal from '../common/LoginPromptModal';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLoginPrompt } from '../../hooks/useLoginPrompt';
 import { 
   Star,
   MapPin,
@@ -27,6 +31,8 @@ import {
 } from 'lucide-react';
 
 export default function EmbeddedSupplierProfile({ companyId }) {
+  const { user } = useAuth();
+  const { requireAuth, showLoginPrompt, hideLoginPrompt, promptConfig } = useLoginPrompt();
   const [supplier, setSupplier] = useState(null);
   const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -36,6 +42,7 @@ export default function EmbeddedSupplierProfile({ companyId }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showProductsDropdown, setShowProductsDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showFloatingChat, setShowFloatingChat] = useState(false);
 
   useEffect(() => {
     if (companyId) {
@@ -180,11 +187,40 @@ export default function EmbeddedSupplierProfile({ companyId }) {
 
                 {/* Action Buttons */}
                 <div className="space-y-2">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => requireAuth(
+                      () => setShowFloatingChat(true),
+                      {
+                        title: "Login Required",
+                        message: "You need to log in to chat with suppliers.",
+                        actionText: `Chat with ${supplier?.name || 'supplier'}`
+                      }
+                    )}
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Chat now
                   </Button>
-                  <Button className="w-full !bg-green-600 hover:!bg-green-700 text-white">
+                  <Button 
+                    className="w-full !bg-green-600 hover:!bg-green-700 text-white"
+                    onClick={() => requireAuth(
+                      () => {
+                        // Scroll to contact section on the page
+                        const contactSection = document.getElementById('contact');
+                        if (contactSection) {
+                          contactSection.scrollIntoView({ behavior: 'smooth' });
+                        } else {
+                          // Navigate to contact anchor
+                          window.location.href = '#contact';
+                        }
+                      },
+                      {
+                        title: "Login Required",
+                        message: "You need to log in to send inquiries to suppliers.",
+                        actionText: `Send inquiry to ${supplier?.name || 'supplier'}`
+                      }
+                    )}
+                  >
                     <Mail className="w-4 h-4 mr-2" />
                     Send Inquiry
                   </Button>
@@ -333,6 +369,30 @@ export default function EmbeddedSupplierProfile({ companyId }) {
           </div>
         </div>
       </div>
+
+      {/* Floating Chat Modal */}
+      {showFloatingChat && supplier && (
+        <SimpleFloatingChat
+          isOpen={showFloatingChat}
+          onClose={() => setShowFloatingChat(false)}
+          product={{
+            company: {
+              id: supplier.id,
+              name: supplier.name,
+              user_id: supplier.user_id
+            }
+          }}
+        />
+      )}
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={hideLoginPrompt}
+        title={promptConfig.title}
+        message={promptConfig.message}
+        actionText={promptConfig.actionText}
+      />
     </div>
   );
 }

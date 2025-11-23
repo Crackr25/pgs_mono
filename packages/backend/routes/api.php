@@ -127,6 +127,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Company banner management
     Route::post('/companies/{company}/upload-banner', [CompanyController::class, 'uploadBanner']);
     Route::delete('/companies/{company}/banner', [CompanyController::class, 'deleteBanner']);
+    Route::post('/companies/{company}/upload-logo', [CompanyController::class, 'uploadLogo']);
+    Route::delete('/companies/{company}/logo', [CompanyController::class, 'deleteLogo']);
     
     // Product management
     Route::post('/products', [ProductController::class, 'store']);

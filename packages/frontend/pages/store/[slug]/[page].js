@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { getImageUrl } from '../../../lib/storefront-api';
 import ProductDetailModal from '../../../components/products/ProductDetailModal';
+import StorefrontHeader from '../../../components/storefront/StorefrontHeader';
 
 export default function StorefrontPage() {
   const router = useRouter();
@@ -160,33 +161,13 @@ export default function StorefrontPage() {
       <div className={shouldShowEmbeddedProfile ? "min-h-screen bg-white" : "min-h-screen bg-black"}>
         {/* Header Navigation */}
         <header className="bg-white shadow-sm sticky top-0 z-50">
-          {/* Company Info Bar */}
-          <div className="bg-white border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <Link href={`/store/${slug}`} className="flex items-center space-x-4 cursor-pointer">
-                  {company.logo && (
-                    <img 
-                      src={getImageUrl(company.logo)} 
-                      alt={company.name}
-                      className="h-12 w-auto"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
-                  </div>
-                </Link>
-                <div className="hidden md:flex items-center space-x-4">
-                  <button 
-                    className="px-6 py-2 rounded text-white font-semibold hover:opacity-90 transition"
-                    style={{ backgroundColor: primary_color }}
-                  >
-                    Contact Supplier
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Enhanced Company Info Header */}
+          <StorefrontHeader 
+            company={company}
+            storefront={storefront}
+            slug={slug}
+            primaryColor={primary_color}
+          />
 
           {/* Navigation Bar */}
           <div className="bg-black text-white">

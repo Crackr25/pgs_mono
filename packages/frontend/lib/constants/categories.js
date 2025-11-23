@@ -8,8 +8,6 @@ export const PRODUCT_CATEGORIES = [
   { value: 'automotive', label: 'Automotive' },
   { value: 'textiles', label: 'Textiles' },
   { value: 'machinery', label: 'Machinery' },
-  { value: 'chemicals', label: 'Chemicals' },
-  { value: 'food', label: 'Food & Beverages' },
   { value: 'construction', label: 'Construction Materials' },
   { value: 'packaging', label: 'Packaging' },
   { value: 'apparel', label: 'Apparel' },
