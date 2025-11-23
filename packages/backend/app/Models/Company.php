@@ -12,6 +12,7 @@ class Company extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'manufacturer_type',
         'registration',
         'peza_id',
         'location',
@@ -19,8 +20,10 @@ class Company extends Model
         'preferred_payout_method',
         'payout_settings',
         'year_established',
+        'years_in_business',
         'factory_size',
         'product_lines',
+        'main_categories',
         'employees',
         'description',
         'website',
@@ -29,6 +32,10 @@ class Company extends Model
         'logo',
         'company_banner',
         'verified',
+        'certification_badge',
+        'certification_agency',
+        'leading_factory_rank',
+        'odm_services_available',
         'status',
         // Onboarding file uploads
         'dti_sec_certificate',
@@ -52,9 +59,12 @@ class Company extends Model
 
     protected $casts = [
         'product_lines' => 'array',
+        'main_categories' => 'array',
         'payout_settings' => 'array',
         'verified' => 'boolean',
+        'odm_services_available' => 'boolean',
         'year_established' => 'integer',
+        'years_in_business' => 'integer',
         'employees' => 'integer',
         // File upload arrays
         'peza_documents' => 'array',

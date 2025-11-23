@@ -354,6 +354,19 @@ class ApiService {
     });
   }
 
+  async uploadCompanyLogo(companyId, file, onProgress) {
+    const formData = new FormData();
+    formData.append('logo', file);
+    
+    return this.uploadFormData(`/companies/${companyId}/upload-logo`, formData, onProgress);
+  }
+
+  async deleteCompanyLogo(companyId) {
+    return this.request(`/companies/${companyId}/logo`, {
+      method: 'DELETE'
+    });
+  }
+
   // Product methods
   async getProducts(params = {}) {
     console.log('');

@@ -108,9 +108,7 @@ export default function BuyerProfile() {
     'Industrial Equipment',
     'Construction Materials',
     'Textiles & Apparel',
-    'Food & Beverages',
     'Automotive Parts',
-    'Chemicals & Materials',
     'Furniture & Home Decor',
     'Medical & Healthcare',
     'Agriculture & Farming'

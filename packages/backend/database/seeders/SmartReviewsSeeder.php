@@ -276,14 +276,12 @@ class SmartReviewsSeeder extends Seeder
                 // Select random product from this company
                 $product = $products->random();
 
-                // Generate rating (weighted towards higher ratings - 70% are 4-5 stars)
+                // Generate rating (mostly 5 stars with some 4 stars to look natural - average will be 4.8/5)
                 $rand = rand(1, 100);
-                if ($rand <= 50) {
+                if ($rand <= 85) {
                     $rating = 5;
-                } elseif ($rand <= 85) {
-                    $rating = 4;
                 } else {
-                    $rating = 3;
+                    $rating = 4;
                 }
 
                 // Generate review

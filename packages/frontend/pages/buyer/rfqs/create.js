@@ -41,9 +41,7 @@ export default function CreateRFQ() {
     'Industrial Equipment',
     'Construction Materials',
     'Textiles & Apparel',
-    'Food & Beverages',
     'Automotive Parts',
-    'Chemicals & Materials',
     'Furniture & Home Decor',
     'Medical & Healthcare',
     'Agriculture & Farming',
@@ -96,13 +94,6 @@ export default function CreateRFQ() {
       { key: 'Weight Capacity', value: '' },
       { key: 'Safety Standards', value: '' },
       { key: 'Installation Requirements', value: '' }
-    ],
-    'Food & Beverages': [
-      { key: 'Shelf Life', value: '' },
-      { key: 'Storage Temperature', value: '' },
-      { key: 'Packaging Type', value: '' },
-      { key: 'Certifications Required', value: 'FDA, HACCP, Organic' },
-      { key: 'Ingredients List', value: '' }
     ],
     'Automotive Parts': [
       { key: 'Compatible Models', value: '' },

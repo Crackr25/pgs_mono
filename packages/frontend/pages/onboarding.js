@@ -230,9 +230,7 @@ export default function Onboarding() {
     { value: 'electronics', label: 'Electronics' },
     { value: 'automotive', label: 'Automotive Parts' },
     { value: 'textiles', label: 'Textiles' },
-    { value: 'machinery', label: 'Machinery' },
-    { value: 'chemicals', label: 'Chemicals' },
-    { value: 'food', label: 'Food & Beverages' }
+    { value: 'machinery', label: 'Machinery' }
   ];
 
   const renderStepContent = () => {
