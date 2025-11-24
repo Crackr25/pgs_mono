@@ -25,7 +25,7 @@ class Review extends Model
     ];
 
     protected $casts = [
-        'rating' => 'integer',
+        'rating' => 'decimal:1',
         'verified' => 'boolean',
         'response_date' => 'datetime'
     ];
