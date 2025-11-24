@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             OrderSeeder::class,
             ComprehensiveQuoteRFQSeeder::class,
+            CompanyVerificationBadgesSeeder::class,
             SmartReviewsSeeder::class,
         ]);
     }
