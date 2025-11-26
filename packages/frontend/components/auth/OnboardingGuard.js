@@ -29,7 +29,7 @@ const OnboardingGuard = ({ children }) => {
       });
       
       // Skip onboarding for buyers and agents - they don't need company setup
-      if (user.usertype === 'buyer' || user.usertype === 'agent') {
+      if (user.usertype === 'buyer' || user.usertype === 'agent' || user.usertype === 'admin') {
         console.log(`${user.usertype} detected, setting hasCompany to true`);
         setHasCompany(true);
         // Redirect to appropriate dashboard if they're on onboarding page

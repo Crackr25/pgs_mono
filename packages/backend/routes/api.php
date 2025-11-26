@@ -334,3 +334,43 @@ Route::get('/public/storefront/{slug}', [\App\Http\Controllers\Api\PublicStorefr
 Route::get('/public/storefront/{slug}/menu', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'getMenu']);
 Route::get('/public/storefront/{slug}/products', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'getProducts']);
 Route::get('/public/storefront/{slug}/page/{pageSlug}', [\App\Http\Controllers\Api\PublicStorefrontController::class, 'showPage']);
+
+// Admin routes - Protected by admin middleware
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    // User Management
+    Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index']);
+    Route::get('/users/statistics', [\App\Http\Controllers\Admin\AdminUserController::class, 'statistics']);
+    Route::get('/users/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show']);
+    Route::put('/users/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'update']);
+    Route::delete('/users/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'destroy']);
+    Route::post('/users/{id}/toggle-status', [\App\Http\Controllers\Admin\AdminUserController::class, 'toggleStatus']);
+    Route::post('/users/{id}/reset-password', [\App\Http\Controllers\Admin\AdminUserController::class, 'resetPassword']);
+    Route::post('/users/{id}/impersonate', [\App\Http\Controllers\Admin\AdminUserController::class, 'impersonate']);
+    Route::post('/users/stop-impersonation', [\App\Http\Controllers\Admin\AdminUserController::class, 'stopImpersonation']);
+    Route::get('/users/{id}/activity', [\App\Http\Controllers\Admin\AdminUserController::class, 'activityLog']);
+
+    // Company Management
+    Route::get('/companies', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'index']);
+    Route::get('/companies/statistics', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'statistics']);
+    Route::get('/companies/pending-verifications', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'pendingVerifications']);
+    Route::get('/companies/{id}', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'show']);
+    Route::put('/companies/{id}', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'update']);
+    Route::delete('/companies/{id}', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'destroy']);
+    Route::post('/companies/{id}/verify', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'verify']);
+    Route::post('/companies/{id}/reject', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'reject']);
+    Route::get('/companies/{id}/documents', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'documents']);
+    Route::post('/companies/{id}/stripe-status', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'updateStripeStatus']);
+    Route::get('/companies/{id}/activity', [\App\Http\Controllers\Admin\AdminCompanyController::class, 'activity']);
+
+    // Agent Management
+    Route::get('/agents', [\App\Http\Controllers\Admin\AdminAgentController::class, 'index']);
+    Route::get('/agents/statistics', [\App\Http\Controllers\Admin\AdminAgentController::class, 'statistics']);
+    Route::get('/agents/pending-invitations', [\App\Http\Controllers\Admin\AdminAgentController::class, 'pendingInvitations']);
+    Route::get('/agents/{id}', [\App\Http\Controllers\Admin\AdminAgentController::class, 'show']);
+    Route::put('/agents/{id}', [\App\Http\Controllers\Admin\AdminAgentController::class, 'update']);
+    Route::delete('/agents/{id}', [\App\Http\Controllers\Admin\AdminAgentController::class, 'destroy']);
+    Route::post('/agents/{id}/toggle-status', [\App\Http\Controllers\Admin\AdminAgentController::class, 'toggleStatus']);
+    Route::post('/agents/{id}/permissions', [\App\Http\Controllers\Admin\AdminAgentController::class, 'updatePermissions']);
+    Route::post('/agents/{id}/resend-invitation', [\App\Http\Controllers\Admin\AdminAgentController::class, 'resendInvitation']);
+    Route::get('/agents/{id}/activity', [\App\Http\Controllers\Admin\AdminAgentController::class, 'activity']);
+});

@@ -21,13 +21,10 @@ class WebSocketService {
     });
 
     this.pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-      wsHost: process.env.NEXT_PUBLIC_PUSHER_HOST,
-      wsPort: process.env.NEXT_PUBLIC_PUSHER_PORT,
-      wssPort: process.env.NEXT_PUBLIC_PUSHER_PORT,
-      forceTLS: process.env.NEXT_PUBLIC_PUSHER_SCHEME === 'https',
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap1',
+      forceTLS: true,
       enabledTransports: ['ws', 'wss'],
-      authEndpoint: `${process.env.NEXT_PUBLIC_API_URL}/broadcasting/auth`,
+      authEndpoint: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.pinoyglobalsupply.com/api'}/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${authToken}`,

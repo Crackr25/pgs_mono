@@ -28,7 +28,16 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirectPath = user.usertype === 'buyer' ? '/buyer' : '/';
+      let redirectPath = '/';
+      
+      if (user.usertype === 'admin') {
+        redirectPath = '/admin';
+      } else if (user.usertype === 'buyer') {
+        redirectPath = '/buyer';
+      } else if (user.usertype === 'agent') {
+        redirectPath = '/agent/dashboard';
+      }
+      
       router.push(redirectPath);
     }
   }, [isAuthenticated, user, router]);
@@ -62,11 +71,16 @@ export default function Login() {
       console.log('User data:', response.user);
       console.log('User type:', response.user?.usertype);
       
-      // Redirect based on user type and Stripe onboarding status
+      // Redirect based on user type
       const userType = response.user?.usertype || 'seller';
       
-      if (userType === 'buyer') {
+      if (userType === 'admin') {
+        // Admin users go directly to admin portal
+        router.push('/admin');
+      } else if (userType === 'buyer') {
         router.push('/buyer');
+      } else if (userType === 'agent') {
+        router.push('/agent/dashboard');
       } else {
         // For sellers, check if they have completed Stripe onboarding
         const company = response.user?.company;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { CheckCircle, AlertCircle, Info, X, Loader2 } from 'lucide-react';
 
 const Toast = ({ type = 'info', title, message, duration = 5000, onClose }) => {
@@ -88,8 +88,6 @@ const Toast = ({ type = 'info', title, message, duration = 5000, onClose }) => {
 };
 
 // Toast Provider Context
-import { createContext, useContext, useState } from 'react';
-
 const ToastContext = createContext();
 
 export const useToast = () => {

@@ -94,6 +94,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is an admin.
+     */
+    public function isAdmin()
+    {
+        return $this->usertype === 'admin';
+    }
+
+    /**
      * Get the active company context for the user.
      * For sellers, returns their own company.
      * For agents, returns the company they work for.

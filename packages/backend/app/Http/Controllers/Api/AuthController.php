@@ -76,7 +76,7 @@ class AuthController extends Controller
     {
         $user = $request->user();
         
-        // Load company information for agents and sellers
+        // Load company information for agents and sellers (not for admin)
         if ($user->usertype === 'agent') {
             $user->load('companyAgent.company');
             $activeCompany = $user->getActiveCompany();
@@ -84,6 +84,7 @@ class AuthController extends Controller
         } elseif ($user->usertype === 'seller') {
             $user->load('company');
         }
+        // Admin users don't need company data
         
         return response()->json($user);
     }

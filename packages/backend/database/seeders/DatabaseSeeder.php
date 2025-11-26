@@ -19,8 +19,9 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
 
-        // Run the OrderSeeder
+        // Run the seeders
         $this->call([
+            AdminSeeder::class,
             OrderSeeder::class,
             ComprehensiveQuoteRFQSeeder::class,
         ]);

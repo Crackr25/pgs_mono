@@ -5,6 +5,7 @@ import Layout from '../components/layout/Layout';
 import AuthGuard from '../components/auth/AuthGuard';
 import OnboardingGuard from '../components/auth/OnboardingGuard';
 import { AuthProvider } from '../contexts/AuthContext';
+import { ToastProvider } from '../components/common/Toast';
 
 // Pages that don't require authentication
 // All buyer pages are public, allowing unauthenticated browsing
@@ -34,17 +35,19 @@ export default function App({ Component, pageProps }) {
 
   return (
     <AuthProvider>
-      <Layout>
-        {isPublicPage || isBuyerPageRoute || isStorefrontPageRoute || isAgentInvitationPageRoute ? (
-          <Component {...pageProps} />
-        ) : (
-          <AuthGuard>
-            <OnboardingGuard>
-              <Component {...pageProps} />
-            </OnboardingGuard>
-          </AuthGuard>
-        )}
-      </Layout>
+      <ToastProvider>
+        <Layout>
+          {isPublicPage || isBuyerPageRoute || isStorefrontPageRoute || isAgentInvitationPageRoute ? (
+            <Component {...pageProps} />
+          ) : (
+            <AuthGuard>
+              <OnboardingGuard>
+                <Component {...pageProps} />
+              </OnboardingGuard>
+            </AuthGuard>
+          )}
+        </Layout>
+      </ToastProvider>
     </AuthProvider>
   );
 }

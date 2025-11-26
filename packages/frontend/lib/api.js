@@ -1373,6 +1373,214 @@ class ApiService {
       }
     });
   }
+
+  // ==================== Admin API Methods ====================
+  
+  // Admin - Get all users with pagination and filters
+  async getAdminUsers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/users${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get user statistics
+  async getAdminUserStatistics() {
+    return this.request('/admin/users/statistics');
+  }
+
+  // Admin - Get specific user
+  async getAdminUser(id) {
+    return this.request(`/admin/users/${id}`);
+  }
+
+  // Admin - Update user
+  async updateAdminUser(id, data) {
+    return this.request(`/admin/users/${id}`, {
+      method: 'PUT',
+      data
+    });
+  }
+
+  // Admin - Delete user
+  async deleteAdminUser(id) {
+    return this.request(`/admin/users/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Admin - Toggle user status
+  async toggleAdminUserStatus(id) {
+    return this.request(`/admin/users/${id}/toggle-status`, {
+      method: 'POST'
+    });
+  }
+
+  // Admin - Reset user password
+  async resetAdminUserPassword(id, password, passwordConfirmation) {
+    return this.request(`/admin/users/${id}/reset-password`, {
+      method: 'POST',
+      data: {
+        password,
+        password_confirmation: passwordConfirmation
+      }
+    });
+  }
+
+  // Admin - Get user activity log
+  async getAdminUserActivity(id) {
+    return this.request(`/admin/users/${id}/activity`);
+  }
+
+  // Admin - Impersonate user
+  async impersonateUser(id) {
+    return this.request(`/admin/users/${id}/impersonate`, {
+      method: 'POST'
+    });
+  }
+
+  // Admin - Stop impersonation
+  async stopImpersonation() {
+    return this.request('/admin/users/stop-impersonation', {
+      method: 'POST'
+    });
+  }
+
+  // ==================== Admin Company Management ====================
+  
+  // Admin - Get all companies with pagination and filters
+  async getAdminCompanies(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/companies${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get company statistics
+  async getAdminCompanyStatistics() {
+    return this.request('/admin/companies/statistics');
+  }
+
+  // Admin - Get pending verifications
+  async getAdminPendingVerifications(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/companies/pending-verifications${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific company
+  async getAdminCompany(id) {
+    return this.request(`/admin/companies/${id}`);
+  }
+
+  // Admin - Update company
+  async updateAdminCompany(id, data) {
+    return this.request(`/admin/companies/${id}`, {
+      method: 'PUT',
+      data
+    });
+  }
+
+  // Admin - Delete company
+  async deleteAdminCompany(id) {
+    return this.request(`/admin/companies/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Admin - Verify company
+  async verifyAdminCompany(id) {
+    return this.request(`/admin/companies/${id}/verify`, {
+      method: 'POST'
+    });
+  }
+
+  // Admin - Reject company verification
+  async rejectAdminCompany(id, reason) {
+    return this.request(`/admin/companies/${id}/reject`, {
+      method: 'POST',
+      data: { reason }
+    });
+  }
+
+  // Admin - Get company documents
+  async getAdminCompanyDocuments(id) {
+    return this.request(`/admin/companies/${id}/documents`);
+  }
+
+  // Admin - Update Stripe status
+  async updateAdminCompanyStripeStatus(id, status) {
+    return this.request(`/admin/companies/${id}/stripe-status`, {
+      method: 'POST',
+      data: { stripe_onboarding_status: status }
+    });
+  }
+
+  // Admin - Get company activity
+  async getAdminCompanyActivity(id) {
+    return this.request(`/admin/companies/${id}/activity`);
+  }
+
+  // ==================== Admin Agent Management ====================
+  
+  // Admin - Get all agents with pagination and filters
+  async getAdminAgents(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/agents${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get agent statistics
+  async getAdminAgentStatistics() {
+    return this.request('/admin/agents/statistics');
+  }
+
+  // Admin - Get pending invitations
+  async getAdminPendingInvitations(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/agents/pending-invitations${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific agent
+  async getAdminAgent(id) {
+    return this.request(`/admin/agents/${id}`);
+  }
+
+  // Admin - Update agent
+  async updateAdminAgent(id, data) {
+    return this.request(`/admin/agents/${id}`, {
+      method: 'PUT',
+      data
+    });
+  }
+
+  // Admin - Delete agent
+  async deleteAdminAgent(id) {
+    return this.request(`/admin/agents/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Admin - Toggle agent status
+  async toggleAdminAgentStatus(id) {
+    return this.request(`/admin/agents/${id}/toggle-status`, {
+      method: 'POST'
+    });
+  }
+
+  // Admin - Update agent permissions
+  async updateAdminAgentPermissions(id, permissions, role) {
+    return this.request(`/admin/agents/${id}/permissions`, {
+      method: 'POST',
+      data: { permissions, role }
+    });
+  }
+
+  // Admin - Resend agent invitation
+  async resendAdminAgentInvitation(id) {
+    return this.request(`/admin/agents/${id}/resend-invitation`, {
+      method: 'POST'
+    });
+  }
+
+  // Admin - Get agent activity
+  async getAdminAgentActivity(id) {
+    return this.request(`/admin/agents/${id}/activity`);
+  }
 }
 
 const apiService = new ApiService();

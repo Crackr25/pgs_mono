@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { CartProvider } from '../../contexts/CartContext';
@@ -7,13 +7,24 @@ import BuyerNavBar from './BuyerNavBar';
 import BuyerGlobalTopNav from './BuyerGlobalTopNav';
 import SideBar from './SideBar';
 import BuyerSideBar from './BuyerSideBar';
+import AdminLayout from '../admin/AdminLayout';
 import Footer from './Footer';
 import ProminentSearchBar from '../common/ProminentSearchBar';
+import ImpersonationBanner from '../common/ImpersonationBanner';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+
+  // Check if admin is impersonating
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const impersonating = localStorage.getItem('is_impersonating') === 'true';
+      setIsImpersonating(impersonating);
+    }
+  }, []);
 
   // Debug logging
   console.log('Layout Debug:', {
@@ -23,6 +34,33 @@ export default function Layout({ children }) {
     usertype: user?.usertype
   });
 
+  // Determine page types and user types BEFORE any hooks
+  const isAdminPage = router.pathname.startsWith('/admin');
+  const isBuyerUser = user?.usertype === 'buyer';
+  const isBuyerPage = router.pathname.startsWith('/buyer') || (isBuyerUser && router.pathname === '/chat');
+  const isBuyerDashboard = router.pathname === '/buyer';
+  const isUnauthenticatedBuyerPage = !isAuthenticated && router.pathname.startsWith('/buyer');
+  
+  // ALL useEffect hooks MUST be called before any conditional returns
+  // Handle admin route protection
+  useEffect(() => {
+    if (isAdminPage && (!isAuthenticated || user?.usertype !== 'admin')) {
+      router.push('/login');
+    }
+  }, [isAdminPage, isAuthenticated, user, router]);
+
+  // Handle role-based redirects
+  useEffect(() => {
+    // Prevent buyers from accessing seller portal
+    if (isAuthenticated && user?.usertype === 'buyer' && !router.pathname.startsWith('/buyer') && !router.pathname.startsWith('/admin')) {
+      router.push('/buyer');
+    }
+    // Prevent sellers from accessing buyer portal
+    if (isAuthenticated && user?.usertype === 'seller' && router.pathname.startsWith('/buyer')) {
+      router.push('/');
+    }
+  }, [isAuthenticated, user, router.pathname, router]);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -30,6 +68,24 @@ export default function Layout({ children }) {
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
+
+  // NOW we can do conditional returns
+  if (isAdminPage) {
+    // Show loading while checking authentication
+    if (!isAuthenticated || user?.usertype !== 'admin') {
+      return (
+        <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p className="mt-4 text-secondary-600">Redirecting...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Use admin layout for admin users
+    return <AdminLayout>{children}</AdminLayout>;
+  }
 
   // Layout for unauthenticated users
   // Only use minimal layout for login page and agent invitation pages, not for buyer pages
@@ -63,15 +119,6 @@ export default function Layout({ children }) {
     );
   }
 
-  // Determine if this is a buyer page or buyer accessing chat
-  // Updated to work for both authenticated and unauthenticated users
-  const isBuyerUser = user?.usertype === 'buyer';
-  const isBuyerPage = router.pathname.startsWith('/buyer') || (isBuyerUser && router.pathname === '/chat');
-  const isBuyerDashboard = router.pathname === '/buyer';
-  
-  // For unauthenticated users, treat all /buyer routes as buyer pages
-  const isUnauthenticatedBuyerPage = !isAuthenticated && router.pathname.startsWith('/buyer');
-  
   // Determine when to show the prominent search bar (Alibaba-style)
   // Show on main buyer pages but not on detail pages, forms, or specific functionality pages
   const shouldShowProminentSearch = (isBuyerPage || isUnauthenticatedBuyerPage) && (
@@ -93,6 +140,7 @@ export default function Layout({ children }) {
     return (
       <CartProvider>
         <div className="min-h-screen bg-secondary-50">
+          {isImpersonating && <ImpersonationBanner />}
           <BuyerGlobalTopNav />
           {/* Prominent Search Bar - Alibaba Style (only on homepage) */}
           {shouldShowProminentSearch && <ProminentSearchBar />}
@@ -114,6 +162,7 @@ export default function Layout({ children }) {
     return (
       <CartProvider>
         <div className="min-h-screen bg-secondary-50">
+          {isImpersonating && <ImpersonationBanner />}
           <BuyerGlobalTopNav />
           {/* Prominent Search Bar - Alibaba Style (on main listing pages) */}
           {shouldShowProminentSearch && <ProminentSearchBar />}
@@ -134,9 +183,7 @@ export default function Layout({ children }) {
   }
 
   // Role-based redirect logic - prevent buyers from accessing seller portal
-  if (isAuthenticated && user?.usertype === 'buyer' && !router.pathname.startsWith('/buyer')) {
-    // Redirect buyers to buyer portal if they try to access seller routes
-    router.push('/buyer');
+  if (isAuthenticated && user?.usertype === 'buyer' && !router.pathname.startsWith('/buyer') && !router.pathname.startsWith('/admin')) {
     return (
       <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -149,8 +196,6 @@ export default function Layout({ children }) {
 
   // Role-based redirect logic - prevent sellers from accessing buyer portal
   if (isAuthenticated && user?.usertype === 'seller' && router.pathname.startsWith('/buyer')) {
-    // Redirect sellers to seller portal if they try to access buyer routes
-    router.push('/');
     return (
       <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -163,19 +208,22 @@ export default function Layout({ children }) {
 
   // Layout for seller pages (existing functionality)
   return (
-    <div className="min-h-screen bg-secondary-50 flex">
-      <SideBar isOpen={sidebarOpen} onClose={closeSidebar} />
-      
-      <div className="flex-1 flex flex-col lg:ml-0">
-        <NavBar onMenuToggle={toggleSidebar} isSidebarOpen={sidebarOpen} />
+    <div className="min-h-screen bg-secondary-50">
+      {isImpersonating && <ImpersonationBanner />}
+      <div className="flex">
+        <SideBar isOpen={sidebarOpen} onClose={closeSidebar} />
         
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-        
-        <Footer />
+        <div className="flex-1 flex flex-col lg:ml-0">
+          <NavBar onMenuToggle={toggleSidebar} isSidebarOpen={sidebarOpen} />
+          
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
+          
+          <Footer />
+        </div>
       </div>
     </div>
   );
