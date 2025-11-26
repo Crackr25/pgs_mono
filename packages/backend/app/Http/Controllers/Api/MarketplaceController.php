@@ -19,18 +19,30 @@ class MarketplaceController extends Controller
         $perPage = 12; // Reduced from 30 to 12 to make pagination more visible
         $page = $request->get('page', 1);
         
+        // Log incoming filters for debugging
+        \Log::info('Marketplace Products Request', [
+            'filters' => $request->all(),
+            'category' => $request->category,
+            'location' => $request->location,
+        ]);
+        
         // Get random products with their company and main image
         $query = Product::with([
             'company:user_id,id,name,location,verified',
             'company.storefront:id,company_id,slug,is_active',
             'mainImage:id,product_id,image_path'
         ])
-        ->where('active', true)
-        ->inRandomOrder();
+        ->where('active', true);
         
         // Apply filters if provided
         if ($request->has('category') && $request->category) {
-            $query->where('category', $request->category);
+            // Normalize category for case-insensitive comparison
+            $categoryFilter = strtolower(trim($request->category));
+            \Log::info('Applying category filter', [
+                'original' => $request->category,
+                'normalized' => $categoryFilter
+            ]);
+            $query->where('category', $categoryFilter);
         }
         
         if ($request->has('location') && $request->location) {
@@ -39,6 +51,23 @@ class MarketplaceController extends Controller
             });
         }
         
+        // Handle price range filter (e.g., "0-100", "100-500", "5000+")
+        if ($request->has('priceRange') && $request->priceRange) {
+            $priceRange = $request->priceRange;
+            \Log::info('Applying price range filter', ['priceRange' => $priceRange]);
+            
+            if (strpos($priceRange, '+') !== false) {
+                // Handle "5000+" format
+                $minPrice = (int) str_replace('+', '', $priceRange);
+                $query->where('price', '>=', $minPrice);
+            } elseif (strpos($priceRange, '-') !== false) {
+                // Handle "0-100" format
+                list($minPrice, $maxPrice) = explode('-', $priceRange);
+                $query->whereBetween('price', [(int) $minPrice, (int) $maxPrice]);
+            }
+        }
+        
+        // Also support individual min_price and max_price for backward compatibility
         if ($request->has('min_price') && $request->min_price) {
             $query->where('price', '>=', $request->min_price);
         }
@@ -49,12 +78,41 @@ class MarketplaceController extends Controller
         
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            
+            // Category label to value mapping for search
+            $categoryMap = [
+                'electronics' => 'electronics',
+                'automotive' => 'automotive',
+                'textiles' => 'textiles',
+                'machinery' => 'machinery',
+                'construction materials' => 'construction',
+                'construction' => 'construction',
+                'packaging' => 'packaging',
+                'apparel' => 'apparel',
+                'conductor' => 'conductor',
+                'furniture' => 'furniture',
+                'hair clipper' => 'hair_clipper',
+                'hair_clipper' => 'hair_clipper',
+                'metal' => 'metal'
+            ];
+            
+            $searchLower = strtolower($search);
+            $matchedCategory = $categoryMap[$searchLower] ?? null;
+            
+            $query->where(function($q) use ($search, $matchedCategory) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhere('category', 'like', "%{$search}%");
+                
+                // If search matches a category label, also search by the exact category value
+                if ($matchedCategory) {
+                    $q->orWhere('category', $matchedCategory);
+                }
             });
         }
+        
+        // Apply random ordering after all filters
+        $query->inRandomOrder();
         
         $products = $query->paginate($perPage);
         
@@ -121,8 +179,6 @@ class MarketplaceController extends Controller
             'automotive', 
             'textiles',
             'machinery',
-            'chemicals',
-            'food',
             'construction',
             'packaging',
             'apparel',
@@ -144,6 +200,11 @@ class MarketplaceController extends Controller
 
         // Merge standard categories with any additional ones from database
         $allCategories = array_unique(array_merge($standardCategories, $existingCategories));
+        
+        // Filter out removed categories (chemicals and food)
+        $allCategories = array_filter($allCategories, function($category) {
+            return !in_array($category, ['chemicals', 'food']);
+        });
         
         // Sort and return
         sort($allCategories);

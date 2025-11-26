@@ -82,6 +82,8 @@ Route::post('/search/track', [SearchController::class, 'trackSearch']);
 Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
 Route::get('/suppliers/{id}/products', [SupplierController::class, 'products']);
 Route::get('/suppliers/{id}/reviews', [SupplierController::class, 'reviews']);
+Route::get('/suppliers/{id}/reviews/stats', [SupplierController::class, 'reviewStats']);
+Route::post('/suppliers/{id}/reviews', [SupplierController::class, 'submitReview']); // Submit review (public)
 
 // Quote creation (public - buyers don't need accounts)
 Route::post('/quotes', [QuoteController::class, 'store']);
@@ -125,6 +127,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Company banner management
     Route::post('/companies/{company}/upload-banner', [CompanyController::class, 'uploadBanner']);
     Route::delete('/companies/{company}/banner', [CompanyController::class, 'deleteBanner']);
+    Route::post('/companies/{company}/upload-logo', [CompanyController::class, 'uploadLogo']);
+    Route::delete('/companies/{company}/logo', [CompanyController::class, 'deleteLogo']);
     
     // Product management
     Route::post('/products', [ProductController::class, 'store']);

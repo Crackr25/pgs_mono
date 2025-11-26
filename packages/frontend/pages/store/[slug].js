@@ -1,10 +1,12 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { storefrontAPI, getImageUrl } from '../../lib/storefront-api';
+import apiService from '../../lib/api';
 import Head from 'next/head';
 import Link from 'next/link';
 import ProductDetailModal from '../../components/products/ProductDetailModal';
 import EmbeddedSupplierProfile from '../../components/storefront/EmbeddedSupplierProfile';
+import StorefrontHeader from '../../components/storefront/StorefrontHeader';
 
 export default function PublicStorefront() {
   const router = useRouter();
@@ -150,38 +152,15 @@ export default function PublicStorefront() {
       <div className="min-h-screen bg-white">
         {/* Header Navigation */}
         <header className="bg-white shadow-sm sticky top-0 z-50">
-          {/* Company Info Bar */}
-          <div className="bg-white border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <Link 
-                  href={landing_page ? `/store/${slug}/${landing_page.slug}` : `/store/${slug}`} 
-                  className="flex items-center space-x-4 cursor-pointer"
-                >
-                  {company.logo && (
-                    <img 
-                      src={getImageUrl(company.logo)} 
-                      alt={company.name}
-                      className="h-12 w-auto"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
-                  </div>
-                </Link>
-                <div className="hidden md:flex items-center space-x-4">
-                  <button 
-                    className="px-6 py-2 rounded text-white font-semibold hover:opacity-90 transition"
-                    style={{ backgroundColor: primary_color }}
-                  >
-                    Contact Supplier
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Enhanced Company Info Header */}
+          <StorefrontHeader 
+            company={company}
+            storefront={storefront}
+            slug={slug}
+            primaryColor={primary_color}
+          />
 
-          {/* Alibaba-style Black Navigation Bar */}
+          {/* Professional Navigation Bar */}
           <div className="bg-black text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <nav className="flex items-center h-12">
@@ -1037,6 +1016,470 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
               <p className="text-sm">Please select products to feature in the page builder</p>
             </div>
           )}
+        </div>
+      </section>
+    );
+  }
+
+  // Company Reviews Section (Professional B2B Style)
+  if (section_type === 'company_reviews') {
+    // State for dynamic reviews
+    const [reviews, setReviews] = useState(settings?.reviews || []);
+    const [reviewStats, setReviewStats] = useState(null);
+    const [loadingReviews, setLoadingReviews] = useState(true);
+    const [showReviewForm, setShowReviewForm] = useState(false);
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reviewForm, setReviewForm] = useState({
+      reviewer_name: '',
+      reviewer_email: '',
+      reviewer_company: '',
+      rating: 5,
+      title: '',
+      comment: ''
+    });
+    
+    // Fetch reviews from API
+    useEffect(() => {
+      const fetchReviews = async () => {
+        try {
+          // If settings has reviews, use static data
+          if (settings?.reviews && settings.reviews.length > 0) {
+            setLoadingReviews(false);
+            return;
+          }
+          
+          // Otherwise, fetch from API
+          const [reviewsData, statsData] = await Promise.all([
+            apiService.getSupplierReviews(company.id, { per_page: 20 }),
+            apiService.getSupplierReviewStats(company.id)
+          ]);
+          
+          setReviews(reviewsData.data || []);
+          setReviewStats(statsData);
+        } catch (error) {
+          console.error('Failed to fetch reviews:', error);
+        } finally {
+          setLoadingReviews(false);
+        }
+      };
+      
+      if (company?.id) {
+        fetchReviews();
+      }
+    }, [company.id, settings?.reviews]);
+    
+    // Calculate rating breakdown
+    const overallRating = reviewStats?.average_rating || settings?.overall_rating || 0;
+    const totalReviews = reviewStats?.total_reviews || reviews.length;
+    const ratingBreakdown = reviewStats?.rating_breakdown || {
+      5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+    };
+    
+    // If no stats from API, calculate from local reviews
+    if (!reviewStats && reviews.length > 0) {
+      reviews.forEach(review => {
+        if (review.rating && ratingBreakdown[review.rating] !== undefined) {
+          ratingBreakdown[review.rating]++;
+        }
+      });
+    }
+    
+    // Handle review form submission
+    const handleSubmitReview = async (e) => {
+      e.preventDefault();
+      setSubmittingReview(true);
+      
+      try {
+        await apiService.submitSupplierReview(company.id, reviewForm);
+        
+        // Show success message
+        alert('Thank you for your review! It will appear after verification.');
+        
+        // Reset form
+        setReviewForm({
+          reviewer_name: '',
+          reviewer_email: '',
+          reviewer_company: '',
+          rating: 5,
+          title: '',
+          comment: ''
+        });
+        setShowReviewForm(false);
+        
+        // Refresh reviews
+        const [reviewsData, statsData] = await Promise.all([
+          apiService.getSupplierReviews(company.id, { per_page: 20 }),
+          apiService.getSupplierReviewStats(company.id)
+        ]);
+        
+        setReviews(reviewsData.data || []);
+        setReviewStats(statsData);
+        
+      } catch (error) {
+        console.error('Failed to submit review:', error);
+        alert('Failed to submit review. Please try again.');
+      } finally {
+        setSubmittingReview(false);
+      }
+    };
+
+    return (
+      <section className="mb-8">
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Supplier Reviews'}</h2>
+          
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Overall Rating Card */}
+            <div className="md:col-span-1 bg-gray-50 rounded-lg p-6">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-orange-500 mb-2">
+                  {overallRating.toFixed(1)}
+                  <span className="text-2xl text-gray-600">/5</span>
+                </div>
+                <div className="flex justify-center mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg
+                      key={star}
+                      className={`w-6 h-6 ${star <= Math.round(overallRating) ? 'text-orange-500' : 'text-gray-300'}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-gray-600 font-semibold">Very satisfied</p>
+                <p className="text-sm text-gray-500 mt-1">{totalReviews} Reviews</p>
+              </div>
+
+              {/* Supplier Service Ratings */}
+              <div className="mt-6 space-y-3 border-t pt-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-600">Supplier Service</span>
+                    <span className="text-sm font-semibold text-orange-500">5.0</span>
+                  </div>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg key={star} className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-600">On-time shipment</span>
+                    <span className="text-sm font-semibold text-orange-500">5.0</span>
+                  </div>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg key={star} className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-600">Product Quality</span>
+                    <span className="text-sm font-semibold text-orange-500">5.0</span>
+                  </div>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg key={star} className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Quality Breakdown */}
+            <div className="md:col-span-2">
+              <h3 className="text-lg font-semibold mb-4">Product Quality</h3>
+              <div className="space-y-3">
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const count = ratingBreakdown[stars] || 0;
+                  const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                  
+                  return (
+                    <div key={stars} className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600 w-16">{stars} Stars</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-orange-500 h-full rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-600 w-16 text-right">
+                        {percentage.toFixed(0)}% ({count})
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Write Review Button */}
+          <div className="mb-6 flex justify-between items-center">
+            <h3 className="text-lg font-semibold">All Reviews</h3>
+            <button
+              onClick={() => setShowReviewForm(!showReviewForm)}
+              className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Write a Review
+            </button>
+          </div>
+
+          {/* Review Submission Form */}
+          {showReviewForm && (
+            <div className="mb-8 bg-gray-50 rounded-lg p-6 border-2 border-orange-200">
+              <h3 className="text-xl font-bold mb-4">Share Your Experience</h3>
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={reviewForm.reviewer_name}
+                      onChange={(e) => setReviewForm({...reviewForm, reviewer_name: e.target.value})}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="John Smith"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={reviewForm.reviewer_email}
+                      onChange={(e) => setReviewForm({...reviewForm, reviewer_email: e.target.value})}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="john@example.com"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={reviewForm.reviewer_company}
+                    onChange={(e) => setReviewForm({...reviewForm, reviewer_company: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Your Company Name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rating <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewForm({...reviewForm, rating: star})}
+                        className="focus:outline-none"
+                      >
+                        <svg
+                          className={`w-8 h-8 ${star <= reviewForm.rating ? 'text-orange-500' : 'text-gray-300'} hover:text-orange-400 transition`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </button>
+                    ))}
+                    <span className="ml-2 text-gray-600 font-semibold">{reviewForm.rating} star{reviewForm.rating !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Review Title (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={reviewForm.title}
+                    onChange={(e) => setReviewForm({...reviewForm, title: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="e.g., Excellent Quality Products"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Review <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    required
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+                    rows={5}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Share your experience with this supplier..."
+                    maxLength={2000}
+                  />
+                  <p className="text-sm text-gray-500 mt-1">{reviewForm.comment.length}/2000 characters</p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="px-6 py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewForm(false)}
+                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Review Filters */}
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              <button className="px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200 transition">
+                ALL
+              </button>
+              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition">
+                With pictures({reviews.filter(r => r.images?.length > 0).length})
+              </button>
+              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition">
+                With videos(0)
+              </button>
+              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition">
+                Good service(3)
+              </button>
+              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition">
+                Fast shipping(1)
+              </button>
+            </div>
+          </div>
+
+          {/* Individual Reviews */}
+          <div className="space-y-6">
+            {reviews.length > 0 ? (
+              reviews.map((review, idx) => (
+                <div key={idx} className="border-b pb-6 last:border-b-0">
+                  <div className="flex items-start gap-4">
+                    {/* User Avatar */}
+                    <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                      {review.author?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    
+                    <div className="flex-1">
+                      {/* Review Header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-semibold">{review.author || 'Anonymous'}</p>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span className="flex items-center">
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {review.country || 'Global'}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-500">{review.date || 'Recent'}</p>
+                      </div>
+
+                      {/* Rating */}
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Supplier Service:</span>
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <svg
+                                key={star}
+                                className={`w-4 h-4 ${star <= (review.rating || 5) ? 'text-orange-500' : 'text-gray-300'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <span className="text-sm font-semibold text-orange-500">{review.rating || 5} stars</span>
+                        </div>
+                      </div>
+
+                      {/* Product Info */}
+                      {review.product && (
+                        <div className="flex items-center gap-3 mb-3 bg-gray-50 p-3 rounded">
+                          {review.product_image && (
+                            <img 
+                              src={getImageUrl(review.product_image)} 
+                              alt={review.product}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          )}
+                          <p className="text-sm text-gray-700 font-medium">{review.product}</p>
+                        </div>
+                      )}
+
+                      {/* Review Text */}
+                      <p className="text-gray-700 mb-3 leading-relaxed">{review.comment || review.text}</p>
+
+                      {/* Review Images */}
+                      {review.images && review.images.length > 0 && (
+                        <div className="flex gap-2 mb-3">
+                          {review.images.map((img, imgIdx) => (
+                            <img
+                              key={imgIdx}
+                              src={getImageUrl(img)}
+                              alt={`Review ${idx + 1} - Image ${imgIdx + 1}`}
+                              className="w-24 h-24 object-cover rounded border hover:opacity-75 transition cursor-pointer"
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Helpful Button */}
+                      <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                        </svg>
+                        <span>Helpful ({review.helpful || 0})</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <p className="text-gray-500 text-lg">No reviews yet</p>
+                <p className="text-gray-400 text-sm mt-2">Be the first to review this supplier</p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
     );

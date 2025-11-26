@@ -222,6 +222,9 @@ export default function CompanyProfile() {
         case 'factory-tour':
           response = await apiService.uploadFactoryTour(company.id, files, onProgress);
           break;
+        case 'logo':
+          response = await apiService.uploadCompanyLogo(company.id, files[0], onProgress);
+          break;
         case 'banner':
           response = await apiService.uploadCompanyBanner(company.id, files[0], onProgress);
           break;
@@ -291,6 +294,32 @@ export default function CompanyProfile() {
     } catch (error) {
       console.error('Delete banner error:', error);
       setError(error.message || 'Failed to delete banner');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    if (!company || !company.logo) return;
+
+    if (!confirm('Are you sure you want to delete the company logo?')) return;
+
+    setError(null);
+    setIsSaving(true);
+
+    try {
+      const response = await apiService.deleteCompanyLogo(company.id);
+      
+      // Update company data to remove logo
+      setCompany(prev => ({
+        ...prev,
+        logo: null
+      }));
+
+      console.log('Logo deleted successfully');
+    } catch (error) {
+      console.error('Delete logo error:', error);
+      setError(error.message || 'Failed to delete logo');
     } finally {
       setIsSaving(false);
     }
@@ -384,6 +413,67 @@ export default function CompanyProfile() {
             <div className="text-sm text-red-700">{error}</div>
           </div>
         )}
+
+        {/* Company Logo */}
+        <Card>
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-secondary-900 mb-6">
+              Company Logo
+            </h3>
+            
+            {/* Logo Display */}
+            <div className="mb-6">
+              {company.logo ? (
+                <div className="relative inline-block">
+                  <div className="w-32 h-32 rounded-lg overflow-hidden bg-white border-2 border-secondary-200 p-2">
+                    <img
+                      src={company.logo.startsWith('http') ? company.logo : `${process.env.NEXT_PUBLIC_STORAGE_URL || '/storage'}/${company.logo}`}
+                      alt="Company Logo"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={handleLogoDelete}
+                      className="absolute -top-2 -right-2 p-1.5 rounded-full bg-red-600 text-white hover:bg-red-700 shadow-lg"
+                      title="Delete logo"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6 px-4 border-2 border-dashed border-secondary-300 rounded-lg bg-secondary-50">
+                  <Camera className="mx-auto h-12 w-12 text-secondary-400" />
+                  <div className="mt-4">
+                    <h3 className="mt-2 text-sm font-medium text-secondary-900">No logo image</h3>
+                    <p className="mt-1 text-xs text-secondary-500">
+                      Upload a square logo image (recommended 200x200px)
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Logo Upload */}
+            {isEditing && (
+              <div className="border-t pt-6">
+                <FileUpload
+                  key={`logo-upload-${isEditing}`}
+                  label={company.logo ? "Replace Logo" : "Upload Logo"}
+                  accept=".jpg,.jpeg,.png,.webp,.svg"
+                  multiple={false}
+                  maxSize={5}
+                  onUpload={(files) => handleFileUpload(files, 'logo')}
+                  uploadProgress={uploadProgress}
+                  uploadErrors={uploadErrors}
+                  description="Recommended size: 200x200px (square). Supported formats: JPG, PNG, WebP, SVG (max 5MB)"
+                />
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Company Banner */}
         <Card>

@@ -39,34 +39,6 @@ export default function CompanyProfile() {
       </Head>
 
       <div className="min-h-screen bg-gray-50">
-        {/* Navigation Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-50">
-          <div className="bg-white border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <Link href={`/store/${slug}`}>
-                  <div className="flex items-center space-x-4 cursor-pointer">
-                    {company.logo && (
-                      <img src={getImageUrl(company.logo)} alt={company.name} className="h-12 w-auto" />
-                    )}
-                    <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-black text-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <nav className="flex items-center h-12 space-x-8">
-                <Link href={`/store/${slug}`} className="text-sm hover:text-gray-300">Home</Link>
-                <Link href={`/store/${slug}/products`} className="text-sm hover:text-gray-300">Products</Link>
-                <Link href={`/store/${slug}/profile`} className="text-sm text-blue-400 border-b-2 border-blue-400">Profile</Link>
-                <Link href={`/store/${slug}/contact`} className="text-sm hover:text-gray-300">Contact</Link>
-              </nav>
-            </div>
-          </div>
-        </header>
 
         {/* Custom Company Profile Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

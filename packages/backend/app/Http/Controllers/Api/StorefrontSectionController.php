@@ -15,7 +15,7 @@ class StorefrontSectionController extends Controller
         $validated = $request->validate([
             'storefront_id' => 'required|exists:company_storefronts,id',
             'page_id' => 'nullable|exists:storefront_pages,id',
-            'section_type' => 'required|in:banner,hero,heading,text,about,products_showcase,featured_products,gallery,image,video,certifications,testimonials,team,contact,slider',
+            'section_type' => 'required|in:banner,hero,heading,text,about,products_showcase,featured_products,gallery,image,video,certifications,testimonials,team,contact,slider,company_reviews',
             'title' => 'nullable|string|max:200',
             'content' => 'nullable|string|max:5000',
             'settings' => 'nullable',
@@ -89,7 +89,7 @@ class StorefrontSectionController extends Controller
 
         $validated = $request->validate([
             'page_id' => 'nullable|exists:storefront_pages,id',
-            'section_type' => 'sometimes|in:banner,hero,heading,text,about,products_showcase,featured_products,gallery,image,video,certifications,testimonials,team,contact,slider',
+            'section_type' => 'sometimes|in:banner,hero,heading,text,about,products_showcase,featured_products,gallery,image,video,certifications,testimonials,team,contact,slider,company_reviews',
             'title' => 'nullable|string|max:200',
             'content' => 'nullable|string|max:5000',
             'settings' => 'nullable',

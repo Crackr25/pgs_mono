@@ -148,7 +148,16 @@ export default function SearchResults() {
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: value };
+      
+      // When changing category or price filter, clear the search term to avoid conflicts
+      if ((key === 'category' || key === 'priceRange') && value !== '') {
+        newFilters.search = '';
+      }
+      
+      return newFilters;
+    });
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 

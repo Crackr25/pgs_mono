@@ -354,6 +354,19 @@ class ApiService {
     });
   }
 
+  async uploadCompanyLogo(companyId, file, onProgress) {
+    const formData = new FormData();
+    formData.append('logo', file);
+    
+    return this.uploadFormData(`/companies/${companyId}/upload-logo`, formData, onProgress);
+  }
+
+  async deleteCompanyLogo(companyId) {
+    return this.request(`/companies/${companyId}/logo`, {
+      method: 'DELETE'
+    });
+  }
+
   // Product methods
   async getProducts(params = {}) {
     console.log('');
@@ -907,6 +920,17 @@ class ApiService {
   async getSupplierReviews(supplierId, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return this.publicRequest(`/suppliers/${supplierId}/reviews${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getSupplierReviewStats(supplierId) {
+    return this.publicRequest(`/suppliers/${supplierId}/reviews/stats`);
+  }
+
+  async submitSupplierReview(supplierId, reviewData) {
+    return this.publicRequest(`/suppliers/${supplierId}/reviews`, {
+      method: 'POST',
+      data: reviewData
+    });
   }
 
   // Starred Suppliers methods

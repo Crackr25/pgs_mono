@@ -24,6 +24,8 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             OrderSeeder::class,
             ComprehensiveQuoteRFQSeeder::class,
+            CompanyVerificationBadgesSeeder::class,
+            SmartReviewsSeeder::class,
         ]);
     }
 }
