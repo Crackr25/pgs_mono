@@ -20,12 +20,14 @@ import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import apiService from '../../../lib/api';
 import { useCart } from '../../../contexts/CartContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import ShippingAddressModal from '../../../components/checkout/ShippingAddressModal';
 import StripePaymentForm from '../../../components/checkout/StripePaymentForm';
 import getStripe from '../../../lib/stripe';
 
 export default function Checkout() {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
   const { fetchCartItems, removeCartItems } = useCart();
   const [cartItems, setCartItems] = useState([]); // Use local state for selected items
   const [loading, setLoading] = useState(true);
@@ -103,8 +105,15 @@ export default function Checkout() {
       }
     };
     
+    // Check authentication before proceeding
+    if (!isAuthenticated) {
+      console.warn('User not authenticated, redirecting to login');
+      router.push('/login?redirect=/buyer/checkout');
+      return;
+    }
+    
     initializeCheckout();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchSavedAddresses = async () => {
     try {

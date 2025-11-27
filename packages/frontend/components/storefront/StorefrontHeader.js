@@ -45,17 +45,17 @@ export default function StorefrontHeader({ company, storefront, slug, primaryCol
         backgroundColor: '#D3E4FD'
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
-        <div className="flex items-start justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 relative z-10">
+        <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4">
           {/* Left Section: Logo and Company Info */}
-          <div className="flex items-start space-x-4 flex-1">
+          <div className="flex items-start space-x-3 md:space-x-4 flex-1 w-full md:w-auto">
             {/* Logo */}
             {logo && (
               <div className="flex-shrink-0">
                 <img 
                   src={getImageUrl(logo)} 
                   alt={name}
-                  className="h-24 w-24 object-contain rounded-lg border-2 border-gray-200 bg-white p-2"
+                  className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain rounded-lg border-2 border-gray-200 bg-white p-2"
                 />
               </div>
             )}
@@ -84,15 +84,15 @@ export default function StorefrontHeader({ company, storefront, slug, primaryCol
               )}
 
               {/* Company Name with Dropdown Icon */}
-              <div className="flex items-center space-x-2 mb-3">
-                <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+              <div className="flex items-center space-x-2 mb-2 md:mb-3">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight">{name}</h1>
                 <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
 
               {/* Company Details Row */}
-              <div className="flex items-center space-x-4 text-sm text-gray-700 mb-3">
+              <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs sm:text-sm text-gray-700 mb-2 md:mb-3">
                 {/* Manufacturer Type */}
                 {manufacturer_type && (
                   <div className="flex items-center">
@@ -152,9 +152,9 @@ export default function StorefrontHeader({ company, storefront, slug, primaryCol
           </div>
 
           {/* Right Section: Action Buttons */}
-          <div className="flex flex-col space-y-2 ml-6">
+          <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto md:ml-6">
             <button 
-              className="px-6 py-2.5 rounded-md text-white font-semibold hover:opacity-90 transition-all shadow-md whitespace-nowrap"
+              className="flex-1 md:flex-initial px-4 md:px-6 py-2 md:py-2.5 rounded-md text-sm md:text-base text-white font-semibold hover:opacity-90 transition-all shadow-md whitespace-nowrap"
               style={{ backgroundColor: primaryColor || '#FF6600' }}
               onClick={() => requireAuth(
                 () => {
@@ -177,7 +177,7 @@ export default function StorefrontHeader({ company, storefront, slug, primaryCol
               Contact supplier
             </button>
             <button 
-              className="px-6 py-2.5 rounded-md bg-white text-gray-700 font-medium hover:bg-gray-50 transition-all border border-gray-300 shadow-sm whitespace-nowrap"
+              className="flex-1 md:flex-initial px-4 md:px-6 py-2 md:py-2.5 rounded-md text-sm md:text-base bg-white text-gray-700 font-medium hover:bg-gray-50 transition-all border border-gray-300 shadow-sm whitespace-nowrap"
               onClick={() => requireAuth(
                 () => setShowFloatingChat(true),
                 {

@@ -130,7 +130,7 @@ export default function Pagination({
       )}
       
       {/* Per Page Selector */}
-      {showPerPageSelector && (
+      {showPerPageSelector && onPerPageChange && (
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-600">Show:</span>
           <select

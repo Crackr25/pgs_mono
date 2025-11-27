@@ -51,8 +51,8 @@ export default function Layout({ children }) {
 
   // Handle role-based redirects
   useEffect(() => {
-    // Prevent buyers from accessing seller portal
-    if (isAuthenticated && user?.usertype === 'buyer' && !router.pathname.startsWith('/buyer') && !router.pathname.startsWith('/admin')) {
+    // Prevent buyers from accessing seller portal (but allow storefront access)
+    if (isAuthenticated && user?.usertype === 'buyer' && !router.pathname.startsWith('/buyer') && !router.pathname.startsWith('/admin') && !router.pathname.startsWith('/store')) {
       router.push('/buyer');
     }
     // Prevent sellers from accessing buyer portal
@@ -144,12 +144,27 @@ export default function Layout({ children }) {
           <BuyerGlobalTopNav />
           {/* Prominent Search Bar - Alibaba Style (only on homepage) */}
           {shouldShowProminentSearch && <ProminentSearchBar />}
-          <main className="p-4 sm:p-6 lg:p-8">
+          <main className="p-3 sm:p-4 md:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
           </main>
           <Footer />
+        </div>
+      </CartProvider>
+    );
+  }
+
+  // Layout for buyer messages page - no sidebar, full width
+  if (router.pathname === '/buyer/messages') {
+    return (
+      <CartProvider>
+        <div className="min-h-screen bg-secondary-50">
+          {isImpersonating && <ImpersonationBanner />}
+          <BuyerGlobalTopNav />
+          <main className="flex-1">
+            {children}
+          </main>
         </div>
       </CartProvider>
     );
@@ -169,7 +184,7 @@ export default function Layout({ children }) {
           <div className="flex">
             <BuyerSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
             <div className="flex-1 flex flex-col lg:ml-0">
-              <main className="flex-1 p-4 sm:p-6 lg:p-8">
+              <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                 <div className="max-w-7xl mx-auto">
                   {children}
                 </div>

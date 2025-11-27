@@ -323,10 +323,10 @@ export default function SupplierDetail() {
         {/* Header Section - Hide when embedded */}
         {!isEmbedded && (
           <div className="bg-white border-b border-secondary-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 sm:py-0 sm:h-16 gap-2 sm:gap-0">
                 {/* Left: Breadcrumb */}
-                <div className="flex items-center space-x-2 text-sm">
+                <div className="flex items-center space-x-2 text-xs sm:text-sm">
                   <Link href="/buyer" className="text-primary-600 hover:text-primary-700">
                     Marketplace
                   </Link>
@@ -339,7 +339,7 @@ export default function SupplierDetail() {
                 </div>
 
                 {/* Right: Rating and Verification */}
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                 <div className="text-right">
                   <div className="flex items-center space-x-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -366,10 +366,10 @@ export default function SupplierDetail() {
         {/* Navigation Bar - Hide when embedded */}
         {!isEmbedded && (
         <div className="bg-secondary-50 border-b border-secondary-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-12">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-2 sm:py-0 sm:h-12 gap-2 sm:gap-0">
               {/* Left: Navigation Tabs */}
-              <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-8 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
                 <button
                   onClick={() => setActiveTab('home')}
                   className={`text-sm font-medium transition-colors duration-200 ${
@@ -493,14 +493,14 @@ export default function SupplierDetail() {
               </div>
 
               {/* Right: Search Box */}
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <div className="flex items-center">
                   <input
                     type="text"
                     placeholder="Search products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-64 pl-4 pr-10 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                    className="w-full sm:w-48 md:w-64 pl-4 pr-10 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                   />
                   {searchQuery ? (
                     <button
@@ -547,12 +547,12 @@ export default function SupplierDetail() {
         )}
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex gap-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
             {/* Sidebar - Left */}
-            <div className="w-80 flex-shrink-0 space-y-4">
+            <div className="w-full lg:w-80 flex-shrink-0 space-y-3 sm:space-y-4">
               {/* Company Profile Card */}
-              <Card className="p-6">
+              <Card className="p-4 sm:p-6">
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 mx-auto mb-4 bg-primary-100 rounded-lg flex items-center justify-center overflow-hidden">
                     {supplier.company_banner ? (
@@ -567,7 +567,7 @@ export default function SupplierDetail() {
                   <p className="text-sm text-secondary-600 mb-3">{supplier.location || 'No location provided'}</p>
                   
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-3 gap-1 sm:gap-2 mb-3 sm:mb-4">
                     <div className="text-center">
                       <div className="text-lg font-bold text-primary-600">
                         {supplier.products_count || supplier.total_products || products.length || 0}
@@ -592,7 +592,7 @@ export default function SupplierDetail() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     <Button 
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                       onClick={handleChatNow}
@@ -620,7 +620,7 @@ export default function SupplierDetail() {
               </Card>
 
               {/* Contact Info */}
-              <Card className="p-4">
+              <Card className="p-3 sm:p-4">
                 <h3 className="font-semibold text-secondary-900 mb-3">Contact Details</h3>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2 text-sm">
@@ -731,7 +731,7 @@ export default function SupplierDetail() {
                       </p>
                       
                       {/* Key Highlights */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
                         <div className="text-center p-4 bg-primary-50 rounded-lg border border-primary-100">
                           <Package className="w-8 h-8 text-primary-600 mx-auto mb-2" />
                           <div className="text-xl font-bold text-primary-600">
@@ -918,7 +918,7 @@ export default function SupplierDetail() {
                             View All Products
                           </Button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                           {filteredProducts.slice(0, 6).map((product) => {
                             // Debug: Log product structure
                             
@@ -1046,7 +1046,7 @@ export default function SupplierDetail() {
                     </div>
 
                     {/* Products Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                       {filteredProducts.map((product) => (
                         <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group">
                           <div className="relative">
@@ -1166,8 +1166,8 @@ export default function SupplierDetail() {
 
                     {/* Company Information */}
                     <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Company Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-secondary-900 mb-3 sm:mb-4">Company Information</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div className="flex items-center space-x-3">
                           <Building className="w-5 h-5 text-secondary-400" />
                           <div>
@@ -1445,8 +1445,8 @@ export default function SupplierDetail() {
                 {activeTab === 'contacts' && (
                   <div className="space-y-6 animate-in fade-in-50 duration-300">
                     <Card className="p-6">
-                      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Contact Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-secondary-900 mb-3 sm:mb-4">Contact Information</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div className="space-y-4">
                           <div className="flex items-start space-x-3">
                             <Building className="w-5 h-5 text-secondary-400 mt-1" />

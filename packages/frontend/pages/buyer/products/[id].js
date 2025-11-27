@@ -662,10 +662,10 @@ Product Link: ${window.location.href}`;
         <ProminentSearchBar />
 
         {/* Enhanced Breadcrumb - Alibaba Style */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <div className="flex flex-col space-y-3">
+        <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-4 shadow-sm">
+          <div className="flex flex-col space-y-2 md:space-y-3">
             {/* Category Breadcrumb */}
-            <div className="flex items-center space-x-2 text-sm text-secondary-600">
+            <div className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm text-secondary-600 overflow-x-auto whitespace-nowrap pb-1">
               <Link href="/buyer" className="hover:text-primary-600 transition-colors">
                 Marketplace
               </Link>
@@ -683,11 +683,11 @@ Product Link: ${window.location.href}`;
             
             {/* Product Title with Rating and Sales Info */}
             <div className="flex flex-col space-y-2">
-              <h1 className="text-xl lg:text-2xl font-bold text-secondary-900 leading-tight">
+              <h1 className="text-base sm:text-lg lg:text-2xl font-bold text-secondary-900 leading-tight">
                 {product.name}
               </h1>
               
-              <div className="flex items-center space-x-4 text-sm">
+              <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs sm:text-sm">
                 {/* Rating */}
                 <div className="flex items-center space-x-1">
                   <div className="flex items-center">
@@ -702,8 +702,8 @@ Product Link: ${window.location.href}`;
                 </div>
                 
                 {/* Sales Info */}
-                <div className="flex items-center space-x-4 text-secondary-500">
-                  <span>•</span>
+                <div className="flex flex-wrap items-center gap-2 md:gap-4 text-secondary-500">
+                  <span className="hidden sm:inline">•</span>
                   <span>{product.orders_count || 88} sold</span>
                   {product.is_trending && (
                     <>
@@ -715,8 +715,8 @@ Product Link: ${window.location.href}`;
               </div>
               
               {/* Company Info - Clickable with Philippines location */}
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
+              <div className="flex flex-wrap items-center gap-1 md:gap-2">
+                <div className="w-5 h-5 md:w-6 md:h-6 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <Shield className="w-3 h-3 text-primary-600" />
                 </div>
                 {/* OLD LOGIC (kept for reference, hidden):
@@ -740,18 +740,47 @@ Product Link: ${window.location.href}`;
                 */}
                 {/* NEW LOGIC: Redirect to manufacturer's website */}
                 {product.company?.website ? (
-                  <a
-                    href={getCompanyWebsiteUrl(product.company.website)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-700 hover:underline font-medium transition-colors cursor-pointer"
-                    title={`Visit ${product.company.name}'s website`}
-                    onClick={() => {
-                      console.log('Opening manufacturer website:', getCompanyWebsiteUrl(product.company.website));
-                    }}
-                  >
-                    {product.company.name}
-                  </a>
+                  (() => {
+                    const websiteUrl = getCompanyWebsiteUrl(product.company.website);
+                    const isInternalStorefront = websiteUrl && (websiteUrl.includes('/store/') || websiteUrl.startsWith('/store/'));
+                    
+                    console.log('=== COMPANY NAME CLICK DEBUG ===');
+                    console.log('Company:', product.company.name);
+                    console.log('Original website:', product.company.website);
+                    console.log('Processed URL:', websiteUrl);
+                    console.log('Is internal storefront:', isInternalStorefront);
+                    
+                    if (isInternalStorefront) {
+                      // For internal storefronts, open in new tab
+                      return (
+                        <a
+                          href={websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:text-primary-700 hover:underline font-medium transition-colors cursor-pointer"
+                          title={`Visit ${product.company.name}'s website`}
+                          onClick={(e) => {
+                            console.log('Clicking company link, opening:', websiteUrl);
+                          }}
+                        >
+                          {product.company.name}
+                        </a>
+                      );
+                    } else {
+                      // For external websites, use regular anchor tag
+                      return (
+                        <a
+                          href={websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:text-primary-700 hover:underline font-medium transition-colors cursor-pointer"
+                          title={`Visit ${product.company.name}'s website`}
+                        >
+                          {product.company.name}
+                        </a>
+                      );
+                    }
+                  })()
                 ) : (
                   <span className="text-primary-600 font-medium">
                     {product.company?.name || 'Unknown Company'}
@@ -787,14 +816,14 @@ Product Link: ${window.location.href}`;
         </button>
 
         {/* Product Header */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
           {/* Left Column - Images + Business Recommendations + Tabs */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Product Images */}
-            <div className="flex gap-4">
-              {/* Image Thumbnails */}
+            <div className="flex gap-2 md:gap-4">
+              {/* Image Thumbnails - Hidden on mobile, visible on tablet+ */}
               {product.images && product.images.length > 1 && (
-                <div className="flex flex-col space-y-2 w-20">
+                <div className="hidden sm:flex flex-col space-y-2 w-16 md:w-20">
                   {product.images.map((image, index) => (
                     <button
                       key={index}
@@ -884,8 +913,8 @@ Product Link: ${window.location.href}`;
 
             {/* Tabs Navigation - Below Business Recommendations */}
             <div className="w-full bg-white rounded-lg border border-gray-200 shadow-sm">
-              <div className="border-b border-secondary-200">
-                <nav className="flex space-x-8 px-6">
+              <div className="border-b border-secondary-200 overflow-x-auto">
+                <nav className="flex space-x-4 md:space-x-8 px-3 md:px-6 min-w-min">
                   {[
                     { id: 'overview', label: 'Overview' },
                     { id: 'specifications', label: 'Specifications' },
@@ -895,7 +924,7 @@ Product Link: ${window.location.href}`;
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                         activeTab === tab.id
                           ? 'border-primary-500 text-primary-600'
                           : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
@@ -908,7 +937,7 @@ Product Link: ${window.location.href}`;
               </div>
 
               {/* Tab Content - Inside the same card */}
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 {activeTab === 'overview' && (
                   <div className="max-w-none">
                     <h3 className="text-lg font-semibold mb-4">Product Overview</h3>
@@ -927,8 +956,8 @@ Product Link: ${window.location.href}`;
 
                 {activeTab === 'specifications' && (
                   <div className="max-w-none">
-                    <h3 className="text-lg font-semibold mb-4">Technical Specifications</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Technical Specifications</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                       {product.specifications && Object.entries(product.specifications).map(([key, value]) => (
                         <div key={key} className="flex justify-between py-2 border-b border-secondary-100">
                           <span className="font-medium text-secondary-700">{key}:</span>
@@ -1052,15 +1081,15 @@ Product Link: ${window.location.href}`;
           <div className="lg:col-span-1 relative">
             <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto bg-white rounded-lg border border-gray-200 shadow-sm">
               {/* Product Title and Description - Keep all existing content */}
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-4 md:p-6 border-b border-gray-100">
                 <h1 className="text-2xl font-bold text-secondary-900 mb-3">{product.name}</h1>
                 <p className="text-secondary-600 text-sm leading-relaxed">{product.description}</p>
               </div>
 
               {/* Price Section */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-baseline space-x-2 mb-4">
-                  <span className="text-3xl font-bold text-primary-600">
+              <div className="p-4 md:p-6 border-b border-gray-100">
+                <div className="flex flex-wrap items-baseline gap-2 mb-3 md:mb-4">
+                  <span className="text-2xl md:text-3xl font-bold text-primary-600">
                     ${getCurrentPrice().toFixed(2)}
                   </span>
                   <span className="text-secondary-600">per {product.unit}</span>
@@ -1105,8 +1134,8 @@ Product Link: ${window.location.href}`;
 
               {/* Product Variations */}
               {product.variations && product.variations.length > 0 && (
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-3">Variations</h3>
+                <div className="p-4 md:p-6 border-b border-gray-100">
+                  <h3 className="text-base md:text-lg font-semibold text-secondary-900 mb-3">Variations</h3>
                   <div className="space-y-2">
                     {product.variations.map((variation, index) => (
                       <button
@@ -1143,8 +1172,8 @@ Product Link: ${window.location.href}`;
               )}
 
               {/* Company Info */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-start space-x-3 mb-4">
+              <div className="p-4 md:p-6 border-b border-gray-100">
+                <div className="flex items-start space-x-2 md:space-x-3 mb-3 md:mb-4">
                   <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
                     <Shield className="w-6 h-6 text-primary-600" />
                   </div>
@@ -1170,18 +1199,38 @@ Product Link: ${window.location.href}`;
                       */}
                       {/* NEW LOGIC: Redirect to manufacturer's website */}
                       {product.company?.website ? (
-                        <a
-                          href={getCompanyWebsiteUrl(product.company.website)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-secondary-900 hover:text-primary-600 hover:underline cursor-pointer transition-colors"
-                          title={`Visit ${product.company.name}'s website`}
-                          onClick={() => {
-                            console.log('Opening manufacturer website (sidebar):', getCompanyWebsiteUrl(product.company.website));
-                          }}
-                        >
-                          {product.company.name}
-                        </a>
+                        (() => {
+                          const websiteUrl = getCompanyWebsiteUrl(product.company.website);
+                          const isInternalStorefront = websiteUrl && (websiteUrl.includes('/store/') || websiteUrl.startsWith('/store/'));
+                          
+                          if (isInternalStorefront) {
+                            // For internal storefronts, open in new tab
+                            return (
+                              <a
+                                href={websiteUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-secondary-900 hover:text-primary-600 hover:underline cursor-pointer transition-colors"
+                                title={`Visit ${product.company.name}'s website`}
+                              >
+                                {product.company.name}
+                              </a>
+                            );
+                          } else {
+                            // For external websites, use regular anchor tag
+                            return (
+                              <a
+                                href={websiteUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-secondary-900 hover:text-primary-600 hover:underline cursor-pointer transition-colors"
+                                title={`Visit ${product.company.name}'s website`}
+                              >
+                                {product.company.name}
+                              </a>
+                            );
+                          }
+                        })()
                       ) : (
                         <h3 className="font-semibold text-secondary-900">
                           {product.company?.name || 'Unknown Company'}
@@ -1214,7 +1263,7 @@ Product Link: ${window.location.href}`;
                 </div>
                 
                 <div className="grid grid-cols-1 gap-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
                     <Button 
                       onClick={() => requireAuth(
                         () => setShowFloatingChat(true),
@@ -1246,8 +1295,8 @@ Product Link: ${window.location.href}`;
 
               {/* Add to Cart Section */}
               {getCurrentStock() > 0 && (
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold mb-4">Add to Cart</h3>
+                <div className="p-4 md:p-6 border-b border-gray-100">
+                  <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Add to Cart</h3>
                   
                   {/* Specifications Selection */}
                   {product.specifications && Object.keys(product.specifications).length > 0 && (
@@ -1353,7 +1402,7 @@ Product Link: ${window.location.href}`;
 
               {/* Out of Stock Message */}
               {getCurrentStock() === 0 && (
-                <div className="p-6 border-b border-gray-100">
+                <div className="p-4 md:p-6 border-b border-gray-100">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-red-700">
                       <AlertCircle className="w-5 h-5" />
@@ -1367,8 +1416,8 @@ Product Link: ${window.location.href}`;
               )}
 
               {/* Quick Actions */}
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 md:p-6">
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
                   <Button 
                     variant="outline" 
                     onClick={handleSaveProduct}
@@ -1390,9 +1439,9 @@ Product Link: ${window.location.href}`;
         
         {/* Message Form Modal */}
         {showMessageForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 md:p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold">Send Message to {product?.company?.name}</h3>
                   <button 
@@ -1406,10 +1455,10 @@ Product Link: ${window.location.href}`;
                 <form onSubmit={handleMessageSubmit} className="space-y-4">
                   {/* Template Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-xs md:text-sm font-medium text-secondary-700 mb-2">
                       Choose Message Template
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {inquiryTemplates.map((template) => (
                         <button
                           key={template.id}
@@ -1509,11 +1558,11 @@ Product Link: ${window.location.href}`;
 
         {/* Inquiry Modal */}
         {showInquiryModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 md:p-4 z-50">
             <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-secondary-900">Send Inquiry</h3>
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
+                <h3 className="text-lg md:text-xl font-semibold text-secondary-900">Send Inquiry</h3>
                 <button
                   onClick={() => setShowInquiryModal(false)}
                   className="text-secondary-400 hover:text-secondary-600 transition-colors"
@@ -1523,9 +1572,9 @@ Product Link: ${window.location.href}`;
               </div>
 
               {/* Supplier Info */}
-              <div className="p-6 border-b border-gray-100 bg-gray-50">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="p-4 md:p-6 border-b border-gray-100 bg-gray-50">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <Shield className="w-6 h-6 text-primary-600" />
                   </div>
                   <div className="flex-1">
@@ -1547,8 +1596,8 @@ Product Link: ${window.location.href}`;
               </div>
 
               {/* Product Info Summary */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center space-x-4">
+              <div className="p-4 md:p-6 border-b border-gray-100">
+                <div className="flex items-center space-x-3 md:space-x-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     {product?.images && product.images.length > 0 ? (
                       <Image
@@ -1581,8 +1630,8 @@ Product Link: ${window.location.href}`;
                 </div>
               </div>
 
-              <div className="p-6">
-                <form onSubmit={(e) => { e.preventDefault(); handleInquirySubmit(); }} className="space-y-6">
+              <div className="p-4 md:p-6">
+                <form onSubmit={(e) => { e.preventDefault(); handleInquirySubmit(); }} className="space-y-4 md:space-y-6">
                   {/* Inquiry Type */}
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
@@ -1714,18 +1763,18 @@ Product Link: ${window.location.href}`;
 
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (
-          <div className="mt-12">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-secondary-900 mb-2">
+          <div className="mt-8 md:mt-12">
+            <div className="mb-4 md:mb-6">
+              <h2 className="text-xl md:text-2xl font-bold text-secondary-900 mb-2">
                 Related Products
               </h2>
-              <p className="text-secondary-600">
+              <p className="text-sm md:text-base text-secondary-600">
                 You might also be interested in these products from the same category
               </p>
             </div>
             
             {loadingRelated ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {Array.from({ length: 4 }, (_, i) => (
                   <div key={i} className="animate-pulse">
                     <div className="bg-secondary-200 h-48 rounded-lg mb-3"></div>
@@ -1736,7 +1785,7 @@ Product Link: ${window.location.href}`;
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {relatedProducts.map((relatedProduct) => (
                   <Link key={relatedProduct.id} href={`/buyer/products/${relatedProduct.id}`}>
                     <div className="group cursor-pointer bg-white rounded-lg border border-secondary-200 overflow-hidden hover:shadow-lg transition-all duration-200">

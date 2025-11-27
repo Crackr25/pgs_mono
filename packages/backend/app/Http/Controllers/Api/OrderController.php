@@ -12,10 +12,20 @@ class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Order::with(['quote', 'company', 'payments', 'user']);
+        $query = Order::with(['quote.product', 'company', 'payments', 'user']);
         
+        // Filter by company (for sellers/manufacturers)
+        if ($request->has('company_id')) {
+            $query->where('company_id', $request->company_id);
+        } 
+        // Filter by buyer email (for buyers)
+        elseif ($request->has('buyer_email')) {
+            $query->where('buyer_email', $request->buyer_email);
+        }
         // Filter by authenticated user (buyers see only their orders)
-        $query->where('user_id', auth()->id());
+        else {
+            $query->where('user_id', auth()->id());
+        }
         
         // Filter by status
         if ($request->has('status')) {
@@ -25,16 +35,6 @@ class OrderController extends Controller
         // Filter by payment status
         if ($request->has('payment_status')) {
             $query->where('payment_status', $request->payment_status);
-        }
-        
-        // Filter by company (for sellers)
-        if ($request->has('company_id')) {
-            $query->where('company_id', $request->company_id);
-        }
-        
-        // Filter by buyer email (for buyers)
-        if ($request->has('buyer_email')) {
-            $query->where('buyer_email', $request->buyer_email);
         }
         
         // Search by order number or product name
@@ -48,6 +48,34 @@ class OrderController extends Controller
         }
         
         $orders = $query->orderBy('created_at', 'desc')->paginate(15);
+        
+        // Add product_id to each order
+        $orders->getCollection()->transform(function ($order) {
+            $order->product_id = null;
+            
+            // Get product_id from quote if available
+            if ($order->quote && $order->quote->product_id) {
+                $order->product_id = $order->quote->product_id;
+            }
+            // Otherwise, try to extract from cart_items in notes
+            elseif ($order->notes && strpos($order->notes, 'Cart Items:') !== false) {
+                try {
+                    $notesArray = explode('Cart Items:', $order->notes);
+                    if (count($notesArray) > 1) {
+                        $cartItemsJson = trim($notesArray[1]);
+                        $cartItems = json_decode($cartItemsJson, true);
+                        if ($cartItems && is_array($cartItems) && count($cartItems) > 0) {
+                            // Use the first product's ID
+                            $order->product_id = $cartItems[0]['product_id'] ?? null;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Error parsing cart items:', ['error' => $e->getMessage()]);
+                }
+            }
+            
+            return $order;
+        });
         
         return response()->json($orders);
     }

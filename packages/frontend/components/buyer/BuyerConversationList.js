@@ -57,11 +57,11 @@ export default function BuyerConversationList({
   }
 
   return (
-    <div className="w-1/3 border-r border-secondary-200 flex flex-col">
+    <div className="w-80 lg:w-96 border-r border-secondary-200 flex flex-col bg-white flex-shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-secondary-200">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold text-secondary-900">Messages</h1>
+      <div className="p-4 border-b border-secondary-200 bg-white">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-secondary-900">Conversations</h2>
         </div>
         
         {/* Search */}

@@ -171,9 +171,9 @@ export default function StorefrontPage() {
 
           {/* Navigation Bar */}
           <div className="bg-black text-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <nav className="flex items-center h-12">
-                <div className="flex items-center space-x-8 flex-1">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+              <nav className="flex items-center h-12 overflow-x-auto">
+                <div className="flex items-center space-x-4 md:space-x-8 flex-1 min-w-min">
                   {menuItems && menuItems.length > 0 ? (
                     menuItems.filter(item => item.is_visible).map((item) => {
                       const hasChildren = item.children && item.children.length > 0;
@@ -301,9 +301,9 @@ export default function StorefrontPage() {
                   ))}
                 </div>
               ) : page.content ? (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                  <div className="bg-white rounded-lg shadow-md p-8">
-                    <h1 className="text-4xl font-bold mb-6" style={{ color: primary_color }}>
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+                  <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6" style={{ color: primary_color }}>
                       {page.title}
                     </h1>
                     <div className="prose max-w-none">
@@ -312,17 +312,17 @@ export default function StorefrontPage() {
                   </div>
                 </div>
               ) : (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-                  <p className="text-gray-500">No content available for this page yet.</p>
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12 text-center">
+                  <p className="text-sm sm:text-base text-gray-500">No content available for this page yet.</p>
                 </div>
               )}
             </main>
 
             {/* Footer */}
-            <footer className="bg-gray-800 text-white py-8 mt-16">
-              <div className="max-w-7xl mx-auto px-4 text-center">
-                <p>&copy; {new Date().getFullYear()} {company.name}. All rights reserved.</p>
-                <p className="text-sm text-gray-400 mt-2">Powered by Pinoy Global Supply</p>
+            <footer className="bg-gray-800 text-white py-6 sm:py-8 mt-8 sm:mt-12 md:mt-16">
+              <div className="max-w-7xl mx-auto px-3 sm:px-4 text-center">
+                <p className="text-sm sm:text-base">&copy; {new Date().getFullYear()} {company.name}. All rights reserved.</p>
+                <p className="text-xs sm:text-sm text-gray-400 mt-2">Powered by Pinoy Global Supply</p>
               </div>
             </footer>
           </>
@@ -459,8 +459,8 @@ function StorefrontSection({ section, primaryColor, company, products }) {
   if (section_type === 'hero') {
     if (parsedImages && parsedImages.length > 0) {
       return (
-        <section className="mb-16 w-full">
-          <div className="relative h-96 md:h-[600px] overflow-hidden w-full">
+        <section className="mb-8 sm:mb-12 md:mb-16 w-full">
+          <div className="relative h-64 sm:h-80 md:h-96 lg:h-[600px] overflow-hidden w-full">
             {parsedImages.map((img, idx) => (
               <div
                 key={idx}
@@ -476,7 +476,7 @@ function StorefrontSection({ section, primaryColor, company, products }) {
               >
                 <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center pointer-events-none">
                   {title && (
-                    <h2 className="text-4xl md:text-6xl font-bold text-white text-center px-4 drop-shadow-lg">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold text-white text-center px-4 drop-shadow-lg">
                       {title}
                     </h2>
                   )}
@@ -535,11 +535,11 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'about') {
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <h2 className="text-3xl font-bold mb-6">{title || 'About Us'}</h2>
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">{title || 'About Us'}</h2>
+            <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
           </div>
         </div>
       </section>
@@ -548,11 +548,11 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'text') {
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            {title && <h2 className="text-3xl font-bold mb-6 text-gray-900">{title}</h2>}
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-lg">{content}</p>
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8">
+            {title && <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">{title}</h2>}
+            <p className="text-sm sm:text-base md:text-lg text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>
           </div>
         </div>
       </section>
@@ -561,11 +561,11 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'gallery' && parsedImages && parsedImages.length > 0) {
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
-            {title && <h2 className="text-3xl font-bold mb-6">{title}</h2>}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8">
+            {title && <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">{title}</h2>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {parsedImages.map((img, idx) => (
                 <img 
                   key={idx}
@@ -584,10 +584,10 @@ function StorefrontSection({ section, primaryColor, company, products }) {
 
   if (section_type === 'image' && parsedImages && parsedImages.length > 0) {
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            {title && <h2 className="text-3xl font-bold mb-6 px-6 pt-6">{title}</h2>}
+            {title && <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 px-4 sm:px-6 pt-4 sm:pt-6">{title}</h2>}
             <img 
               src={getImageUrl(parsedImages[0])}
               alt={title || 'Section image'}
@@ -611,8 +611,8 @@ function StorefrontSection({ section, primaryColor, company, products }) {
     
     if (allMedia.length > 0) {
       return (
-        <section className="mb-8 w-full">
-          <div className="relative h-96 md:h-[600px] overflow-hidden bg-gray-900 w-full">
+        <section className="mb-6 sm:mb-8 w-full">
+          <div className="relative h-64 sm:h-80 md:h-96 lg:h-[600px] overflow-hidden bg-gray-900 w-full">
             {allMedia.map((media, idx) => {
               const isVideo = videos.includes(media);
               
@@ -708,16 +708,16 @@ function StorefrontSection({ section, primaryColor, company, products }) {
     const displayProducts = productsLimit === 0 ? availableProducts : availableProducts.slice(0, productsLimit);
     
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Our Products'}</h2>
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">{title || 'Our Products'}</h2>
             {content && (
-              <p className="text-gray-700 mb-8">{content}</p>
+              <p className="text-sm sm:text-base text-gray-700 mb-6 sm:mb-8">{content}</p>
             )}
           
           {displayProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {displayProducts.map((product) => {
                 // Use getImageUrl helper function to construct proper image URLs
                 const productImage = product.main_image 
@@ -810,16 +810,16 @@ function StorefrontSection({ section, primaryColor, company, products }) {
     }
     
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Featured Products'}</h2>
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">{title || 'Featured Products'}</h2>
             {content && (
-              <p className="text-gray-700 mb-8">{content}</p>
+              <p className="text-sm sm:text-base text-gray-700 mb-6 sm:mb-8">{content}</p>
             )}
             
             {featuredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {featuredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} primaryColor={primaryColor} />
                 ))}
@@ -950,17 +950,17 @@ function StorefrontSection({ section, primaryColor, company, products }) {
     }
 
     return (
-      <section className="mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">{title || 'Supplier Reviews'}</h2>
+      <section className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:p-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">{title || 'Supplier Reviews'}</h2>
             
             {/* Show content only if there are actual reviews */}
             {totalReviews > 0 ? (
               <>
-                <div className="grid md:grid-cols-3 gap-8 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-6 sm:mb-8">
                   {/* Overall Rating Card */}
-                  <div className="md:col-span-1 bg-gray-50 rounded-lg p-6">
+                  <div className="md:col-span-1 bg-gray-50 rounded-lg p-4 sm:p-6">
                     <div className="text-center">
                       <div className="text-5xl font-bold text-orange-500 mb-2">
                         {overallRating.toFixed(1)}
@@ -1058,8 +1058,8 @@ function StorefrontSection({ section, primaryColor, company, products }) {
                 </div>
 
                 {/* Review Filters */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-4">All Reviews ({totalReviews})</h3>
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">All Reviews ({totalReviews})</h3>
                   <div className="flex flex-wrap gap-2">
                     <button className="px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200 transition">
                       ALL ({totalReviews})
@@ -1077,7 +1077,7 @@ function StorefrontSection({ section, primaryColor, company, products }) {
                 </div>
 
                 {/* Individual Reviews */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {reviews.map((review, idx) => {
                     // Get product image URL
                     const productImage = review.product?.image 
@@ -1085,10 +1085,10 @@ function StorefrontSection({ section, primaryColor, company, products }) {
                       : null;
 
                     return (
-                      <div key={review.id || idx} className="border-b pb-6 last:border-b-0">
-                        <div className="flex items-start gap-4">
+                      <div key={review.id || idx} className="border-b pb-4 sm:pb-6 last:border-b-0">
+                        <div className="flex items-start gap-3 sm:gap-4">
                           {/* User Avatar */}
-                          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                             {review.reviewer_name?.charAt(0).toUpperCase() || 'U'}
                           </div>
                           

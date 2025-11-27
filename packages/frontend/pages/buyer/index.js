@@ -53,28 +53,29 @@ export default function BuyerDashboard() {
         <title>Marketplace - Pinoy Global Supply</title>
       </Head>
 
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-4 md:p-6 text-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Welcome to the Marketplace</h1>
-              <p className="text-lg text-blue-100 font-medium">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Welcome to the Marketplace</h1>
+              <p className="text-sm sm:text-base md:text-lg text-blue-100 font-medium">
                 Discover quality products from verified Philippine suppliers
               </p>
             </div>
-            <div className="flex space-x-3 mt-4 sm:mt-0">
+            <div className="flex flex-wrap gap-2 md:gap-3 w-full sm:w-auto">
               <Button 
                 variant="secondary" 
                 onClick={() => setIsContactModalOpen(true)}
+                className="flex-1 sm:flex-initial"
               >
                 <Phone className="w-4 h-4 mr-2" />
-                Contact Us
+                <span className="text-sm md:text-base">Contact Us</span>
               </Button>
-              <Link href="/buyer/rfqs/create">
-                <Button variant="secondary">
+              <Link href="/buyer/rfqs/create" className="flex-1 sm:flex-initial">
+                <Button variant="secondary" className="w-full">
                   <Plus className="w-4 h-4 mr-2" />
-                  Post RFQ
+                  <span className="text-sm md:text-base">Post RFQ</span>
                 </Button>
               </Link>
             </div>
@@ -85,15 +86,15 @@ export default function BuyerDashboard() {
         {loading ? (
           <StatsSkeleton />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg border border-secondary-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Package className="w-5 h-5 text-blue-600" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="bg-white p-3 md:p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-secondary-600">Products</p>
-                  <p className="text-lg font-bold text-secondary-900">
+                <div className="min-w-0">
+                  <p className="text-xs md:text-sm text-secondary-600 truncate">Products</p>
+                  <p className="text-sm md:text-lg font-bold text-secondary-900">
                     {marketplaceStats.active_products > 0 
                       ? marketplaceStats.active_products.toLocaleString() 
                       : '50K+'}
@@ -102,14 +103,14 @@ export default function BuyerDashboard() {
               </div>
             </div>
             
-            <div className="bg-white p-4 rounded-lg border border-secondary-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-green-600" />
+            <div className="bg-white p-3 md:p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Users className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-secondary-600">Suppliers</p>
-                  <p className="text-lg font-bold text-secondary-900">
+                <div className="min-w-0">
+                  <p className="text-xs md:text-sm text-secondary-600 truncate">Suppliers</p>
+                  <p className="text-sm md:text-lg font-bold text-secondary-900">
                     {marketplaceStats.total_suppliers > 0 
                       ? marketplaceStats.total_suppliers.toLocaleString() 
                       : '2.5K+'}
@@ -118,26 +119,26 @@ export default function BuyerDashboard() {
               </div>
             </div>
             
-            <div className="bg-white p-4 rounded-lg border border-secondary-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-yellow-600" />
+            <div className="bg-white p-3 md:p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-yellow-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-secondary-600">Avg Response</p>
-                  <p className="text-lg font-bold text-secondary-900">2 hrs</p>
+                <div className="min-w-0">
+                  <p className="text-xs md:text-sm text-secondary-600 truncate">Avg Response</p>
+                  <p className="text-sm md:text-lg font-bold text-secondary-900">2 hrs</p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white p-4 rounded-lg border border-secondary-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
+            <div className="bg-white p-3 md:p-4 rounded-lg border border-secondary-200">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-secondary-600">Success Rate</p>
-                  <p className="text-lg font-bold text-secondary-900">95%</p>
+                <div className="min-w-0">
+                  <p className="text-xs md:text-sm text-secondary-600 truncate">Success Rate</p>
+                  <p className="text-sm md:text-lg font-bold text-secondary-900">95%</p>
                 </div>
               </div>
             </div>
