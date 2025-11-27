@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\CompanyAgent;
+use App\Mail\AgentInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class AdminAgentController extends Controller
 {
@@ -253,6 +257,148 @@ class AdminAgentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Invitation resent successfully'
+        ]);
+    }
+
+    /**
+     * Create agent invitation (Admin creates invitation for a company)
+     */
+    public function createInvitation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|max:255',
+            'name' => 'required|string|max:255',
+            'company_id' => 'required|exists:companies,id',
+            'role' => 'nullable|string|max:255',
+            'permissions' => 'nullable|array',
+            'send_invitation' => 'boolean'
+        ]);
+
+        // Check if user already exists
+        $user = User::where('email', $validated['email'])->first();
+
+        if (!$user) {
+            // Create new user with temporary password
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make(Str::random(12)), // Temporary password
+                'usertype' => 'agent',
+            ]);
+        } else {
+            // Check if user is already an agent for this company
+            $existingAgent = CompanyAgent::where('user_id', $user->id)
+                ->where('company_id', $validated['company_id'])
+                ->first();
+
+            if ($existingAgent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This user is already an agent for this company'
+                ], 400);
+            }
+
+            // Update usertype to agent if not already
+            if ($user->usertype !== 'agent') {
+                $user->usertype = 'agent';
+                $user->save();
+            }
+        }
+
+        // Create company agent record
+        $companyAgent = CompanyAgent::create([
+            'company_id' => $validated['company_id'],
+            'user_id' => $user->id,
+            'role' => $validated['role'] ?? 'Agent',
+            'permissions' => $validated['permissions'] ?? [],
+            'is_active' => true,
+            'invited_by' => auth()->id(),
+        ]);
+
+        // Generate invitation token
+        $token = $companyAgent->generateInvitationToken();
+
+        // Send invitation email if requested
+        $emailSent = null;
+        if ($request->get('send_invitation', true)) {
+            try {
+                Mail::to($user->email)->send(new AgentInvitation($companyAgent, $token));
+                $emailSent = true;
+            } catch (\Exception $e) {
+                // Log the error but don't fail the invitation creation
+                \Log::error('Failed to send agent invitation email: ' . $e->getMessage());
+                $emailSent = false;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Agent invitation created successfully',
+            'data' => $companyAgent->load(['user', 'company']),
+            'invitation_token' => $token,
+            'email_sent' => $emailSent,
+            'email_status' => $emailSent === true ? 'sent' : ($emailSent === false ? 'failed' : 'not_requested')
+        ], 201);
+    }
+
+    /**
+     * Change agent's company
+     */
+    public function changeCompany(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'company_id' => 'required|exists:companies,id',
+            'role' => 'nullable|string|max:255',
+            'permissions' => 'nullable|array',
+        ]);
+
+        $agent = User::whereHas('companyAgent')->findOrFail($id);
+        
+        $companyAgent = CompanyAgent::where('user_id', $id)->first();
+        
+        if (!$companyAgent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Agent is not associated with any company'
+            ], 400);
+        }
+
+        // Check if agent is already assigned to the new company
+        $existingAssignment = CompanyAgent::where('user_id', $id)
+            ->where('company_id', $validated['company_id'])
+            ->where('id', '!=', $companyAgent->id)
+            ->first();
+
+        if ($existingAssignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Agent is already assigned to this company'
+            ], 400);
+        }
+
+        $oldCompanyId = $companyAgent->company_id;
+
+        // Update company assignment
+        $companyAgent->company_id = $validated['company_id'];
+        
+        if (isset($validated['role'])) {
+            $companyAgent->role = $validated['role'];
+        }
+        
+        if (isset($validated['permissions'])) {
+            $companyAgent->permissions = $validated['permissions'];
+        }
+
+        $companyAgent->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Agent company changed successfully',
+            'data' => [
+                'agent' => $companyAgent->load(['user', 'company']),
+                'old_company_id' => $oldCompanyId,
+                'new_company_id' => $validated['company_id']
+            ]
         ]);
     }
 }

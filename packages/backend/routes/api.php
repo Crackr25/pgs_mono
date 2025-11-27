@@ -370,11 +370,86 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/agents', [\App\Http\Controllers\Admin\AdminAgentController::class, 'index']);
     Route::get('/agents/statistics', [\App\Http\Controllers\Admin\AdminAgentController::class, 'statistics']);
     Route::get('/agents/pending-invitations', [\App\Http\Controllers\Admin\AdminAgentController::class, 'pendingInvitations']);
+    Route::post('/agents/create-invitation', [\App\Http\Controllers\Admin\AdminAgentController::class, 'createInvitation']);
     Route::get('/agents/{id}', [\App\Http\Controllers\Admin\AdminAgentController::class, 'show']);
     Route::put('/agents/{id}', [\App\Http\Controllers\Admin\AdminAgentController::class, 'update']);
     Route::delete('/agents/{id}', [\App\Http\Controllers\Admin\AdminAgentController::class, 'destroy']);
     Route::post('/agents/{id}/toggle-status', [\App\Http\Controllers\Admin\AdminAgentController::class, 'toggleStatus']);
     Route::post('/agents/{id}/permissions', [\App\Http\Controllers\Admin\AdminAgentController::class, 'updatePermissions']);
+    Route::post('/agents/{id}/change-company', [\App\Http\Controllers\Admin\AdminAgentController::class, 'changeCompany']);
     Route::post('/agents/{id}/resend-invitation', [\App\Http\Controllers\Admin\AdminAgentController::class, 'resendInvitation']);
     Route::get('/agents/{id}/activity', [\App\Http\Controllers\Admin\AdminAgentController::class, 'activity']);
+
+    // Product Management
+    Route::get('/products', [\App\Http\Controllers\Admin\AdminProductController::class, 'index']);
+    Route::get('/products/statistics', [\App\Http\Controllers\Admin\AdminProductController::class, 'statistics']);
+    Route::get('/products/categories', [\App\Http\Controllers\Admin\AdminProductController::class, 'categories']);
+    Route::get('/products/out-of-stock', [\App\Http\Controllers\Admin\AdminProductController::class, 'outOfStock']);
+    Route::get('/products/low-stock', [\App\Http\Controllers\Admin\AdminProductController::class, 'lowStock']);
+    Route::get('/products/{id}', [\App\Http\Controllers\Admin\AdminProductController::class, 'show']);
+    Route::put('/products/{id}', [\App\Http\Controllers\Admin\AdminProductController::class, 'update']);
+    Route::delete('/products/{id}', [\App\Http\Controllers\Admin\AdminProductController::class, 'destroy']);
+    Route::post('/products/{id}/toggle-status', [\App\Http\Controllers\Admin\AdminProductController::class, 'toggleStatus']);
+    Route::post('/products/bulk-update', [\App\Http\Controllers\Admin\AdminProductController::class, 'bulkUpdate']);
+    Route::get('/products/{id}/activity', [\App\Http\Controllers\Admin\AdminProductController::class, 'activity']);
+
+    // Order Management
+    Route::get('/orders', [\App\Http\Controllers\Admin\AdminOrderController::class, 'index']);
+    Route::get('/orders/statistics', [\App\Http\Controllers\Admin\AdminOrderController::class, 'statistics']);
+    Route::get('/orders/pending', [\App\Http\Controllers\Admin\AdminOrderController::class, 'pending']);
+    Route::get('/orders/recent', [\App\Http\Controllers\Admin\AdminOrderController::class, 'recent']);
+    Route::get('/orders/revenue', [\App\Http\Controllers\Admin\AdminOrderController::class, 'revenue']);
+    Route::get('/orders/export', [\App\Http\Controllers\Admin\AdminOrderController::class, 'export']);
+    Route::get('/orders/status/{status}', [\App\Http\Controllers\Admin\AdminOrderController::class, 'byStatus']);
+    Route::get('/orders/{id}', [\App\Http\Controllers\Admin\AdminOrderController::class, 'show']);
+    Route::put('/orders/{id}', [\App\Http\Controllers\Admin\AdminOrderController::class, 'update']);
+    Route::post('/orders/{id}/status', [\App\Http\Controllers\Admin\AdminOrderController::class, 'updateStatus']);
+    Route::post('/orders/{id}/payment-status', [\App\Http\Controllers\Admin\AdminOrderController::class, 'updatePaymentStatus']);
+    Route::post('/orders/bulk-update', [\App\Http\Controllers\Admin\AdminOrderController::class, 'bulkUpdate']);
+    Route::get('/orders/{id}/activity', [\App\Http\Controllers\Admin\AdminOrderController::class, 'activity']);
+
+    // Payment Management
+    Route::get('/payments', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'index']);
+    Route::get('/payments/statistics', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'statistics']);
+    Route::get('/payments/completed', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'completed']);
+    Route::get('/payments/failed', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'failed']);
+    Route::get('/payments/pending', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'pending']);
+    Route::get('/payments/revenue', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'revenue']);
+    Route::get('/payments/platform-fees', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'platformFees']);
+    Route::get('/payments/export', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'export']);
+    Route::get('/payments/method/{method}', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'byMethod']);
+    Route::get('/payments/{id}', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'show']);
+    Route::get('/payments/{id}/activity', [\App\Http\Controllers\Admin\AdminPaymentController::class, 'activity']);
+
+    // Stripe Management
+    Route::get('/stripe/overview', [\App\Http\Controllers\Admin\AdminStripeController::class, 'overview']);
+    Route::get('/stripe/accounts', [\App\Http\Controllers\Admin\AdminStripeController::class, 'connectedAccounts']);
+    Route::get('/stripe/accounts/{companyId}', [\App\Http\Controllers\Admin\AdminStripeController::class, 'accountDetails']);
+    Route::get('/stripe/transactions', [\App\Http\Controllers\Admin\AdminStripeController::class, 'transactions']);
+    Route::get('/stripe/payouts', [\App\Http\Controllers\Admin\AdminStripeController::class, 'payouts']);
+    Route::get('/stripe/config', [\App\Http\Controllers\Admin\AdminStripeController::class, 'configStatus']);
+    Route::post('/stripe/test-connection', [\App\Http\Controllers\Admin\AdminStripeController::class, 'testConnection']);
+
+    // Chat Monitoring
+    Route::get('/chat/statistics', [\App\Http\Controllers\Admin\AdminChatController::class, 'statistics']);
+    Route::get('/chat/conversations', [\App\Http\Controllers\Admin\AdminChatController::class, 'conversations']);
+    Route::get('/chat/conversations/recent', [\App\Http\Controllers\Admin\AdminChatController::class, 'recent']);
+    Route::get('/chat/conversations/active', [\App\Http\Controllers\Admin\AdminChatController::class, 'active']);
+    Route::get('/chat/conversations/{id}', [\App\Http\Controllers\Admin\AdminChatController::class, 'show']);
+    Route::get('/chat/conversations/{id}/messages', [\App\Http\Controllers\Admin\AdminChatController::class, 'messages']);
+    Route::get('/chat/conversations/{id}/activity', [\App\Http\Controllers\Admin\AdminChatController::class, 'activity']);
+    Route::put('/chat/conversations/{id}/status', [\App\Http\Controllers\Admin\AdminChatController::class, 'updateStatus']);
+    Route::post('/chat/conversations/{id}/assign-agent', [\App\Http\Controllers\Admin\AdminChatController::class, 'assignAgent']);
+    Route::get('/chat/messages/search', [\App\Http\Controllers\Admin\AdminChatController::class, 'searchMessages']);
+    Route::get('/chat/unread-count', [\App\Http\Controllers\Admin\AdminChatController::class, 'unreadCount']);
+
+    // Contact Inquiries
+    Route::get('/inquiries/statistics', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'statistics']);
+    Route::get('/inquiries', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'index']);
+    Route::get('/inquiries/pending', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'pending']);
+    Route::get('/inquiries/recent', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'recent']);
+    Route::get('/inquiries/{id}', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'show']);
+    Route::put('/inquiries/{id}', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'update']);
+    Route::delete('/inquiries/{id}', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'destroy']);
+    Route::post('/inquiries/bulk-update', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'bulkUpdate']);
 });
