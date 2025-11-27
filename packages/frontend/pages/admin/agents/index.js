@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Users, Search, Filter, UserCheck, UserX, Mail, Trash2, Eye } from 'lucide-react';
+import { Users, Search, Filter, UserCheck, UserX, Mail, Trash2, Eye, UserPlus, Building2, RefreshCw } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
+import { useToast } from '../../../components/common/Toast';
 import apiService from '../../../lib/api';
 
 export default function AgentManagement() {
+  const toast = useToast();
   const [agents, setAgents] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [stats, setStats] = useState({
     total_agents: 0,
     active_agents: 0,
@@ -18,10 +21,21 @@ export default function AgentManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showChangeCompanyModal, setShowChangeCompanyModal] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company_id: '',
+    role: 'Agent'
+  });
 
   useEffect(() => {
     fetchAgents();
     fetchStatistics();
+    fetchCompanies();
   }, [currentPage, searchTerm, filterStatus]);
 
   const fetchAgents = async () => {
@@ -58,6 +72,15 @@ export default function AgentManagement() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await apiService.getAdminCompanies({ per_page: 1000 });
+      setCompanies(response.data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
   const handleToggleStatus = async (agentId) => {
     try {
       await apiService.toggleAdminAgentStatus(agentId);
@@ -84,11 +107,64 @@ export default function AgentManagement() {
 
   const handleResendInvitation = async (agentId) => {
     try {
+      const loadingToastId = toast.showLoading('Resending Invitation', 'Please wait...');
       await apiService.resendAdminAgentInvitation(agentId);
-      alert('Invitation resent successfully');
+      toast.removeToast(loadingToastId);
+      toast.showSuccess('Invitation Resent', 'The invitation has been resent successfully.');
     } catch (error) {
       console.error('Error resending invitation:', error);
-      alert(error.message || 'Failed to resend invitation');
+      toast.showError('Failed', error.message || 'Failed to resend invitation');
+    }
+  };
+
+  const handleCreateInvitation = async (e) => {
+    e.preventDefault();
+    try {
+      setIsProcessing(true);
+      const loadingToastId = toast.showLoading('Creating Invitation', 'Please wait...');
+      
+      await apiService.createAdminAgentInvitation(formData);
+      
+      toast.removeToast(loadingToastId);
+      toast.showSuccess('Invitation Created!', `Agent invitation sent to ${formData.email}`);
+      
+      setShowCreateModal(false);
+      setFormData({ name: '', email: '', company_id: '', role: 'Agent' });
+      fetchAgents();
+      fetchStatistics();
+    } catch (error) {
+      console.error('Error creating invitation:', error);
+      toast.showError('Failed', error.message || 'Failed to create invitation');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const openChangeCompanyModal = (agent) => {
+    setSelectedAgent(agent);
+    setShowChangeCompanyModal(true);
+  };
+
+  const handleChangeCompany = async (e) => {
+    e.preventDefault();
+    try {
+      setIsProcessing(true);
+      const loadingToastId = toast.showLoading('Changing Company', 'Please wait...');
+      
+      const companyId = document.getElementById('change-company-select').value;
+      await apiService.changeAdminAgentCompany(selectedAgent.id, companyId);
+      
+      toast.removeToast(loadingToastId);
+      toast.showSuccess('Company Changed!', `Agent has been reassigned successfully.`);
+      
+      setShowChangeCompanyModal(false);
+      setSelectedAgent(null);
+      fetchAgents();
+    } catch (error) {
+      console.error('Error changing company:', error);
+      toast.showError('Failed', error.message || 'Failed to change company');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -121,6 +197,13 @@ export default function AgentManagement() {
               Manage company agents and their permissions
             </p>
           </div>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="mt-4 sm:mt-0 flex items-center"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Create Agent Invitation
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -296,6 +379,13 @@ export default function AgentManagement() {
                               </button>
                             )}
                             <button
+                              onClick={() => openChangeCompanyModal(agent)}
+                              className="text-purple-600 hover:text-purple-900"
+                              title="Change Company"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                            <button
                               onClick={() => alert('View details coming soon')}
                               className="text-blue-600 hover:text-blue-900"
                               title="View Details"
@@ -350,6 +440,186 @@ export default function AgentManagement() {
             </div>
           )}
         </Card>
+
+        {/* Create Invitation Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
+                <UserPlus className="h-6 w-6 text-blue-600" />
+              </div>
+              
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
+                Create Agent Invitation
+              </h3>
+              
+              <p className="text-sm text-gray-500 text-center mb-6">
+                Invite a new agent to join a company
+              </p>
+
+              <form onSubmit={handleCreateInvitation} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Agent Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company
+                  </label>
+                  <select
+                    required
+                    value={formData.company_id}
+                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="">Select a company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Agent"
+                  />
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setFormData({ name: '', email: '', company_id: '', role: 'Agent' });
+                    }}
+                    className="flex-1"
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="flex-1"
+                  >
+                    {isProcessing ? 'Creating...' : 'Create Invitation'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Change Company Modal */}
+        {showChangeCompanyModal && selectedAgent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-purple-100 rounded-full mb-4">
+                <Building2 className="h-6 w-6 text-purple-600" />
+              </div>
+              
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
+                Change Agent Company
+              </h3>
+              
+              <p className="text-sm text-gray-500 text-center mb-6">
+                Reassign <span className="font-semibold text-gray-900">{selectedAgent.name}</span> to a different company
+              </p>
+
+              <form onSubmit={handleChangeCompany} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Company
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+                    {selectedAgent.company_agent?.company?.name || 'N/A'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Company
+                  </label>
+                  <select
+                    id="change-company-select"
+                    required
+                    defaultValue={selectedAgent.company_agent?.company_id || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="">Select a company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Warning:</strong> This will immediately change the agent's company assignment.
+                  </p>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowChangeCompanyModal(false);
+                      setSelectedAgent(null);
+                    }}
+                    className="flex-1"
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  >
+                    {isProcessing ? 'Changing...' : 'Change Company'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

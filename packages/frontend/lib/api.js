@@ -1601,9 +1601,419 @@ class ApiService {
     });
   }
 
+  // Admin - Create agent invitation
+  async createAdminAgentInvitation(data) {
+    return this.request('/admin/agents/create-invitation', {
+      method: 'POST',
+      data
+    });
+  }
+
+  // Admin - Change agent company
+  async changeAdminAgentCompany(id, companyId, role, permissions) {
+    return this.request(`/admin/agents/${id}/change-company`, {
+      method: 'POST',
+      data: { company_id: companyId, role, permissions }
+    });
+  }
+
   // Admin - Get agent activity
   async getAdminAgentActivity(id) {
     return this.request(`/admin/agents/${id}/activity`);
+  }
+
+  // ==================== Admin Product Management ====================
+  
+  // Admin - Get all products with pagination and filters
+  async getAdminProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/products${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get product statistics
+  async getAdminProductStatistics() {
+    return this.request('/admin/products/statistics');
+  }
+
+  // Admin - Get all categories
+  async getAdminProductCategories() {
+    return this.request('/admin/products/categories');
+  }
+
+  // Admin - Get out of stock products
+  async getAdminOutOfStockProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/products/out-of-stock${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get low stock products
+  async getAdminLowStockProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/products/low-stock${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific product
+  async getAdminProduct(id) {
+    return this.request(`/admin/products/${id}`);
+  }
+
+  // Admin - Update product
+  async updateAdminProduct(id, data) {
+    return this.request(`/admin/products/${id}`, {
+      method: 'PUT',
+      data
+    });
+  }
+
+  // Admin - Delete product
+  async deleteAdminProduct(id) {
+    return this.request(`/admin/products/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Admin - Toggle product status
+  async toggleAdminProductStatus(id) {
+    return this.request(`/admin/products/${id}/toggle-status`, {
+      method: 'POST'
+    });
+  }
+
+  // Admin - Bulk update products
+  async bulkUpdateAdminProducts(productIds, action) {
+    return this.request('/admin/products/bulk-update', {
+      method: 'POST',
+      data: {
+        product_ids: productIds,
+        action
+      }
+    });
+  }
+
+  // Admin - Get product activity
+  async getAdminProductActivity(id) {
+    return this.request(`/admin/products/${id}/activity`);
+  }
+
+  // ==================== Admin Order Management ====================
+  
+  // Admin - Get all orders with pagination and filters
+  async getAdminOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/orders${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get order statistics
+  async getAdminOrderStatistics() {
+    return this.request('/admin/orders/statistics');
+  }
+
+  // Admin - Get pending orders
+  async getAdminPendingOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/orders/pending${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get recent orders
+  async getAdminRecentOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/orders/recent${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get revenue statistics
+  async getAdminRevenue(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/orders/revenue${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get orders by status
+  async getAdminOrdersByStatus(status, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/orders/status/${status}${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific order
+  async getAdminOrder(id) {
+    return this.request(`/admin/orders/${id}`);
+  }
+
+  // Admin - Update order
+  async updateAdminOrder(id, data) {
+    return this.request(`/admin/orders/${id}`, {
+      method: 'PUT',
+      data
+    });
+  }
+
+  // Admin - Update order status
+  async updateAdminOrderStatus(id, status, notes = null) {
+    return this.request(`/admin/orders/${id}/status`, {
+      method: 'POST',
+      data: { status, notes }
+    });
+  }
+
+  // Admin - Update payment status
+  async updateAdminOrderPaymentStatus(id, paymentStatus, notes = null) {
+    return this.request(`/admin/orders/${id}/payment-status`, {
+      method: 'POST',
+      data: { payment_status: paymentStatus, notes }
+    });
+  }
+
+  // Admin - Bulk update orders
+  async bulkUpdateAdminOrders(orderIds, action, data = {}) {
+    return this.request('/admin/orders/bulk-update', {
+      method: 'POST',
+      data: {
+        order_ids: orderIds,
+        action,
+        ...data
+      }
+    });
+  }
+
+  // Admin - Get order activity
+  async getAdminOrderActivity(id) {
+    return this.request(`/admin/orders/${id}/activity`);
+  }
+
+  // Admin - Export orders
+  async exportAdminOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/orders/export${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // ==================== Admin Payment Management ====================
+  
+  // Admin - Get all payments with pagination and filters
+  async getAdminPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get payment statistics
+  async getAdminPaymentStatistics() {
+    return this.request('/admin/payments/statistics');
+  }
+
+  // Admin - Get completed payments
+  async getAdminCompletedPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/completed${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get failed payments
+  async getAdminFailedPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/failed${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get pending payments
+  async getAdminPendingPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/pending${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get revenue statistics
+  async getAdminPaymentRevenue(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/revenue${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get platform fees
+  async getAdminPlatformFees(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/platform-fees${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get payments by method
+  async getAdminPaymentsByMethod(method, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/method/${method}${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific payment
+  async getAdminPayment(id) {
+    return this.request(`/admin/payments/${id}`);
+  }
+
+  // Admin - Get payment activity
+  async getAdminPaymentActivity(id) {
+    return this.request(`/admin/payments/${id}/activity`);
+  }
+
+  // Admin - Export payments
+  async exportAdminPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/payments/export${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // ==================== Admin Stripe Management ====================
+  
+  // Admin - Get Stripe overview
+  async getAdminStripeOverview() {
+    return this.request('/admin/stripe/overview');
+  }
+
+  // Admin - Get connected Stripe accounts
+  async getAdminStripeAccounts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/stripe/accounts${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get Stripe account details
+  async getAdminStripeAccountDetails(companyId) {
+    return this.request(`/admin/stripe/accounts/${companyId}`);
+  }
+
+  // Admin - Get Stripe transactions
+  async getAdminStripeTransactions(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/stripe/transactions${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get Stripe payouts
+  async getAdminStripePayouts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/stripe/payouts${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get Stripe configuration status
+  async getAdminStripeConfig() {
+    return this.request('/admin/stripe/config');
+  }
+
+  // Admin - Test Stripe connection
+  async testAdminStripeConnection() {
+    return this.request('/admin/stripe/test-connection', {
+      method: 'POST'
+    });
+  }
+
+  // ==================== Admin Chat Monitoring ====================
+  
+  // Admin - Get chat statistics
+  async getAdminChatStatistics() {
+    return this.request('/admin/chat/statistics');
+  }
+
+  // Admin - Get all conversations
+  async getAdminConversations(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/chat/conversations${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get recent conversations
+  async getAdminRecentConversations(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/chat/conversations/recent${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get active conversations
+  async getAdminActiveConversations(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/chat/conversations/active${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific conversation
+  async getAdminConversation(id) {
+    return this.request(`/admin/chat/conversations/${id}`);
+  }
+
+  // Admin - Get conversation messages
+  async getAdminConversationMessages(id, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/chat/conversations/${id}/messages${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get conversation activity
+  async getAdminConversationActivity(id) {
+    return this.request(`/admin/chat/conversations/${id}/activity`);
+  }
+
+  // Admin - Update conversation status
+  async updateAdminConversationStatus(id, status) {
+    return this.request(`/admin/chat/conversations/${id}/status`, {
+      method: 'PUT',
+      data: { status }
+    });
+  }
+
+  // Admin - Assign agent to conversation
+  async assignAgentToConversation(id, agentId, assignmentType = 'manual') {
+    return this.request(`/admin/chat/conversations/${id}/assign-agent`, {
+      method: 'POST',
+      data: { agent_id: agentId, assignment_type: assignmentType }
+    });
+  }
+
+  // Admin - Search messages
+  async searchAdminMessages(query, params = {}) {
+    const searchParams = new URLSearchParams({ query, ...params }).toString();
+    return this.request(`/admin/chat/messages/search?${searchParams}`);
+  }
+
+  // Admin - Get unread messages count
+  async getAdminUnreadMessagesCount() {
+    return this.request('/admin/chat/unread-count');
+  }
+
+  // ==================== Admin Inquiry Management ====================
+  
+  // Admin - Get inquiry statistics
+  async getAdminInquiryStatistics() {
+    return this.request('/admin/inquiries/statistics');
+  }
+
+  // Admin - Get all inquiries
+  async getAdminInquiries(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/inquiries${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get pending inquiries
+  async getAdminPendingInquiries(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/inquiries/pending${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get recent inquiries
+  async getAdminRecentInquiries(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/admin/inquiries/recent${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Admin - Get specific inquiry
+  async getAdminInquiry(id) {
+    return this.request(`/admin/inquiries/${id}`);
+  }
+
+  // Admin - Update inquiry
+  async updateAdminInquiry(id, data) {
+    return this.request(`/admin/inquiries/${id}`, {
+      method: 'PUT',
+      data
+    });
+  }
+
+  // Admin - Delete inquiry
+  async deleteAdminInquiry(id) {
+    return this.request(`/admin/inquiries/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Admin - Bulk update inquiries
+  async bulkUpdateAdminInquiries(inquiryIds, action, data = {}) {
+    return this.request('/admin/inquiries/bulk-update', {
+      method: 'POST',
+      data: {
+        inquiry_ids: inquiryIds,
+        action,
+        ...data
+      }
+    });
   }
 }
 

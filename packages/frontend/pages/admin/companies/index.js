@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { Building2, Search, Filter, CheckCircle, XCircle, Clock, Eye, Trash2 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
+import ConfirmModal from '../../../components/common/ConfirmModal';
+import { useToast } from '../../../components/common/Toast';
 import apiService from '../../../lib/api';
 
 export default function CompanyManagement() {
+  const router = useRouter();
+  const toast = useToast();
   const [companies, setCompanies] = useState([]);
   const [stats, setStats] = useState({
     total_companies: 0,
@@ -18,6 +23,9 @@ export default function CompanyManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [verifyModal, setVerifyModal] = useState({ isOpen: false, companyId: null, companyName: '' });
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, companyId: null, companyName: '' });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -58,29 +66,73 @@ export default function CompanyManagement() {
     }
   };
 
-  const handleVerify = async (companyId) => {
-    if (!confirm('Are you sure you want to verify this company?')) return;
+  const openVerifyModal = (companyId, companyName) => {
+    setVerifyModal({ isOpen: true, companyId, companyName });
+  };
+
+  const handleVerify = async () => {
+    const { companyId, companyName } = verifyModal;
+    setVerifyModal({ ...verifyModal, isOpen: false });
     
     try {
+      setIsProcessing(true);
+      const loadingToastId = toast.showLoading('Verifying Company', 'Please wait while we verify this company...');
+      
       await apiService.verifyAdminCompany(companyId);
+      
+      toast.removeToast(loadingToastId);
+      toast.showSuccess(
+        'Company Verified!',
+        `${companyName} has been successfully verified and can now start selling.`,
+        5000
+      );
+      
       fetchCompanies();
       fetchStatistics();
     } catch (error) {
       console.error('Error verifying company:', error);
-      alert(error.message || 'Failed to verify company');
+      toast.showError(
+        'Verification Failed',
+        error.message || 'Failed to verify company. Please try again.',
+        5000
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDelete = async (companyId) => {
-    if (!confirm('Are you sure you want to delete this company? This action cannot be undone.')) return;
+  const openDeleteModal = (companyId, companyName) => {
+    setDeleteModal({ isOpen: true, companyId, companyName });
+  };
+
+  const handleDelete = async () => {
+    const { companyId, companyName } = deleteModal;
+    setDeleteModal({ ...deleteModal, isOpen: false });
     
     try {
+      setIsProcessing(true);
+      const loadingToastId = toast.showLoading('Deleting Company', 'Please wait...');
+      
       await apiService.deleteAdminCompany(companyId);
+      
+      toast.removeToast(loadingToastId);
+      toast.showSuccess(
+        'Company Deleted',
+        `${companyName} has been permanently deleted.`,
+        5000
+      );
+      
       fetchCompanies();
       fetchStatistics();
     } catch (error) {
       console.error('Error deleting company:', error);
-      alert(error.message || 'Failed to delete company');
+      toast.showError(
+        'Deletion Failed',
+        error.message || 'Failed to delete company. Please try again.',
+        5000
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -273,23 +325,25 @@ export default function CompanyManagement() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleVerify(company.id)}
+                                onClick={() => openVerifyModal(company.id, company.name)}
                                 className="text-green-600 hover:text-green-900"
+                                disabled={isProcessing}
                               >
                                 Verify
                               </Button>
                             )}
                             <button
-                              onClick={() => alert('View details coming soon')}
+                              onClick={() => router.push(`/admin/companies/${company.id}`)}
                               className="text-blue-600 hover:text-blue-900"
                               title="View Details"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDelete(company.id)}
+                              onClick={() => openDeleteModal(company.id, company.name)}
                               className="text-red-600 hover:text-red-900"
                               title="Delete"
+                              disabled={isProcessing}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -334,6 +388,52 @@ export default function CompanyManagement() {
             </div>
           )}
         </Card>
+
+        {/* Verify Confirmation Modal */}
+        <ConfirmModal
+          isOpen={verifyModal.isOpen}
+          onClose={() => setVerifyModal({ ...verifyModal, isOpen: false })}
+          onConfirm={handleVerify}
+          type="success"
+          title="Verify Company"
+          message={
+            <>
+              Are you sure you want to verify <span className="font-semibold text-gray-900">{verifyModal.companyName}</span>? 
+              This will allow them to start selling products on the platform.
+            </>
+          }
+          note={
+            <>
+              <strong>Note:</strong> Once verified, the company will receive a notification and gain access to seller features.
+            </>
+          }
+          confirmText="Yes, Verify"
+          cancelText="Cancel"
+          isLoading={isProcessing}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+          onConfirm={handleDelete}
+          type="danger"
+          title="Delete Company"
+          message={
+            <>
+              Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteModal.companyName}</span>? 
+              This action cannot be undone.
+            </>
+          }
+          note={
+            <>
+              <strong>Warning:</strong> All company data, products, and associated records will be permanently deleted.
+            </>
+          }
+          confirmText="Yes, Delete"
+          cancelText="Cancel"
+          isLoading={isProcessing}
+        />
       </div>
     </>
   );

@@ -60,8 +60,6 @@ export default function AdminSideBar({ isOpen, onClose }) {
       children: [
         { name: 'Products & Catalog', href: '/admin/products' },
         { name: 'Orders & Transactions', href: '/admin/orders' },
-        { name: 'RFQ & Quotes', href: '/admin/rfqs' },
-        { name: 'Inventory', href: '/admin/inventory' }
       ]
     },
     { 
@@ -70,8 +68,6 @@ export default function AdminSideBar({ isOpen, onClose }) {
       section: 'financial',
       children: [
         { name: 'Payment Ledger', href: '/admin/payments' },
-        { name: 'Seller Payouts', href: '/admin/payouts' },
-        { name: 'Revenue Analytics', href: '/admin/revenue' },
         { name: 'Stripe Management', href: '/admin/stripe' }
       ]
     },
@@ -82,8 +78,6 @@ export default function AdminSideBar({ isOpen, onClose }) {
       children: [
         { name: 'Chat Monitoring', href: '/admin/chat' },
         { name: 'Contact Inquiries', href: '/admin/inquiries' },
-        { name: 'Email Management', href: '/admin/emails' },
-        { name: 'Notifications', href: '/admin/notifications' }
       ]
     },
     { 
