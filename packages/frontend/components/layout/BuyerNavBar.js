@@ -148,7 +148,7 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
           </div>
 
           {/* Center - Quick Actions */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden lg:flex items-center space-x-3">
             <Link href="/buyer/rfqs/create">
               <button className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
                 <Plus className="w-4 h-4" />
@@ -165,7 +165,7 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             {/* Notifications */}
             <div className="relative">
               <button
@@ -250,12 +250,12 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-2 p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-blue-600">
+                <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-xs md:text-sm font-medium text-blue-600">
                     {user?.name?.charAt(0)?.toUpperCase() || 'B'}
                   </span>
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-secondary-900">
+                <span className="hidden md:block text-sm font-medium text-secondary-900">
                   {user?.name || 'Buyer'}
                 </span>
               </button>

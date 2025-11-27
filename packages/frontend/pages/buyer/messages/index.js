@@ -11,7 +11,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 export default function BuyerMessages() {
   const router = useRouter();
-  const { conversation_id } = router.query;
+  const { conversation_id, company, order } = router.query;
   
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -39,8 +39,15 @@ export default function BuyerMessages() {
         setSelectedConversation(conversation);
         fetchMessages(conversation_id);
       }
+    } else if (company && conversations.length > 0 && !conversation_id) {
+      // Debug: Log all conversations to see structure
+      console.log('🔍 Looking for company:', company);
+      console.log('📋 Available conversations:', conversations);
+      
+      // Create or find conversation with this company
+      createOrFindConversation(company);
     }
-  }, [conversation_id, conversations]);
+  }, [conversation_id, company, conversations, router]);
 
   // Subscribe to WebSocket when conversation is selected
   useEffect(() => {
@@ -85,6 +92,43 @@ export default function BuyerMessages() {
       console.error('Error fetching messages:', error);
     } finally {
       setMessagesLoading(false);
+    }
+  };
+
+  const createOrFindConversation = async (companyId) => {
+    try {
+      // First, check if conversation already exists in our list
+      const existingConversation = conversations.find(c => 
+        c.seller?.company?.id === parseInt(companyId)
+      );
+      
+      if (existingConversation) {
+        console.log('📬 Found existing conversation:', existingConversation);
+        setSelectedConversation(existingConversation);
+        fetchMessages(existingConversation.id);
+        router.replace(`/buyer/messages?conversation_id=${existingConversation.id}`, undefined, { shallow: true });
+        return existingConversation;
+      }
+      
+      // If no conversation exists, create a placeholder state to allow sending the first message
+      // which will create the conversation
+      console.log('📝 No existing conversation. User can send a message to start one.');
+      const placeholderConversation = {
+        id: null,
+        new: true,
+        seller: {
+          company: {
+            id: parseInt(companyId),
+            name: 'Loading...'
+          }
+        }
+      };
+      setSelectedConversation(placeholderConversation);
+      setMessages([]);
+      return null;
+    } catch (error) {
+      console.error('Error creating/finding conversation:', error);
+      return null;
     }
   };
 
@@ -225,48 +269,77 @@ export default function BuyerMessages() {
     if (!selectedConversation) return;
 
     try {
-      const response = await apiService.sendBuyerMessageWithAttachment(
-        selectedConversation.id,
-        message,
-        attachment
-      );
-      
-      if (response.success) {
-        // Immediately add the sent message to local state
-        setMessages(prev => {
-          const messageExists = prev.some(msg => msg.id === response.message.id);
-          if (!messageExists) {
-            console.log('✅ Adding sent message to local state');
-            return [...prev, response.message];
-          }
-          return prev;
+      // If this is a new conversation (no ID), send to recipient_id instead
+      if (selectedConversation.new && selectedConversation.seller?.company?.id) {
+        const response = await apiService.sendBuyerMessage({
+          recipient_id: selectedConversation.seller.company.id,
+          recipient_type: 'company',
+          message: message,
+          message_type: 'text'
         });
         
-        // Update the conversation's last message info without full reload
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === selectedConversation.id 
-              ? {
-                  ...conv,
-                  latest_message: {
-                    message: response.message.message,
-                    sender_id: response.message.sender_id,
-                    message_type: response.message.message_type,
-                    created_at: response.message.created_at
-                  },
-                  last_message_at: response.message.created_at
-                }
-              : conv
-          )
+        if (response.success) {
+          // Refresh conversations to get the newly created conversation
+          await fetchConversations();
+          
+          // Find and select the new conversation
+          const newConversation = conversations.find(c => 
+            c.seller?.company?.id === selectedConversation.seller.company.id
+          );
+          
+          if (newConversation) {
+            setSelectedConversation(newConversation);
+            fetchMessages(newConversation.id);
+            router.replace(`/buyer/messages?conversation_id=${newConversation.id}`, undefined, { shallow: true });
+          }
+          
+          return response;
+        }
+      } else {
+        // Existing conversation - use normal flow
+        const response = await apiService.sendBuyerMessageWithAttachment(
+          selectedConversation.id,
+          message,
+          attachment
         );
         
-        return response;
+        if (response.success) {
+          // Immediately add the sent message to local state
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === response.message.id);
+            if (!messageExists) {
+              console.log('✅ Adding sent message to local state');
+              return [...prev, response.message];
+            }
+            return prev;
+          });
+          
+          // Update the conversation's last message info without full reload
+          setConversations(prev => 
+            prev.map(conv => 
+              conv.id === selectedConversation.id 
+                ? {
+                    ...conv,
+                    latest_message: {
+                      message: response.message.message,
+                      sender_id: response.message.sender_id,
+                      message_type: response.message.message_type,
+                      created_at: response.message.created_at
+                    },
+                    last_message_at: response.message.created_at
+                  }
+                : conv
+            )
+          );
+          
+          return response;
+        }
       }
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, conversations, router]);
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
@@ -288,50 +361,24 @@ export default function BuyerMessages() {
         <title>Messages - Pinoy Global Supply</title>
       </Head>
 
-      <div className="h-screen flex flex-col">
-        {/* Header */}
-        <div className="flex-shrink-0 p-6 border-b border-secondary-200 bg-white">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-secondary-900">Messages</h1>
-              <p className="mt-1 text-sm text-secondary-600">
-                Communicate with suppliers
-              </p>
-            </div>
-            <div className="flex space-x-3 mt-4 sm:mt-0">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => router.push('/buyer')}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </div>
-          </div>
-        </div>
+      <div className="fixed inset-0 flex" style={{ top: '64px', left: '0' }}>
+        <BuyerConversationList
+          conversations={conversations}
+          selectedConversation={selectedConversation}
+          onSelectConversation={handleSelectConversation}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          loading={loading}
+        />
 
-        <div className="flex-1 flex overflow-hidden">
-          {/* Conversations List */}
-          <BuyerConversationList
-            conversations={conversations}
-            selectedConversation={selectedConversation}
-            onSelectConversation={handleSelectConversation}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            loading={loading}
-          />
-
-          {/* Chat Window */}
-          <BuyerChatWindow
-            conversation={selectedConversation}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            currentUser={user}
-            loading={messagesLoading}
-            onMessagesUpdate={setMessages}
-          />
-        </div>
+        <BuyerChatWindow
+          conversation={selectedConversation}
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          currentUser={user}
+          loading={messagesLoading}
+          onMessagesUpdate={setMessages}
+        />
       </div>
     </>
   );

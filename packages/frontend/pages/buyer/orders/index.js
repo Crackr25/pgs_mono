@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { 
   Package, 
   Search, 
@@ -23,6 +24,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import apiService from '../../../lib/api';
 
 export default function Orders() {
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +97,7 @@ export default function Orders() {
       // Transform backend data to match frontend expectations
       const transformedOrders = ordersData.map(order => ({
         id: order.order_number || order.id,
+        product_id: order.product_id || null, // Product ID for linking to product details
         supplier: {
           id: order.company?.id || order.company_id,
           name: order.company?.name || 'Unknown Supplier',
@@ -109,7 +112,8 @@ export default function Orders() {
             quantity: order.quantity,
             unit: 'pieces', // Default unit since backend doesn't store this
             unit_price: order.total_amount / order.quantity,
-            total_price: order.total_amount
+            total_price: order.total_amount,
+            product_id: order.product_id || null
           }
         ],
         total_amount: parseFloat(order.total_amount),
@@ -415,14 +419,34 @@ export default function Orders() {
                         <p className="text-sm text-secondary-600 mb-2">Items:</p>
                         <div className="space-y-2">
                           {order.items.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg">
-                              <div>
-                                <p className="font-medium text-secondary-900">{item.name}</p>
+                            <div key={item.id} className="flex items-center gap-3 p-3 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors">
+                              {/* Product Image */}
+                              <div 
+                                className="w-16 h-16 flex-shrink-0 bg-secondary-200 rounded-md flex items-center justify-center overflow-hidden cursor-pointer"
+                                onClick={() => item.product_id && (window.location.href = `/buyer/products/${item.product_id}`)}
+                              >
+                                <Package className="w-8 h-8 text-secondary-400" />
+                              </div>
+                              
+                              {/* Product Info */}
+                              <div className="flex-1 min-w-0">
+                                {item.product_id ? (
+                                  <a 
+                                    href={`/buyer/products/${item.product_id}`}
+                                    className="font-medium text-secondary-900 hover:text-primary-600 cursor-pointer block truncate"
+                                  >
+                                    {item.name}
+                                  </a>
+                                ) : (
+                                  <p className="font-medium text-secondary-900 truncate">{item.name}</p>
+                                )}
                                 <p className="text-sm text-secondary-600">
                                   {item.quantity.toLocaleString()} {item.unit} × {formatCurrency(item.unit_price)}
                                 </p>
                               </div>
-                              <p className="font-medium text-secondary-900">
+                              
+                              {/* Price */}
+                              <p className="font-medium text-secondary-900 flex-shrink-0">
                                 {formatCurrency(item.total_price)}
                               </p>
                             </div>
@@ -444,7 +468,7 @@ export default function Orders() {
                         )}
                       </div>
 
-                      {order.notes && (
+                      {order.notes && !order.notes.includes('Cart Items:') && (
                         <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                           <p className="text-sm text-blue-800">
                             <strong>Notes:</strong> {order.notes}
@@ -466,12 +490,28 @@ export default function Orders() {
                       </div>
 
                       <div className="space-y-2">
-                        <Link href={`/buyer/orders/${order.id}`}>
-                          <Button variant="outline" size="sm" className="w-full">
+                        {order.product_id ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => window.location.href = `/buyer/products/${order.product_id}`}
+                          >
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </Button>
-                        </Link>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            disabled
+                            title="Product information not available"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </Button>
+                        )}
                         
                         {order.status === 'delivered' && (
                           <Button variant="outline" size="sm" className="w-full">
@@ -480,12 +520,23 @@ export default function Orders() {
                           </Button>
                         )}
                         
-                        <Link href={`/chat?company=${order.supplier.id}&order=${order.id}`}>
-                          <Button variant="outline" size="sm" className="w-full">
-                            <MessageSquare className="w-4 h-4 mr-2" />
-                            Contact Supplier
-                          </Button>
-                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => {
+                            router.push({
+                              pathname: '/buyer/messages',
+                              query: { 
+                                company: order.supplier.id, 
+                                order: order.id 
+                              }
+                            });
+                          }}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Contact Supplier
+                        </Button>
 
                         {order.tracking_number && (
                           <Button variant="outline" size="sm" className="w-full">

@@ -382,10 +382,10 @@ export default function ProminentSearchBar({ className = "" }) {
   };
 
   return (
-    <div className={`bg-gradient-to-r from-primary-50 to-primary-100 py-8 ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`bg-gradient-to-r from-primary-50 to-primary-100 py-4 md:py-6 lg:py-8 ${className}`}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Search Section Title */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4 md:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-secondary-900 mb-2">
             Find Products & Suppliers
           </h1>
@@ -397,7 +397,7 @@ export default function ProminentSearchBar({ className = "" }) {
         {/* Main Search Bar - Alibaba Style */}
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSearch} className="relative">
-            <div className="flex bg-white rounded-lg shadow-medium border border-secondary-200 overflow-hidden">
+            <div className="flex bg-white rounded-md md:rounded-lg shadow-medium border border-secondary-200 overflow-hidden">
               {/* Category Dropdown */}
               <div className="relative z-50">
                 <button
@@ -408,13 +408,13 @@ export default function ProminentSearchBar({ className = "" }) {
                     console.log('Category button clicked!', showCategoryDropdown); // Debug log
                     setShowCategoryDropdown(!showCategoryDropdown);
                   }}
-                  className="flex items-center px-4 py-4 text-secondary-700 hover:bg-secondary-50 border-r border-secondary-200 min-w-0 whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 relative z-50"
+                  className="flex items-center px-2 md:px-4 py-3 md:py-4 text-secondary-700 hover:bg-secondary-50 border-r border-secondary-200 min-w-0 whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 relative z-50"
                   style={{ userSelect: 'none' }}
                 >
-                  <span className="text-sm font-medium truncate max-w-32 sm:max-w-none pointer-events-none">
+                  <span className="text-xs md:text-sm font-medium truncate max-w-[80px] sm:max-w-none pointer-events-none">
                     {selectedCategory ? getCategoryLabel(selectedCategory) : 'All Categories'}
                   </span>
-                  <ChevronDown className={`w-4 h-4 ml-2 flex-shrink-0 pointer-events-none transition-transform duration-200 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 md:w-4 md:h-4 ml-1 md:ml-2 flex-shrink-0 pointer-events-none transition-transform duration-200 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Category Dropdown Menu */}
@@ -448,18 +448,18 @@ export default function ProminentSearchBar({ className = "" }) {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onFocus={() => searchQuery.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Search for products, suppliers, or categories..."
-                className="flex-1 px-4 py-4 text-base focus:outline-none focus:ring-0 border-0 min-w-0"
+                placeholder="Search for products, suppliers..."
+                className="flex-1 px-2 md:px-4 py-3 md:py-4 text-sm md:text-base focus:outline-none focus:ring-0 border-0 min-w-0"
                 autoComplete="off"
               />
 
               {/* Search Button - Primary Blue Theme */}
               <button
                 type="submit"
-                className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                className="px-4 md:px-8 py-3 md:py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
-                <div className="flex items-center space-x-2">
-                  <Search className="w-5 h-5" />
+                <div className="flex items-center space-x-1 md:space-x-2">
+                  <Search className="w-4 h-4 md:w-5 md:h-5" />
                   <span className="hidden sm:inline">Search</span>
                 </div>
               </button>
@@ -557,9 +557,9 @@ export default function ProminentSearchBar({ className = "" }) {
           </form>
 
           {/* Popular Searches - Optional Enhancement */}
-          <div className="mt-4 text-center">
-            <p className="text-sm text-secondary-500 mb-2">Popular searches:</p>
-            <div className="flex flex-wrap justify-center gap-2">
+          <div className="mt-3 md:mt-4 text-center">
+            <p className="text-xs md:text-sm text-secondary-500 mb-1 md:mb-2">Popular searches:</p>
+            <div className="flex flex-wrap justify-center gap-1 md:gap-2">
               {['LED Lights', 'Face Masks', 'Solar Panels', 'Smartphones', 'Furniture'].map((term) => (
                 <button
                   key={term}

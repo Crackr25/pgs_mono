@@ -480,11 +480,11 @@ export default function ProductGrid({ hideFilters = false }) {
   
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Filter Bar - Hidden on homepage */}
       {!hideFilters && (
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
@@ -497,7 +497,7 @@ export default function ProductGrid({ hideFilters = false }) {
             <select
               value={filters.sortBy}
               onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-              className="px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="px-2 md:px-3 py-2 text-xs md:text-sm border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               {sortOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -507,9 +507,9 @@ export default function ProductGrid({ hideFilters = false }) {
             </select>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-secondary-600">
-              {pagination.from}-{pagination.to} of {pagination.totalItems} products
+          <div className="flex items-center gap-2">
+            <span className="text-xs md:text-sm text-secondary-600">
+              {pagination.from}-{pagination.to} of {pagination.totalItems}
             </span>
             <div className="flex border border-secondary-300 rounded-lg overflow-hidden">
               <button
@@ -542,7 +542,7 @@ export default function ProductGrid({ hideFilters = false }) {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <div>
               <label className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
               {categories.length === 0 ? (
@@ -608,7 +608,7 @@ export default function ProductGrid({ hideFilters = false }) {
       )}
 
       {/* Product Grid */}
-      <div className={`grid gap-6 ${
+      <div className={`grid gap-4 md:gap-6 ${
         viewMode === 'grid' 
           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'
@@ -633,29 +633,18 @@ export default function ProductGrid({ hideFilters = false }) {
 
       {/* Pagination - Always show if there are products */}
       
-      {products.length > 0 && (
+      {products.length > 0 && pagination.totalPages > 1 && !loading && (
         <div className="mt-8">
-          {loading ? (
-            <div className="flex justify-center items-center space-x-2">
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-16 h-4 bg-gray-200 rounded animate-pulse ml-4"></div>
-            </div>
-          ) : (
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.totalItems}
-              itemsPerPage={pagination.itemsPerPage}
-              onPageChange={handlePageChange}
-              paginationInfo={{
-                from: pagination.from,
-                to: pagination.to,
-                total: pagination.totalItems
-              }}
-            />
-          )}
+          <Pagination
+            currentPage={pagination.currentPage}
+            lastPage={pagination.totalPages}
+            total={pagination.totalItems}
+            perPage={pagination.itemsPerPage}
+            onPageChange={handlePageChange}
+            showPerPageSelector={false}
+            from={pagination.from}
+            to={pagination.to}
+          />
         </div>
       )}
 

@@ -205,11 +205,13 @@ export default function BuyerChatWindow({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center text-secondary-500">
-        <div className="text-center">
-          <MessageSquare className="w-16 h-16 mx-auto mb-4 text-secondary-300" />
-          <h3 className="text-lg font-medium mb-2">Select a conversation</h3>
-          <p>Choose a conversation from the sidebar to start messaging</p>
+      <div className="flex-1 flex items-center justify-center bg-gray-50 text-secondary-500">
+        <div className="text-center p-8">
+          <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MessageSquare className="w-12 h-12 text-primary-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-secondary-900 mb-2">Welcome to Messages</h3>
+          <p className="text-secondary-600 max-w-md">Select a conversation from the sidebar to start chatting with suppliers</p>
         </div>
       </div>
     );
@@ -245,9 +247,9 @@ export default function BuyerChatWindow({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col bg-white">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-secondary-200 bg-white">
+      <div className="flex-shrink-0 p-4 border-b border-secondary-200 bg-white shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">

@@ -161,10 +161,10 @@ export default function PublicStorefront() {
           />
 
           {/* Professional Navigation Bar */}
-          <div className="bg-black text-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <nav className="flex items-center h-12">
-                <div className="flex items-center space-x-8 flex-1">
+          <div className="bg-black text-white overflow-x-auto">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+              <nav className="flex items-center h-12 min-w-min">
+                <div className="flex items-center space-x-4 md:space-x-8 flex-1">
                   {/* Dynamic Menu Items */}
                   {menuItems && menuItems.length > 0 ? (
                     menuItems.filter(item => item.is_visible).map((item) => {
@@ -287,12 +287,12 @@ export default function PublicStorefront() {
                 </div>
                 
                 {/* Search box on the right */}
-                <div className="ml-auto">
+                <div className="ml-auto hidden sm:block">
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="search in this store"
-                      className="bg-white text-gray-900 px-4 py-1 pr-10 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-56"
+                      className="bg-white text-gray-900 px-3 md:px-4 py-1 pr-8 md:pr-10 rounded-full text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-32 md:w-56"
                     />
                     <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -916,7 +916,7 @@ function StorefrontSection({ section, primaryColor, company, slug }) {
           )}
           
           {displayProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {displayProducts.map((product) => (
                 <ProductCard key={product.id} product={product} primaryColor={primaryColor} />
               ))}

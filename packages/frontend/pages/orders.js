@@ -27,6 +27,13 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [updating, setUpdating] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateData, setUpdateData] = useState({
+    status: '',
+    progress: 0,
+    notes: ''
+  });
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -39,15 +46,60 @@ export default function Orders() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Fetch user's company
       const companies = await apiService.getCompanies();
+      console.log('All companies:', companies);
+      
       const userCompany = companies.data?.find(comp => comp.user_id === user.id);
+      console.log('User company:', userCompany);
+      
+      if (!userCompany) {
+        console.error('No company found for user:', user);
+        setError('No company profile found. Please create a company first.');
+        setOrders([]);
+        return;
+      }
+      
+      // Fetch orders for this company
+      console.log('Fetching orders for company_id:', userCompany.id);
       const response = await apiService.getOrders(userCompany.id);
+      console.log('Orders response:', response);
+      
       setOrders(response.data || response);
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError('Failed to load orders. Please try again.');
+      setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateOrder = (order) => {
+    setSelectedOrder(order);
+    setUpdateData({
+      status: order.status,
+      progress: order.progress || 0,
+      notes: order.notes || ''
+    });
+    setShowUpdateModal(true);
+  };
+
+  const submitOrderUpdate = async () => {
+    if (!selectedOrder) return;
+
+    try {
+      setUpdating(true);
+      await apiService.updateOrder(selectedOrder.id, updateData);
+      setShowUpdateModal(false);
+      fetchOrders(); // Refresh orders
+      alert('Order updated successfully!');
+    } catch (error) {
+      console.error('Error updating order:', error);
+      alert('Failed to update order. Please try again.');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -185,6 +237,13 @@ export default function Orders() {
             <Eye className="w-4 h-4 mr-1" />
             Track
           </Button>
+          <Button 
+            variant="primary" 
+            size="sm"
+            onClick={() => handleUpdateOrder(row)}
+          >
+            Update
+          </Button>
           <Button variant="outline" size="sm">
             <Download className="w-4 h-4 mr-1" />
             Invoice
@@ -214,6 +273,26 @@ export default function Orders() {
             Export Orders
           </Button>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <Card className="p-4 bg-red-50 border-red-200">
+            <div className="flex items-center space-x-2">
+              <div className="text-red-600">⚠️</div>
+              <p className="text-red-800">{error}</p>
+            </div>
+          </Card>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <Card className="p-8">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+              <span className="ml-3 text-secondary-600">Loading orders...</span>
+            </div>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -264,7 +343,9 @@ export default function Orders() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-secondary-600">Revenue</p>
-                <p className="text-2xl font-semibold text-secondary-900">$24,150</p>
+                <p className="text-2xl font-semibold text-secondary-900">
+                  ${orders.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                </p>
               </div>
             </div>
           </Card>
@@ -353,12 +434,92 @@ export default function Orders() {
         </Card>
       </div>
 
+      {/* Order Update Modal */}
+      {showUpdateModal && selectedOrder && (
+        <Modal
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
+          title={`Update Order - ${selectedOrder.order_number}`}
+          size="md"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-2">
+                Order Status
+              </label>
+              <select
+                value={updateData.status}
+                onChange={(e) => setUpdateData({ ...updateData, status: e.target.value })}
+                className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="pending">Pending - Awaiting Confirmation</option>
+                <option value="confirmed">Confirmed - Order Accepted</option>
+                <option value="in_production">In Production - Manufacturing</option>
+                <option value="shipped">Shipped - On The Way</option>
+                <option value="delivered">Delivered - Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-2">
+                Progress: {updateData.progress}%
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={updateData.progress}
+                onChange={(e) => setUpdateData({ ...updateData, progress: parseInt(e.target.value) })}
+                className="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-secondary-500 mt-1">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-2">
+                Notes / Update Message
+              </label>
+              <textarea
+                value={updateData.notes}
+                onChange={(e) => setUpdateData({ ...updateData, notes: e.target.value })}
+                rows="4"
+                placeholder="Add notes about this update (e.g., production schedule, shipping details)..."
+                className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowUpdateModal(false)}
+                disabled={updating}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={submitOrderUpdate}
+                disabled={updating}
+              >
+                {updating ? 'Updating...' : 'Update Order'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Order Tracking Modal */}
-      {selectedOrder && (
+      {selectedOrder && !showUpdateModal && (
         <Modal
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          title={`Order Tracking - ${selectedOrder.orderNumber}`}
+          title={`Order Tracking - ${selectedOrder.order_number}`}
           size="lg"
         >
           <div className="space-y-6">
@@ -457,7 +618,14 @@ export default function Orders() {
                 <Download className="w-4 h-4 mr-2" />
                 Download Invoice
               </Button>
-              <Button>
+              <Button onClick={() => {
+                setShowUpdateModal(true);
+                setUpdateData({
+                  status: selectedOrder.status,
+                  progress: selectedOrder.progress || 0,
+                  notes: selectedOrder.notes || ''
+                });
+              }}>
                 Update Status
               </Button>
             </div>

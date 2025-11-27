@@ -34,6 +34,27 @@ export default function Chat() {
     };
   }, []);
 
+  // Handle URL query parameters for direct navigation
+  useEffect(() => {
+    const { company: companyId, order: orderId } = router.query;
+    
+    if (companyId && conversations.length > 0) {
+      // Find conversation with this company
+      const conversation = conversations.find(conv => 
+        conv.company_id === parseInt(companyId) || 
+        conv.company?.id === parseInt(companyId)
+      );
+      
+      if (conversation) {
+        console.log('📬 Opening conversation with company:', companyId);
+        setSelectedConversation(conversation);
+      } else {
+        console.log('📭 No existing conversation found with company:', companyId);
+        // TODO: Optionally create a new conversation or show message to start one
+      }
+    }
+  }, [router.query, conversations]);
+
   // Subscribe to conversation when selected
   useEffect(() => {
     if (selectedConversation && currentUser) {
