@@ -2015,6 +2015,57 @@ class ApiService {
       }
     });
   }
+
+  // ==================== User Profile Management ====================
+  
+  // Get user profile
+  async getUserProfile() {
+    return this.request('/profile', {
+      method: 'GET'
+    });
+  }
+
+  // Update user profile
+  async updateUserProfile(profileData) {
+    return this.request('/profile', {
+      method: 'PUT',
+      data: profileData
+    });
+  }
+
+  // Upload profile picture
+  async uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+
+    return fetch(`${this.baseURL}/profile/upload-picture`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Accept': 'application/json',
+      },
+      body: formData
+    }).then(res => res.json());
+  }
+
+  // Delete profile picture
+  async deleteProfilePicture() {
+    return this.request('/profile/picture', {
+      method: 'DELETE'
+    });
+  }
+
+  // Change password
+  async changePassword(currentPassword, newPassword, newPasswordConfirmation) {
+    return this.request('/profile/change-password', {
+      method: 'POST',
+      data: {
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: newPasswordConfirmation
+      }
+    });
+  }
 }
 
 const apiService = new ApiService();

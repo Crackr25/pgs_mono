@@ -29,6 +29,7 @@ use App\Http\Controllers\SellerPayoutController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\TestAgentController;
 use App\Http\Controllers\BroadcastingAuthController;
+use App\Http\Controllers\Api\UserProfileController;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -56,6 +57,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::get('/auth/user/company', [AuthController::class, 'getUserCompany']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+    
+    // User Profile Management
+    Route::get('/profile', [UserProfileController::class, 'show']);
+    Route::put('/profile', [UserProfileController::class, 'update']);
+    Route::post('/profile/upload-picture', [UserProfileController::class, 'uploadProfilePicture']);
+    Route::delete('/profile/picture', [UserProfileController::class, 'deleteProfilePicture']);
+    Route::post('/profile/change-password', [UserProfileController::class, 'changePassword']);
 });
 
 // Public routes (no authentication required)

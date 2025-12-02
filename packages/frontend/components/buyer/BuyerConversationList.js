@@ -8,6 +8,36 @@ import {
   Package 
 } from 'lucide-react';
 import Skeleton from '../common/Skeleton';
+import { getImageUrl } from '../../lib/imageUtils';
+
+// Helper function to get profile picture with fallback logic
+const getProfilePicture = (conversation) => {
+  // 1. Check if company owner has profile picture
+  if (conversation?.seller?.profile_picture) {
+    return getImageUrl(conversation.seller.profile_picture);
+  }
+  
+  // 2. Check company agents for profile pictures
+  if (conversation?.seller?.company?.agents && conversation.seller.company.agents.length > 0) {
+    const agentWithPicture = conversation.seller.company.agents.find(agent => agent.profile_picture);
+    if (agentWithPicture) {
+      return getImageUrl(agentWithPicture.profile_picture);
+    }
+  }
+  
+  // 3. Random fallback image (female1-3 or male1-2)
+  const randomImages = [
+    '/female_1.png',
+    '/female_2.png', 
+    '/female_3.png',
+    '/male_1.png',
+    '/male_2.png'
+  ];
+  
+  // Use conversation ID to consistently pick the same random image
+  const index = conversation?.id ? conversation.id % randomImages.length : Math.floor(Math.random() * randomImages.length);
+  return randomImages[index];
+};
 
 export default function BuyerConversationList({
   conversations,
@@ -95,12 +125,16 @@ export default function BuyerConversationList({
               }`}
             >
               <div className="flex items-start space-x-3">
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  {conversation.seller.company ? (
-                    <Building2 className="w-6 h-6 text-primary-600" />
-                  ) : (
-                    <User className="w-6 h-6 text-primary-600" />
-                  )}
+                <div className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden bg-gray-200">
+                  <img 
+                    src={getProfilePicture(conversation)} 
+                    alt={conversation.seller.company?.name || conversation.seller.name || 'Supplier'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/female_1.png';
+                    }}
+                  />
                 </div>
                 
                 <div className="flex-1 min-w-0">

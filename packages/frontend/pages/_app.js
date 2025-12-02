@@ -5,7 +5,7 @@ import Layout from '../components/layout/Layout';
 import AuthGuard from '../components/auth/AuthGuard';
 import OnboardingGuard from '../components/auth/OnboardingGuard';
 import { AuthProvider } from '../contexts/AuthContext';
-import { ToastProvider } from '../components/common/Toast';
+import { Toaster } from 'react-hot-toast';
 
 // Pages that don't require authentication
 // All buyer pages are public, allowing unauthenticated browsing
@@ -35,19 +35,41 @@ export default function App({ Component, pageProps }) {
 
   return (
     <AuthProvider>
-      <ToastProvider>
-        <Layout>
-          {isPublicPage || isBuyerPageRoute || isStorefrontPageRoute || isAgentInvitationPageRoute ? (
-            <Component {...pageProps} />
-          ) : (
-            <AuthGuard>
-              <OnboardingGuard>
-                <Component {...pageProps} />
-              </OnboardingGuard>
-            </AuthGuard>
-          )}
-        </Layout>
-      </ToastProvider>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      <Layout>
+        {isPublicPage || isBuyerPageRoute || isStorefrontPageRoute || isAgentInvitationPageRoute ? (
+          <Component {...pageProps} />
+        ) : (
+          <AuthGuard>
+            <OnboardingGuard>
+              <Component {...pageProps} />
+            </OnboardingGuard>
+          </AuthGuard>
+        )}
+      </Layout>
     </AuthProvider>
   );
 }

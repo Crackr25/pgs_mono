@@ -128,7 +128,7 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
             {/* Breadcrumb */}
             <div className="hidden sm:flex items-center space-x-2 text-sm">
               <Link href="/buyer" className="text-secondary-500 hover:text-secondary-700">
-                Buyer Portal
+
               </Link>
               {router.pathname !== '/buyer' && (
                 <>
@@ -273,7 +273,7 @@ export default function BuyerNavBar({ onMenuToggle, isSidebarOpen }) {
                   </div>
                   
                   <div className="py-2">
-                    <Link href="/buyer/profile">
+                    <Link href="/buyer/settings/profile">
                       <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
                         <Building className="w-4 h-4" />
                         <span>Company Profile</span>

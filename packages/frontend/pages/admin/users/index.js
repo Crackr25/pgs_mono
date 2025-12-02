@@ -5,12 +5,11 @@ import { Users, Search, Filter, UserPlus, MoreVertical, Edit, Trash2, Ban, Check
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
-import { useToast } from '../../../components/common/Toast';
+import toast from 'react-hot-toast';
 import apiService from '../../../lib/api';
 
 export default function UserManagement() {
   const router = useRouter();
-  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({
     total_users: 0,
@@ -75,13 +74,13 @@ export default function UserManagement() {
   const handleDeleteConfirm = async () => {
     try {
       await apiService.deleteAdminUser(deleteDialog.userId);
-      toast.showSuccess('User Deleted', `${deleteDialog.userName} has been successfully deleted.`);
+      toast.success(`${deleteDialog.userName} has been successfully deleted.`);
       setDeleteDialog({ isOpen: false, userId: null, userName: '' });
       fetchUsers();
       fetchStatistics();
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.showError('Delete Failed', error.message || 'Failed to delete user');
+      toast.error(error.message || 'Failed to delete user');
     }
   };
 
@@ -95,7 +94,7 @@ export default function UserManagement() {
     
     try {
       setImpersonating(true);
-      const loadingToast = toast.showLoading('Impersonating...', `Logging in as ${user.name}`);
+      const loadingToast = toast.loading(`Logging in as ${user.name}...`);
       
       // Store the admin's current token BEFORE impersonating
       const adminToken = apiService.token;
@@ -123,8 +122,8 @@ export default function UserManagement() {
       
       const redirectPath = redirectMap[user.usertype] || '/';
       
-      toast.removeToast(loadingToast);
-      toast.showSuccess('Impersonation Started', 'Redirecting to user portal...');
+      toast.dismiss(loadingToast);
+      toast.success('Redirecting to user portal...');
       
       // Force a full page reload to the new portal
       // The AuthContext will automatically load the new user data on mount
@@ -133,7 +132,7 @@ export default function UserManagement() {
       }, 500);
     } catch (error) {
       console.error('Error impersonating user:', error);
-      toast.showError('Impersonation Failed', error.message || 'Failed to impersonate user');
+      toast.error(error.message || 'Failed to impersonate user');
       setImpersonating(false);
     }
   };
@@ -330,7 +329,7 @@ export default function UserManagement() {
                             </button>
                           )}
                           <button
-                            onClick={() => toast.showInfo('Coming Soon', 'Edit functionality will be available soon')}
+                            onClick={() => toast('Edit functionality will be available soon', { icon: 'ℹ️' })}
                             className="text-blue-600 hover:text-blue-900"
                             title="Edit"
                           >

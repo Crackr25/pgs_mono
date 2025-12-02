@@ -11,13 +11,12 @@ import Button from '../../../components/common/Button';
 import ConfirmModal from '../../../components/common/ConfirmModal';
 import apiService from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../components/common/Toast';
+import toast from 'react-hot-toast';
 
 export default function CompanyDetail() {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
-  const toast = useToast();
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
@@ -55,25 +54,17 @@ export default function CompanyDetail() {
     
     try {
       setVerifying(true);
-      const loadingToastId = toast.showLoading('Verifying Company', 'Please wait while we verify this company...');
+      const loadingToastId = toast.loading('Verifying company...');
       
       await apiService.verifyAdminCompany(id);
       
-      toast.removeToast(loadingToastId);
-      toast.showSuccess(
-        'Company Verified!',
-        `${company.name} has been successfully verified and can now start selling.`,
-        5000
-      );
+      toast.dismiss(loadingToastId);
+      toast.success(`${company.name} has been successfully verified and can now start selling.`, { duration: 5000 });
       
       fetchCompany();
     } catch (error) {
       console.error('Error verifying company:', error);
-      toast.showError(
-        'Verification Failed',
-        error.message || 'Failed to verify company. Please try again.',
-        5000
-      );
+      toast.error(error.message || 'Failed to verify company. Please try again.', { duration: 5000 });
     } finally {
       setVerifying(false);
     }
@@ -84,25 +75,17 @@ export default function CompanyDetail() {
     if (!reason) return;
     
     try {
-      const loadingToastId = toast.showLoading('Rejecting Company', 'Processing rejection...');
+      const loadingToastId = toast.loading('Processing rejection...');
       
       await apiService.rejectAdminCompany(id, reason);
       
-      toast.removeToast(loadingToastId);
-      toast.showInfo(
-        'Company Rejected',
-        `${company.name} has been rejected. The company owner will be notified.`,
-        5000
-      );
+      toast.dismiss(loadingToastId);
+      toast(`${company.name} has been rejected. The company owner will be notified.`, { icon: 'ℹ️', duration: 5000 });
       
       fetchCompany();
     } catch (error) {
       console.error('Error rejecting company:', error);
-      toast.showError(
-        'Rejection Failed',
-        'Failed to reject company. Please try again.',
-        5000
-      );
+      toast.error('Failed to reject company. Please try again.', { duration: 5000 });
     }
   };
 

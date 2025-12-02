@@ -5,12 +5,11 @@ import { Building2, Search, Filter, CheckCircle, XCircle, Clock, Eye, Trash2 } f
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import ConfirmModal from '../../../components/common/ConfirmModal';
-import { useToast } from '../../../components/common/Toast';
+import toast from 'react-hot-toast';
 import apiService from '../../../lib/api';
 
 export default function CompanyManagement() {
   const router = useRouter();
-  const toast = useToast();
   const [companies, setCompanies] = useState([]);
   const [stats, setStats] = useState({
     total_companies: 0,
@@ -76,26 +75,18 @@ export default function CompanyManagement() {
     
     try {
       setIsProcessing(true);
-      const loadingToastId = toast.showLoading('Verifying Company', 'Please wait while we verify this company...');
+      const loadingToastId = toast.loading('Verifying company...');
       
       await apiService.verifyAdminCompany(companyId);
       
-      toast.removeToast(loadingToastId);
-      toast.showSuccess(
-        'Company Verified!',
-        `${companyName} has been successfully verified and can now start selling.`,
-        5000
-      );
+      toast.dismiss(loadingToastId);
+      toast.success(`${companyName} has been successfully verified and can now start selling.`, { duration: 5000 });
       
       fetchCompanies();
       fetchStatistics();
     } catch (error) {
       console.error('Error verifying company:', error);
-      toast.showError(
-        'Verification Failed',
-        error.message || 'Failed to verify company. Please try again.',
-        5000
-      );
+      toast.error(error.message || 'Failed to verify company. Please try again.', { duration: 5000 });
     } finally {
       setIsProcessing(false);
     }
@@ -111,26 +102,18 @@ export default function CompanyManagement() {
     
     try {
       setIsProcessing(true);
-      const loadingToastId = toast.showLoading('Deleting Company', 'Please wait...');
+      const loadingToastId = toast.loading('Deleting company...');
       
       await apiService.deleteAdminCompany(companyId);
       
-      toast.removeToast(loadingToastId);
-      toast.showSuccess(
-        'Company Deleted',
-        `${companyName} has been permanently deleted.`,
-        5000
-      );
+      toast.dismiss(loadingToastId);
+      toast.success(`${companyName} has been permanently deleted.`, { duration: 5000 });
       
       fetchCompanies();
       fetchStatistics();
     } catch (error) {
       console.error('Error deleting company:', error);
-      toast.showError(
-        'Deletion Failed',
-        error.message || 'Failed to delete company. Please try again.',
-        5000
-      );
+      toast.error(error.message || 'Failed to delete company. Please try again.', { duration: 5000 });
     } finally {
       setIsProcessing(false);
     }

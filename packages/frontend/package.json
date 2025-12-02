@@ -19,7 +19,8 @@
     "pusher-js": "^8.4.0-rc2",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
     "@pgs-mono/shared-configs": "workspace:*",

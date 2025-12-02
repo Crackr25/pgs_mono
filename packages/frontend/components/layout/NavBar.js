@@ -201,6 +201,17 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-[9999]">
                     <div className="py-1">
+                      {/* Update Profile - for all users including agents */}
+                      <button
+                        onClick={() => {
+                          router.push('/buyer/settings/profile');
+                          setIsProfileOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Update Profile
+                      </button>
+                      
                       {/* Hide Company Profile for agents - they don't own the company */}
                       {user?.usertype !== 'agent' && (
                         <button

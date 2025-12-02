@@ -16,6 +16,36 @@ import {
 } from 'lucide-react';
 import Button from '../common/Button';
 import ProductMessageHeader from '../chat/ProductMessageHeader';
+import { getImageUrl } from '../../lib/imageUtils';
+
+// Helper function to get profile picture with fallback logic
+const getProfilePicture = (conversation) => {
+  // 1. Check if company owner has profile picture
+  if (conversation?.seller?.profile_picture) {
+    return getImageUrl(conversation.seller.profile_picture);
+  }
+  
+  // 2. Check company agents for profile pictures
+  if (conversation?.seller?.company?.agents && conversation.seller.company.agents.length > 0) {
+    const agentWithPicture = conversation.seller.company.agents.find(agent => agent.profile_picture);
+    if (agentWithPicture) {
+      return getImageUrl(agentWithPicture.profile_picture);
+    }
+  }
+  
+  // 3. Random fallback image (female1-3 or male1-2)
+  const randomImages = [
+    '/female_1.png',
+    '/female_2.png', 
+    '/female_3.png',
+    '/male_1.png',
+    '/male_2.png'
+  ];
+  
+  // Use conversation ID to consistently pick the same random image
+  const index = conversation?.id ? conversation.id % randomImages.length : Math.floor(Math.random() * randomImages.length);
+  return randomImages[index];
+};
 
 export default function BuyerChatWindow({ 
   conversation, 
@@ -252,12 +282,16 @@ export default function BuyerChatWindow({
       <div className="flex-shrink-0 p-4 border-b border-secondary-200 bg-white shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              {conversation.seller.company ? (
-                <Building2 className="w-5 h-5 text-primary-600" />
-              ) : (
-                <User className="w-5 h-5 text-primary-600" />
-              )}
+            <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-gray-200">
+              <img 
+                src={getProfilePicture(conversation)} 
+                alt={conversation.seller.company?.name || conversation.seller.name || 'Supplier'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/female_1.png';
+                }}
+              />
             </div>
             <div>
               <h2 className="font-semibold text-secondary-900">
@@ -284,12 +318,16 @@ export default function BuyerChatWindow({
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                {conversation.seller.company ? (
-                  <Building2 className="w-8 h-8 text-primary-600" />
-                ) : (
-                  <User className="w-8 h-8 text-primary-600" />
-                )}
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto mb-4">
+                <img 
+                  src={getProfilePicture(conversation)} 
+                  alt={conversation.seller.company?.name || conversation.seller.name || 'Supplier'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/female_1.png';
+                  }}
+                />
               </div>
               <h3 className="text-lg font-medium text-secondary-900 mb-2">
                 Start a conversation with {conversation.seller.company?.name || conversation.seller.name}

@@ -95,10 +95,10 @@ export default function BuyerGlobalTopNav() {
         <div className="flex justify-between items-center h-16">
           {/* Left - Logo */}
           <div className="flex items-center">
-            <Link href="/buyer" className="flex items-center space-x-2">
+            <Link href="/buyer" className="flex items-center space-x-3">
               <img src="/pgs2.png" className="h-8 w-auto" alt="Pinoy Global Supply" />
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                Buyer Portal
+              <span className="text-xl font-bold text-secondary-900 hidden sm:block">
+                Pinoy Global Supply
               </span>
             </Link>
           </div>
@@ -232,7 +232,7 @@ export default function BuyerGlobalTopNav() {
                       </div>
                       
                       <div className="py-2">
-                        <Link href="/buyer/profile">
+                        <Link href="/buyer/settings/profile">
                           <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
                             <User className="w-4 h-4" />
                             <span>My Profile</span>

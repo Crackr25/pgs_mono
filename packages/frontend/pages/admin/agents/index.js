@@ -3,11 +3,10 @@ import Head from 'next/head';
 import { Users, Search, Filter, UserCheck, UserX, Mail, Trash2, Eye, UserPlus, Building2, RefreshCw } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
-import { useToast } from '../../../components/common/Toast';
+import toast from 'react-hot-toast';
 import apiService from '../../../lib/api';
 
 export default function AgentManagement() {
-  const toast = useToast();
   const [agents, setAgents] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [stats, setStats] = useState({
@@ -107,13 +106,13 @@ export default function AgentManagement() {
 
   const handleResendInvitation = async (agentId) => {
     try {
-      const loadingToastId = toast.showLoading('Resending Invitation', 'Please wait...');
+      const loadingToastId = toast.loading('Resending invitation...');
       await apiService.resendAdminAgentInvitation(agentId);
-      toast.removeToast(loadingToastId);
-      toast.showSuccess('Invitation Resent', 'The invitation has been resent successfully.');
+      toast.dismiss(loadingToastId);
+      toast.success('The invitation has been resent successfully.');
     } catch (error) {
       console.error('Error resending invitation:', error);
-      toast.showError('Failed', error.message || 'Failed to resend invitation');
+      toast.error(error.message || 'Failed to resend invitation');
     }
   };
 
@@ -121,12 +120,12 @@ export default function AgentManagement() {
     e.preventDefault();
     try {
       setIsProcessing(true);
-      const loadingToastId = toast.showLoading('Creating Invitation', 'Please wait...');
+      const loadingToastId = toast.loading('Creating invitation...');
       
       await apiService.createAdminAgentInvitation(formData);
       
-      toast.removeToast(loadingToastId);
-      toast.showSuccess('Invitation Created!', `Agent invitation sent to ${formData.email}`);
+      toast.dismiss(loadingToastId);
+      toast.success(`Agent invitation sent to ${formData.email}`);
       
       setShowCreateModal(false);
       setFormData({ name: '', email: '', company_id: '', role: 'Agent' });
@@ -134,7 +133,7 @@ export default function AgentManagement() {
       fetchStatistics();
     } catch (error) {
       console.error('Error creating invitation:', error);
-      toast.showError('Failed', error.message || 'Failed to create invitation');
+      toast.error(error.message || 'Failed to create invitation');
     } finally {
       setIsProcessing(false);
     }
@@ -149,20 +148,20 @@ export default function AgentManagement() {
     e.preventDefault();
     try {
       setIsProcessing(true);
-      const loadingToastId = toast.showLoading('Changing Company', 'Please wait...');
+      const loadingToastId = toast.loading('Changing company...');
       
       const companyId = document.getElementById('change-company-select').value;
       await apiService.changeAdminAgentCompany(selectedAgent.id, companyId);
       
-      toast.removeToast(loadingToastId);
-      toast.showSuccess('Company Changed!', `Agent has been reassigned successfully.`);
+      toast.dismiss(loadingToastId);
+      toast.success(`Agent has been reassigned successfully.`);
       
       setShowChangeCompanyModal(false);
       setSelectedAgent(null);
       fetchAgents();
     } catch (error) {
       console.error('Error changing company:', error);
-      toast.showError('Failed', error.message || 'Failed to change company');
+      toast.error(error.message || 'Failed to change company');
     } finally {
       setIsProcessing(false);
     }
