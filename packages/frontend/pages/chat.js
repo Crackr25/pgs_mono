@@ -87,8 +87,6 @@ export default function Chat() {
       
       // Get current user info
       const userData = user;
-      console.log('👤 Current user:', userData);
-      console.log('🔑 User type:', userData?.usertype);
       setCurrentUser(userData);
 
       // Connect WebSocket
@@ -117,11 +115,49 @@ export default function Chat() {
 
   const fetchConversations = async () => {
     try {
-      const response = await chatAPI.getConversations();
-      if (response.success) {
-        console.log(response.conversations);
-        setConversations(response.conversations);
+      let allConversations = [];
+      
+      // Fetch buyer-seller conversations
+      const buyerSellerResponse = await chatAPI.getConversations();
+      if (buyerSellerResponse.success) {
+        allConversations = buyerSellerResponse.conversations.map(conv => ({
+          ...conv,
+          conversation_type: 'customer'
+        }));
       }
+      
+      // Fetch agent-to-agent conversations if user is an agent
+      if (user?.usertype === 'agent') {
+        try {
+          const agentResponse = await chatAPI.getAgentConversations();
+          if (agentResponse.data) {
+            const agentConversations = agentResponse.data.map(conv => ({
+              id: conv.id,
+              conversation_type: 'agent', // Mark as agent conversation
+              other_agent: conv.other_agent,
+              other_company: conv.other_company,
+              last_message: conv.last_message,
+              last_message_at: conv.last_message_at,
+              unread_count: conv.unread_count,
+              created_at: conv.created_at,
+              // Map to match customer conversation format for display
+              company: conv.other_company,
+              buyer: conv.other_agent,
+              seller: conv.other_agent,
+            }));
+            allConversations = [...allConversations, ...agentConversations];
+          }
+        } catch (error) {
+          console.error('Failed to fetch agent conversations:', error);
+        }
+      }
+      
+      // Sort by last_message_at
+      allConversations.sort((a, b) => 
+        new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at)
+      );
+      
+      setConversations(allConversations);
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
     }
@@ -130,30 +166,34 @@ export default function Chat() {
   const fetchMessages = async (conversationId) => {
     setMessagesLoading(true);
     try {
-      const response = await chatAPI.getConversation(conversationId);
-      if (response.success) {
-        console.log(response.messages);
-        setMessages(response.messages);
-        
-        // Mark messages as read
-        console.log('📖 Marking messages as read for conversation:', conversationId);
-        console.log('👤 Current user type:', currentUser?.usertype);
-        await chatAPI.markMessagesAsRead(conversationId);
-        
-        // Update conversation unread count in local state
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === conversationId 
-              ? { ...conv, unread_count: 0 }
-              : conv
-          )
+      // Check if this is an agent conversation
+      const conversation = conversations.find(c => c.id === conversationId);
+      
+      if (conversation?.conversation_type === 'agent') {
+        // Fetch agent messages
+        const response = await chatAPI.getAgentMessages(conversationId);
+        const sortedMessages = (response.data || []).sort((a, b) => 
+          new Date(a.created_at) - new Date(b.created_at)
         );
-        
-        // Scroll to bottom after messages are loaded
-        setTimeout(() => {
-          chatWindowRef.current?.scrollToBottom?.();
-        }, 100);
+        setMessages(sortedMessages);
+        await chatAPI.markAgentConversationRead(conversationId);
+      } else {
+        // Fetch customer messages
+        const response = await chatAPI.getConversation(conversationId);
+        if (response.success) {
+          setMessages(response.messages);
+          await chatAPI.markMessagesAsRead(conversationId);
+        }
       }
+      
+      // Update conversation unread count in local state
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, unread_count: 0 }
+            : conv
+        )
+      );
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     } finally {
@@ -162,56 +202,45 @@ export default function Chat() {
   };
 
   const subscribeToConversation = (conversationId) => {
-    websocketService.subscribeToConversation(conversationId, {
-      onMessageReceived: handleNewMessage,
-      onSubscribed: () => {
-        console.log(`Subscribed to conversation ${conversationId}`);
-      },
-      onError: (error) => {
-        console.error('Subscription error:', error);
-      }
-    });
+    const conversation = conversations.find(c => c.id === conversationId);
+    
+    if (conversation?.conversation_type === 'agent') {
+      // Subscribe to agent conversation channel
+      const channelName = `agent-conversation.${conversationId}`;
+      websocketService.subscribeToChannel(channelName, 'agent.message.sent', (data) => {
+        handleNewMessage(data);
+      });
+    } else {
+      // Subscribe to customer conversation channel
+      websocketService.subscribeToConversation(conversationId, {
+        onMessageReceived: handleNewMessage,
+        onError: (error) => {
+          console.error('Subscription error:', error);
+        }
+      });
+    }
   };
 
 
   const handleNewMessage = useCallback((data) => {
-    console.log('🔔 Real-time message received:', data);
-    console.log('📋 Current selected conversation:', selectedConversation?.id);
-    
     // Handle different message structures from WebSocket
-    let messageData = data.message || data; // Support both wrapped and direct message format
-    
-    console.log('📋 Message data:', messageData);
-    console.log('📋 Message conversation_id:', messageData.conversation_id);
-    console.log('📋 Current conversation id:', selectedConversation?.id);
+    let messageData = data.message || data;
     
     // Check if message is from current conversation
     if (messageData && selectedConversation && messageData.conversation_id === selectedConversation.id) {
-      console.log('✅ Message matches current conversation, adding to messages');
-      
       // Check if message already exists to prevent duplicates
       setMessages(prev => {
         const messageExists = prev.some(msg => msg.id === messageData.id);
         if (!messageExists) {
-          console.log('✅ Adding new real-time message to conversation');
-          console.log('📝 Message content:', messageData.message);
           return [...prev, messageData];
-        } else {
-          console.log('⚠️ Message already exists, skipping duplicate');
-          return prev;
         }
+        return prev;
       });
 
       // Mark as read if the user is viewing this conversation
       if (messageData.receiver_id === currentUser?.id) {
-        console.log('📖 Marking message as read');
         chatAPI.markMessagesAsRead(messageData.conversation_id, [messageData.id]);
       }
-    } else {
-      console.log('⚠️ Message not added - reason:');
-      console.log('   - Has messageData:', !!messageData);
-      console.log('   - Has selectedConversation:', !!selectedConversation);
-      console.log('   - Conversation IDs match:', messageData?.conversation_id === selectedConversation?.id);
     }
     
     // Update conversations list
@@ -264,16 +293,32 @@ export default function Chat() {
     if (!selectedConversation) return;
 
     try {
-      const response = await chatAPI.sendMessage(selectedConversation.id, message, attachment);
-      if (response.success) {
-        console.log('Message sent successfully');
+      let response;
+      
+      if (selectedConversation.conversation_type === 'agent') {
+        // Send agent message
+        const formData = new FormData();
+        formData.append('conversation_id', selectedConversation.id);
+        formData.append('message', message);
+        if (attachment) {
+          formData.append('images[]', attachment);
+        }
+        response = await chatAPI.sendAgentMessage(formData);
+        // Wrap response to match customer message format
+        response = { success: true, message: response.data };
+      } else {
+        // Send customer message
+        response = await chatAPI.sendMessage(selectedConversation.id, message, attachment);
+      }
+      
+      if (response.success || response.data) {
+        const sentMessage = response.message || response.data;
         
         // Immediately add the sent message for instant UI update
         setMessages(prev => {
-          const messageExists = prev.some(msg => msg.id === response.message.id);
+          const messageExists = prev.some(msg => msg.id === sentMessage.id);
           if (!messageExists) {
-            console.log('✅ Adding sent message to local state immediately');
-            return [...prev, response.message];
+            return [...prev, sentMessage];
           }
           return prev;
         });
@@ -285,11 +330,11 @@ export default function Chat() {
               return {
                 ...conv,
                 latest_message: {
-                  message: response.message.message,
-                  sender_id: response.message.sender_id,
-                  created_at: response.message.created_at
+                  message: sentMessage.message,
+                  sender_id: sentMessage.sender_id,
+                  created_at: sentMessage.created_at
                 },
-                last_message_at: response.message.created_at
+                last_message_at: sentMessage.created_at
               };
             }
             return conv;

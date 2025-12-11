@@ -4,6 +4,7 @@ import { Bell, Search, User, Menu, X, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../hooks/useLanguage';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
+import NotificationBell from '../wall-feed/NotificationBell';
 import apiService from '../../lib/api';
 
 
@@ -153,6 +154,11 @@ export default function NavBar({ onMenuToggle, isSidebarOpen }) {
               </div>
             )}
             
+            {/* Notification Bell for Agents */}
+            {isAuthenticated && user?.usertype === 'agent' && (
+              <NotificationBell />
+            )}
+
             {/* Chat Button */}
             {isAuthenticated && (
               <div className="relative">

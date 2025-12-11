@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, MessageSquare, Clock, User } from 'lucide-react';
+import { Search, MessageSquare, Clock, User, Users } from 'lucide-react';
 
 export default function ConversationList({ 
   conversations, 
@@ -161,16 +161,32 @@ export default function ConversationList({
               }`}
             >
               <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-primary-600">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  conversation.conversation_type === 'agent' 
+                    ? 'bg-blue-100' 
+                    : 'bg-primary-100'
+                }`}>
+                  <span className={`text-sm font-medium ${
+                    conversation.conversation_type === 'agent' 
+                      ? 'text-blue-600' 
+                      : 'text-primary-600'
+                  }`}>
                     {getInitials(conversation.buyer.name)}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-sm font-medium text-secondary-900 truncate">
-                      {conversation.buyer.name}
-                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-sm font-medium text-secondary-900 truncate">
+                        {conversation.buyer.name}
+                      </h3>
+                      {conversation.conversation_type === 'agent' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          <Users className="w-3 h-3 mr-1" />
+                          Agent
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center space-x-1">
                       {conversation.unread_count > 0 && (
                         <div className="w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">

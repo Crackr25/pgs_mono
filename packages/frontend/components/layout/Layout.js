@@ -7,6 +7,8 @@ import BuyerNavBar from './BuyerNavBar';
 import BuyerGlobalTopNav from './BuyerGlobalTopNav';
 import SideBar from './SideBar';
 import BuyerSideBar from './BuyerSideBar';
+import AgentSideBar from './AgentSideBar';
+import AgentNavBar from './AgentNavBar';
 import AdminLayout from '../admin/AdminLayout';
 import Footer from './Footer';
 import ProminentSearchBar from '../common/ProminentSearchBar';
@@ -37,6 +39,8 @@ export default function Layout({ children }) {
   // Determine page types and user types BEFORE any hooks
   const isAdminPage = router.pathname.startsWith('/admin');
   const isBuyerUser = user?.usertype === 'buyer';
+  const isAgentUser = user?.usertype === 'agent';
+  const isAgentPage = router.pathname.startsWith('/agent') || (isAgentUser && router.pathname === '/chat');
   const isBuyerPage = router.pathname.startsWith('/buyer') || (isBuyerUser && router.pathname === '/chat');
   const isBuyerDashboard = router.pathname === '/buyer';
   const isUnauthenticatedBuyerPage = !isAuthenticated && router.pathname.startsWith('/buyer');
@@ -58,6 +62,10 @@ export default function Layout({ children }) {
     // Prevent sellers from accessing buyer portal
     if (isAuthenticated && user?.usertype === 'seller' && router.pathname.startsWith('/buyer')) {
       router.push('/');
+    }
+    // Prevent agents from accessing seller/buyer portals (except chat)
+    if (isAuthenticated && user?.usertype === 'agent' && !router.pathname.startsWith('/agent') && router.pathname !== '/chat' && !router.pathname.startsWith('/profile') && !router.pathname.startsWith('/settings') && !router.pathname.startsWith('/support')) {
+      router.push('/agent/dashboard');
     }
   }, [isAuthenticated, user, router.pathname, router]);
 
@@ -216,6 +224,28 @@ export default function Layout({ children }) {
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           <p className="mt-4 text-secondary-600">Redirecting to seller portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Layout for agent pages - chat-focused portal
+  if (isAgentPage) {
+    return (
+      <div className="min-h-screen bg-secondary-50">
+        {isImpersonating && <ImpersonationBanner />}
+        <div className="flex">
+          <AgentSideBar isOpen={sidebarOpen} onClose={closeSidebar} />
+          
+          <div className="flex-1 flex flex-col lg:ml-0">
+            <AgentNavBar onMenuToggle={toggleSidebar} isSidebarOpen={sidebarOpen} />
+            
+            <main className="flex-1 p-4 sm:p-6 lg:p-8">
+              <div className="max-w-7xl mx-auto">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
       </div>
     );

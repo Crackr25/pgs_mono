@@ -28,6 +28,9 @@ use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\SellerPayoutController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\TestAgentController;
+use App\Http\Controllers\WallFeedController;
+use App\Http\Controllers\WallNotificationController;
+use App\Http\Controllers\AgentMessagingController;
 use App\Http\Controllers\BroadcastingAuthController;
 use App\Http\Controllers\Api\UserProfileController;
 use Illuminate\Support\Facades\Broadcast;
@@ -299,6 +302,40 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{agent}', [AgentController::class, 'update']);
         Route::delete('/{agent}', [AgentController::class, 'destroy']);
         Route::post('/assign-conversation', [AgentController::class, 'assignConversation']);
+    });
+
+    // Wall Feed routes - Agent-to-Agent social feed (agents only)
+    Route::prefix('wall-feed')->group(function () {
+        Route::get('/', [WallFeedController::class, 'index']);
+        Route::post('/', [WallFeedController::class, 'store']);
+        Route::get('/{post}', [WallFeedController::class, 'show']);
+        Route::put('/{post}', [WallFeedController::class, 'update']);
+        Route::delete('/{post}', [WallFeedController::class, 'destroy']);
+        Route::post('/{post}/like', [WallFeedController::class, 'toggleLike']);
+        Route::post('/{post}/view', [WallFeedController::class, 'trackView']);
+        Route::post('/{post}/replies', [WallFeedController::class, 'addReply']);
+        Route::delete('/{post}/replies/{reply}', [WallFeedController::class, 'deleteReply']);
+        Route::post('/{post}/replies/{reply}/like', [WallFeedController::class, 'toggleReplyLike']);
+    });
+
+    // Wall Notifications routes
+    Route::prefix('wall-notifications')->group(function () {
+        Route::get('/', [WallNotificationController::class, 'index']);
+        Route::get('/unread-count', [WallNotificationController::class, 'unreadCount']);
+        Route::post('/{notification}/read', [WallNotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [WallNotificationController::class, 'markAllAsRead']);
+        Route::delete('/{notification}', [WallNotificationController::class, 'destroy']);
+    });
+
+    // Agent Messaging routes - Agent-to-Agent private messaging (agents only)
+    Route::prefix('agent-messaging')->group(function () {
+        Route::get('/conversations', [AgentMessagingController::class, 'getConversations']);
+        Route::get('/conversations/{conversation}/messages', [AgentMessagingController::class, 'getMessages']);
+        Route::post('/messages', [AgentMessagingController::class, 'sendMessage']);
+        Route::post('/conversations/{conversation}/mark-read', [AgentMessagingController::class, 'markAsRead']);
+        Route::get('/agents', [AgentMessagingController::class, 'getAgents']);
+        Route::post('/conversations/start', [AgentMessagingController::class, 'startConversation']);
+        Route::delete('/messages/{message}', [AgentMessagingController::class, 'deleteMessage']);
     });
 
     // Public agent invitation acceptance (no auth required)

@@ -37,14 +37,42 @@ class ApiService {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    
+    // Check if data is FormData
+    const isFormData = options.data instanceof FormData;
+    
+    // Prepare headers
+    let headers = this.getHeaders();
+    
+    // If FormData, remove Content-Type to let browser set it with boundary
+    if (isFormData) {
+      delete headers['Content-Type'];
+    }
+    
+    // Merge with custom headers from options
+    if (options.headers) {
+      // Don't override Content-Type for FormData
+      if (!isFormData) {
+        headers = { ...headers, ...options.headers };
+      } else {
+        // For FormData, only merge non-Content-Type headers
+        const { 'Content-Type': _, ...otherHeaders } = options.headers;
+        headers = { ...headers, ...otherHeaders };
+      }
+    }
+    
     const config = {
-      headers: this.getHeaders(),
       ...options,
+      headers,
     };
 
     // Convert data to body if present
     if (options.data) {
-      config.body = JSON.stringify(options.data);
+      if (isFormData) {
+        config.body = options.data;
+      } else {
+        config.body = JSON.stringify(options.data);
+      }
       delete config.data;
     }
 
@@ -2064,6 +2092,161 @@ class ApiService {
         new_password: newPassword,
         new_password_confirmation: newPasswordConfirmation
       }
+    });
+  }
+
+  // ==================== Wall Feed API ====================
+  
+  // Get wall feed posts
+  async getWallFeed(page = 1, perPage = 15, pinned = false) {
+    const params = new URLSearchParams({ page, per_page: perPage });
+    if (pinned) params.append('pinned', 'true');
+    return this.request(`/wall-feed?${params}`);
+  }
+
+  // Create a wall post
+  async createWallPost(formData) {
+    return this.request('/wall-feed', {
+      method: 'POST',
+      data: formData
+    });
+  }
+
+  // Get a specific post
+  async getWallPost(postId) {
+    return this.request(`/wall-feed/${postId}`);
+  }
+
+  // Update a post
+  async updateWallPost(postId, content) {
+    return this.request(`/wall-feed/${postId}`, {
+      method: 'PUT',
+      data: { content }
+    });
+  }
+
+  // Delete a post
+  async deleteWallPost(postId) {
+    return this.request(`/wall-feed/${postId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Like/Unlike a post
+  async toggleWallPostLike(postId) {
+    return this.request(`/wall-feed/${postId}/like`, {
+      method: 'POST'
+    });
+  }
+
+  // Add a reply to a post
+  async addWallPostReply(postId, formData) {
+    return this.request(`/wall-feed/${postId}/replies`, {
+      method: 'POST',
+      data: formData
+    });
+  }
+
+  // Delete a reply
+  async deleteWallPostReply(postId, replyId) {
+    return this.request(`/wall-feed/${postId}/replies/${replyId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Like/Unlike a reply
+  async toggleWallReplyLike(postId, replyId) {
+    return this.request(`/wall-feed/${postId}/replies/${replyId}/like`, {
+      method: 'POST'
+    });
+  }
+
+  // ==================== Agent Messaging API ====================
+  
+  // Get agent conversations
+  async getAgentConversations(page = 1, perPage = 20) {
+    return this.request(`/agent-messaging/conversations?page=${page}&per_page=${perPage}`);
+  }
+
+  // Get messages for a conversation
+  async getAgentMessages(conversationId, page = 1, perPage = 50) {
+    return this.request(`/agent-messaging/conversations/${conversationId}/messages?page=${page}&per_page=${perPage}`);
+  }
+
+  // Send a message to another agent
+  async sendAgentMessage(formData) {
+    return this.request('/agent-messaging/messages', {
+      method: 'POST',
+      data: formData
+    });
+  }
+
+  // Mark conversation as read
+  async markAgentConversationRead(conversationId) {
+    return this.request(`/agent-messaging/conversations/${conversationId}/mark-read`, {
+      method: 'POST'
+    });
+  }
+
+  // Get list of all agents
+  async getAgentsList(search = '', page = 1, perPage = 20) {
+    const params = new URLSearchParams({ page, per_page: perPage });
+    if (search) params.append('search', search);
+    return this.request(`/agent-messaging/agents?${params}`);
+  }
+
+  // Start a new conversation with an agent
+  async startAgentConversation(agentId) {
+    return this.request('/agent-messaging/conversations/start', {
+      method: 'POST',
+      data: { agent_id: agentId }
+    });
+  }
+
+  // ==================== Wall Notifications API ====================
+  
+  // Get notifications
+  async getWallNotifications(page = 1, perPage = 20) {
+    return this.request(`/wall-notifications?page=${page}&per_page=${perPage}`);
+  }
+
+  // Get unread notifications count
+  async getUnreadNotificationsCount() {
+    return this.request('/wall-notifications/unread-count');
+  }
+
+  // Mark notification as read
+  async markNotificationAsRead(notificationId) {
+    return this.request(`/wall-notifications/${notificationId}/read`, {
+      method: 'POST'
+    });
+  }
+
+  // Mark all notifications as read
+  async markAllNotificationsAsRead() {
+    return this.request('/wall-notifications/mark-all-read', {
+      method: 'POST'
+    });
+  }
+
+  // Delete notification
+  async deleteNotification(notificationId) {
+    return this.request(`/wall-notifications/${notificationId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Track post view
+  async trackPostView(postId) {
+    return this.request(`/wall-feed/${postId}/view`, {
+      method: 'POST'
+    });
+  }
+
+  // Delete an agent message
+  async deleteAgentMessage(messageId) {
+    return this.request(`/agent-messaging/messages/${messageId}`, {
+      method: 'DELETE'
     });
   }
 }

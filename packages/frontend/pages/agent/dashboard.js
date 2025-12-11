@@ -3,16 +3,14 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { 
   Building2, 
-  Package, 
   MessageSquare, 
-  FileText, 
   Users, 
-  Settings,
-  Bell,
-  TrendingUp,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  UserCheck,
+  Mail,
+  Settings
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -26,11 +24,11 @@ export default function AgentDashboard() {
   const [loading, setLoading] = useState(true);
   const [agentData, setAgentData] = useState(null);
   const [companyData, setCompanyData] = useState(null);
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    activeOrders: 0,
-    pendingInquiries: 0,
-    completedTasks: 0
+  const [chatStats, setChatStats] = useState({
+    totalConversations: 0,
+    unreadMessages: 0,
+    assignedToMe: 0,
+    respondedToday: 0
   });
 
   useEffect(() => {
@@ -42,28 +40,28 @@ export default function AgentDashboard() {
   const loadAgentData = async () => {
     try {
       setLoading(true);
-      // You might need to create these API endpoints
-      // For now, we'll use placeholder data
       
-      // Simulate API calls
+      // Load agent data
       setAgentData({
-        role: 'Manager',
-        permissions: ['manage_products', 'handle_orders', 'respond_inquiries'],
-        joinedDate: '2024-01-15',
-        status: 'active'
+        role: user?.active_company?.pivot?.role || 'Agent',
+        permissions: user?.active_company?.pivot?.permissions || [],
+        joinedDate: user?.active_company?.pivot?.joined_at || new Date().toISOString(),
+        status: user?.active_company?.pivot?.is_active ? 'active' : 'inactive'
       });
 
-      setCompanyData({
-        name: 'Sample Company Ltd.',
-        location: 'Manila, Philippines',
-        industry: 'Electronics Manufacturing'
+      setCompanyData(user?.active_company || {
+        name: 'Company',
+        location: 'Philippines',
+        industry: 'Manufacturing'
       });
 
-      setStats({
-        totalProducts: 45,
-        activeOrders: 12,
-        pendingInquiries: 8,
-        completedTasks: 156
+      // Load chat statistics
+      // TODO: Replace with actual API call when backend endpoint is ready
+      setChatStats({
+        totalConversations: 0,
+        unreadMessages: 0,
+        assignedToMe: 0,
+        respondedToday: 0
       });
 
     } catch (error) {
@@ -101,22 +99,12 @@ export default function AgentDashboard() {
               Agent Dashboard - {companyData?.name}
             </p>
           </div>
-          <div className="mt-4 sm:mt-0 flex space-x-3">
+          <div className="mt-4 sm:mt-0">
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/products')}
-            >
-              <Package className="w-4 h-4 mr-2" />
-              Manage Products
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => router.push('/chat')}
             >
               <MessageSquare className="w-4 h-4 mr-2" />
-              Messages
+              Open Messages
             </Button>
           </div>
         </div>
@@ -166,32 +154,18 @@ export default function AgentDashboard() {
           </div>
         </Card>
 
-        {/* Stats Grid */}
+        {/* Chat Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Package className="w-4 h-4 text-blue-600" />
+                  <MessageSquare className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Total Products</p>
-                <p className="text-2xl font-bold text-secondary-900">{stats.totalProducts}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-yellow-600" />
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Active Orders</p>
-                <p className="text-2xl font-bold text-secondary-900">{stats.activeOrders}</p>
+                <p className="text-sm font-medium text-secondary-600">Total Conversations</p>
+                <p className="text-2xl font-bold text-secondary-900">{chatStats.totalConversations}</p>
               </div>
             </div>
           </Card>
@@ -200,12 +174,26 @@ export default function AgentDashboard() {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <Mail className="w-4 h-4 text-red-600" />
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Pending Inquiries</p>
-                <p className="text-2xl font-bold text-secondary-900">{stats.pendingInquiries}</p>
+                <p className="text-sm font-medium text-secondary-600">Unread Messages</p>
+                <p className="text-2xl font-bold text-secondary-900">{chatStats.unreadMessages}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <UserCheck className="w-4 h-4 text-purple-600" />
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-secondary-600">Assigned to Me</p>
+                <p className="text-2xl font-bold text-secondary-900">{chatStats.assignedToMe}</p>
               </div>
             </div>
           </Card>
@@ -218,43 +206,29 @@ export default function AgentDashboard() {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Completed Tasks</p>
-                <p className="text-2xl font-bold text-secondary-900">{stats.completedTasks}</p>
+                <p className="text-sm font-medium text-secondary-600">Responded Today</p>
+                <p className="text-2xl font-bold text-secondary-900">{chatStats.respondedToday}</p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Chat Focused */}
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-secondary-900">Quick Actions</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button
               variant="outline"
               className="justify-start h-auto p-4"
-              onClick={() => router.push('/products/create')}
+              onClick={() => router.push('/chat')}
             >
               <div className="flex items-center space-x-3">
-                <Package className="w-5 h-5 text-blue-600" />
+                <MessageSquare className="w-5 h-5 text-blue-600" />
                 <div className="text-left">
-                  <p className="font-medium">Add Product</p>
-                  <p className="text-sm text-secondary-600">Create new product listing</p>
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-4"
-              onClick={() => router.push('/orders')}
-            >
-              <div className="flex items-center space-x-3">
-                <FileText className="w-5 h-5 text-green-600" />
-                <div className="text-left">
-                  <p className="font-medium">View Orders</p>
-                  <p className="text-sm text-secondary-600">Manage customer orders</p>
+                  <p className="font-medium">View All Messages</p>
+                  <p className="text-sm text-secondary-600">Access all customer conversations</p>
                 </div>
               </div>
             </Button>
@@ -265,13 +239,47 @@ export default function AgentDashboard() {
               onClick={() => router.push('/chat')}
             >
               <div className="flex items-center space-x-3">
-                <MessageSquare className="w-5 h-5 text-purple-600" />
+                <Mail className="w-5 h-5 text-red-600" />
                 <div className="text-left">
-                  <p className="font-medium">Messages</p>
-                  <p className="text-sm text-secondary-600">Respond to inquiries</p>
+                  <p className="font-medium">Unread Messages</p>
+                  <p className="text-sm text-secondary-600">View pending customer inquiries</p>
                 </div>
               </div>
             </Button>
+          </div>
+        </Card>
+
+        {/* Chat Instructions */}
+        <Card>
+          <h3 className="text-lg font-medium text-secondary-900 mb-4">Your Role as Agent</h3>
+          <div className="space-y-3">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MessageSquare className="w-3 h-3 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-secondary-900">Respond to Customer Inquiries</p>
+                <p className="text-sm text-secondary-600">Handle customer messages and provide timely responses</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <UserCheck className="w-3 h-3 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-secondary-900">Manage Assigned Conversations</p>
+                <p className="text-sm text-secondary-600">Conversations are automatically assigned to you when you respond</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <CheckCircle className="w-3 h-3 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-secondary-900">Provide Excellent Service</p>
+                <p className="text-sm text-secondary-600">Represent {companyData?.name} professionally in all interactions</p>
+              </div>
+            </div>
           </div>
         </Card>
 

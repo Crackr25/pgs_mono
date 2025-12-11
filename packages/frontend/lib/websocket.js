@@ -154,6 +154,56 @@ class WebSocketService {
       this.channels.delete(channelName);
     }
   }
+
+  // Generic method to subscribe to any channel
+  subscribeToChannel(channelName, eventName, callback) {
+    if (!this.pusher) {
+      console.error('❌ WebSocket not connected - cannot subscribe to channel');
+      return null;
+    }
+
+    const fullChannelName = channelName.startsWith('private-') ? channelName : `private-${channelName}`;
+    console.log('📡 Subscribing to channel:', fullChannelName, 'event:', eventName);
+    
+    if (this.channels.has(fullChannelName)) {
+      console.log('✅ Already subscribed to channel:', fullChannelName);
+      const existingChannel = this.channels.get(fullChannelName);
+      // Bind the new event if not already bound
+      existingChannel.bind(eventName, callback);
+      return existingChannel;
+    }
+
+    const channel = this.pusher.subscribe(fullChannelName);
+    
+    channel.bind(eventName, (data) => {
+      console.log(`🔔 Event '${eventName}' received on ${fullChannelName}:`, data);
+      if (callback) {
+        callback(data);
+      }
+    });
+
+    channel.bind('pusher:subscription_succeeded', () => {
+      console.log(`✅ Successfully subscribed to ${fullChannelName}`);
+    });
+
+    channel.bind('pusher:subscription_error', (error) => {
+      console.error(`❌ Failed to subscribe to ${fullChannelName}:`, error);
+    });
+
+    this.channels.set(fullChannelName, channel);
+    return channel;
+  }
+
+  // Generic method to unsubscribe from any channel
+  unsubscribeFromChannel(channelName) {
+    const fullChannelName = channelName.startsWith('private-') ? channelName : `private-${channelName}`;
+    
+    if (this.channels.has(fullChannelName)) {
+      console.log('📡 Unsubscribing from channel:', fullChannelName);
+      this.pusher.unsubscribe(fullChannelName);
+      this.channels.delete(fullChannelName);
+    }
+  }
 }
 
 // Create singleton instance

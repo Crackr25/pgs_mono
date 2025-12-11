@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info } from 'lucide-react';
+import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info, Users } from 'lucide-react';
 import ProductMessageHeader from './ProductMessageHeader';
 import Button from '../common/Button';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -406,15 +406,31 @@ const ChatWindow = forwardRef(function ChatWindow({
       <div className="flex-shrink-0 p-4 border-b border-secondary-200 bg-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary-600">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              conversation.conversation_type === 'agent' 
+                ? 'bg-blue-100' 
+                : 'bg-primary-100'
+            }`}>
+              <span className={`text-sm font-medium ${
+                conversation.conversation_type === 'agent' 
+                  ? 'text-blue-600' 
+                  : 'text-primary-600'
+              }`}>
                 {getInitials(conversation.buyer.name)}
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-secondary-900">
-                {conversation.buyer.name}
-              </h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-semibold text-secondary-900">
+                  {conversation.buyer.name}
+                </h3>
+                {conversation.conversation_type === 'agent' && (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    <Users className="w-3 h-3 mr-1" />
+                    Agent
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-secondary-500">{conversation.buyer.email}</p>
               {conversation.order_id && (
                 <p className="text-xs text-blue-600">Order #{conversation.order_id}</p>
