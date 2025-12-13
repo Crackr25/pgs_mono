@@ -552,6 +552,20 @@ class ApiService {
     });
   }
 
+  // Confirm order receipt
+  async confirmOrderReceipt(orderId) {
+    return this.request(`/orders/${orderId}/confirm-receipt`, {
+      method: 'POST',
+    });
+  }
+
+  // Submit order review
+  async submitOrderReview(orderId, reviewData) {
+    return this.request(`/orders/${orderId}/review`, {
+      method: 'POST',
+      body: JSON.stringify(reviewData),
+    });
+  }
 
   async getConversations() {
     return this.request('/conversations');

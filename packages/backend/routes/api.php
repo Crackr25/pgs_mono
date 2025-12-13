@@ -164,6 +164,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/orders/{order}', [OrderController::class, 'update']);
     Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
     Route::get('/orders/{order}/tracking', [OrderController::class, 'tracking']);
+    Route::post('/orders/{orderNumber}/confirm-receipt', [OrderController::class, 'confirmReceipt']);
+    Route::post('/orders/{orderNumber}/review', [OrderController::class, 'submitReview']);
     
     // Message management
     Route::get('/messages', [MessageController::class, 'index']);
