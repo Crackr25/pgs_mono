@@ -29,7 +29,9 @@ class Order extends Model
         'buyer_company',
         'shipping_address',
         'billing_address',
-        'notes'
+        'notes',
+        'is_confirmed',
+        'confirmed_at'
     ];
 
     protected $casts = [
@@ -37,7 +39,9 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'progress' => 'integer',
         'estimated_delivery' => 'date',
-        'paid_at' => 'datetime'
+        'paid_at' => 'datetime',
+        'is_confirmed' => 'boolean',
+        'confirmed_at' => 'datetime'
     ];
 
     // Relationships
@@ -69,6 +73,11 @@ class Order extends Model
     public function sellerPayout()
     {
         return $this->hasOne(SellerPayout::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
     }
 
     // Helper methods for payout management
