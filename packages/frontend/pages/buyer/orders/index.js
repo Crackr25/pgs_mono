@@ -15,23 +15,38 @@ import {
   AlertCircle,
   XCircle,
   Calendar,
-  DollarSign
+  DollarSign,
+  Star,
+  ThumbsUp
 } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import Pagination from '../../../components/common/Pagination';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useToast } from '../../../components/common/Toast';
 import apiService from '../../../lib/api';
 
 export default function Orders() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const toast = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+
+  // Order confirmation and review states
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [reviewData, setReviewData] = useState({
+    rating: 5,
+    comment: '',
+    productQuality: 5,
+    deliverySpeed: 5,
+    communication: 5
+  });
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,7 +62,7 @@ export default function Orders() {
     if (isAuthenticated && user?.email) {
       fetchOrders();
     }
-  }, [isAuthenticated, user?.email, currentPage, searchTerm, statusFilter, dateFilter]);
+  }, [isAuthenticated, user?.email, currentPage, itemsPerPage, searchTerm, statusFilter, dateFilter]);
 
   const fetchOrders = async (page = currentPage) => {
     try {
@@ -76,8 +91,7 @@ export default function Orders() {
       }
 
       if (dateFilter !== 'all') {
-        // Backend doesn't support date filtering yet, so we'll handle this client-side for now
-        // TODO: Add date filtering to backend API
+        params.date_filter = dateFilter;
       }
 
       // Fetch orders from API
@@ -124,7 +138,9 @@ export default function Orders() {
         payment_status: order.payment_status,
         payment_terms: 'Standard Terms', // Default since backend doesn't store this
         tracking_number: null, // Backend doesn't store tracking numbers yet
-        notes: order.notes
+        notes: order.notes,
+        is_confirmed: order.is_confirmed || false,
+        reviews: order.reviews || [] // Use reviews array from relationship
       }));
 
       setOrders(transformedOrders);
@@ -216,6 +232,150 @@ export default function Orders() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleConfirmReceipt = async (orderId) => {
+    try {
+      setConfirmingOrderId(orderId);
+      
+      // Call API to confirm order receipt
+      await apiService.confirmOrderReceipt(orderId);
+      
+      // Update local state after successful API call
+      setOrders(orders.map(order => 
+        order.id === orderId 
+          ? { ...order, is_confirmed: true, status: 'delivered' }
+          : order
+      ));
+      
+      // Show success toast notification
+      toast.showSuccess(
+        'Order Confirmed!',
+        'Order receipt confirmed successfully! You can now leave a review.',
+        5000
+      );
+      
+    } catch (error) {
+      console.error('Error confirming order:', error);
+      toast.showError(
+        'Confirmation Failed',
+        error.message || 'Failed to confirm order receipt. Please try again.',
+        5000
+      );
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  };
+
+  const handleOpenReview = (order) => {
+    setReviewingOrder(order);
+    setReviewData({
+      rating: 5,
+      comment: '',
+      productQuality: 5,
+      deliverySpeed: 5,
+      communication: 5
+    });
+  };
+
+  const handleCloseReview = () => {
+    setReviewingOrder(null);
+    setReviewData({
+      rating: 5,
+      comment: '',
+      productQuality: 5,
+      deliverySpeed: 5,
+      communication: 5
+    });
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewingOrder) return;
+    
+    try {
+      // Validate review
+      if (!reviewData.comment.trim()) {
+        toast.showError(
+          'Review Required',
+          'Please write a review comment.',
+          3000
+        );
+        return;
+      }
+
+      if (reviewData.comment.length < 10) {
+        toast.showError(
+          'Review Too Short',
+          'Please write at least 10 characters.',
+          3000
+        );
+        return;
+      }
+
+      // Call API to submit review
+      const response = await apiService.submitOrderReview(reviewingOrder.id, reviewData);
+      
+      // Calculate average rating (same as backend)
+      const averageRating = (reviewData.rating + reviewData.productQuality + 
+                            reviewData.deliverySpeed + reviewData.communication) / 4;
+      
+      // Update local state after successful API call - add review to reviews array
+      setOrders(orders.map(order => 
+        order.id === reviewingOrder.id 
+          ? { 
+              ...order, 
+              reviews: [
+                {
+                  rating: Math.round(averageRating * 10) / 10, // Round to 1 decimal place
+                  comment: reviewData.comment,
+                  created_at: new Date().toISOString(),
+                  verified: true
+                }
+              ]
+            }
+          : order
+      ));
+      
+      // Show success toast notification
+      toast.showSuccess(
+        'Review Submitted!',
+        'Thank you for your review! It helps other buyers make informed decisions.',
+        5000
+      );
+      handleCloseReview();
+      
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      toast.showError(
+        'Submission Failed',
+        error.message || 'Failed to submit review. Please try again.',
+        5000
+      );
+    }
+  };
+
+  const renderStarRating = (rating, onRatingChange = null) => {
+    return (
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onRatingChange && onRatingChange(star)}
+            disabled={!onRatingChange}
+            className={`${onRatingChange ? 'cursor-pointer' : 'cursor-default'} transition-colors`}
+          >
+            <Star
+              className={`w-5 h-5 ${
+                star <= rating
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -475,6 +635,66 @@ export default function Orders() {
                           </p>
                         </div>
                       )}
+
+                      {/* Order Receipt Confirmation Notice */}
+                      {order.status === 'shipped' && !order.is_confirmed && (
+                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start space-x-3">
+                            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-yellow-800">
+                                Order Shipped - Awaiting Confirmation
+                              </p>
+                              <p className="text-sm text-yellow-700 mt-1">
+                                Once you receive your order, please confirm receipt to complete the transaction.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Confirmed but not reviewed */}
+                      {order.is_confirmed && (!order.reviews || order.reviews.length === 0) && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start space-x-3">
+                            <Star className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-800">
+                                Share Your Experience
+                              </p>
+                              <p className="text-sm text-blue-700 mt-1">
+                                Help other buyers by leaving a review for this supplier.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Display existing reviews */}
+                      {order.reviews && order.reviews.length > 0 && (
+                        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-start space-x-3">
+                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-green-800 mb-2">
+                                Your Review
+                              </p>
+                              <div className="flex items-center space-x-2 mb-2">
+                                {renderStarRating(order.reviews[0].rating)}
+                                <span className="text-sm text-green-700">
+                                  {order.reviews[0].rating}/5
+                                </span>
+                              </div>
+                              <p className="text-sm text-green-700">{order.reviews[0].comment}</p>
+                              {order.reviews[0].created_at && (
+                                <p className="text-xs text-green-600 mt-2">
+                                  Reviewed on {formatDate(order.reviews[0].created_at)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Order Summary & Actions */}
@@ -490,6 +710,31 @@ export default function Orders() {
                       </div>
 
                       <div className="space-y-2">
+                        {/* Confirm Receipt Button - Only show for shipped but not confirmed orders */}
+                        {(order.status === 'shipped' || order.status === 'delivered') && !order.is_confirmed && (
+                          <Button 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => handleConfirmReceipt(order.id)}
+                            disabled={confirmingOrderId === order.id}
+                          >
+                            <ThumbsUp className="w-4 h-4 mr-2" />
+                            {confirmingOrderId === order.id ? 'Confirming...' : 'Confirm Receipt'}
+                          </Button>
+                        )}
+
+                        {/* Leave Review Button - Only show for confirmed but not reviewed orders */}
+                        {order.is_confirmed && (!order.reviews || order.reviews.length === 0) && (
+                          <Button 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => handleOpenReview(order)}
+                          >
+                            <Star className="w-4 h-4 mr-2" />
+                            Leave Review
+                          </Button>
+                        )}
+
                         {order.product_id ? (
                           <Button 
                             variant="outline" 
@@ -513,7 +758,7 @@ export default function Orders() {
                           </Button>
                         )}
                         
-                        {order.status === 'delivered' && (
+                        {(order.status === 'delivered' || order.is_confirmed) && (
                           <Button variant="outline" size="sm" className="w-full">
                             <Download className="w-4 h-4 mr-2" />
                             Download Invoice
@@ -568,6 +813,139 @@ export default function Orders() {
               </Card>
             )}
           </>
+        )}
+
+        {/* Review Modal */}
+        {reviewingOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-secondary-900">Leave a Review</h2>
+                    <p className="text-sm text-secondary-600 mt-1">
+                      Order {reviewingOrder.id} - {reviewingOrder.supplier.name}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCloseReview}
+                    className="text-secondary-400 hover:text-secondary-600"
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Overall Rating */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Overall Rating *
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    {renderStarRating(reviewData.rating, (rating) => 
+                      setReviewData({ ...reviewData, rating })
+                    )}
+                    <span className="text-sm text-secondary-600">
+                      {reviewData.rating}/5
+                    </span>
+                  </div>
+                </div>
+
+                {/* Detailed Ratings */}
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                      Product Quality
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      {renderStarRating(reviewData.productQuality, (rating) => 
+                        setReviewData({ ...reviewData, productQuality: rating })
+                      )}
+                      <span className="text-sm text-secondary-600">
+                        {reviewData.productQuality}/5
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                      Delivery Speed
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      {renderStarRating(reviewData.deliverySpeed, (rating) => 
+                        setReviewData({ ...reviewData, deliverySpeed: rating })
+                      )}
+                      <span className="text-sm text-secondary-600">
+                        {reviewData.deliverySpeed}/5
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                      Communication
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      {renderStarRating(reviewData.communication, (rating) => 
+                        setReviewData({ ...reviewData, communication: rating })
+                      )}
+                      <span className="text-sm text-secondary-600">
+                        {reviewData.communication}/5
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review Comment */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Your Review *
+                  </label>
+                  <textarea
+                    value={reviewData.comment}
+                    onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
+                    placeholder="Share your experience with this supplier and product. Your review helps other buyers make informed decisions."
+                    rows={6}
+                    className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">
+                    Minimum 10 characters required
+                  </p>
+                </div>
+
+                {/* Tips */}
+                <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                  <p className="text-sm font-medium text-blue-800 mb-2">
+                    Tips for writing a helpful review:
+                  </p>
+                  <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                    <li>Describe the product quality and if it matches the description</li>
+                    <li>Comment on the delivery time and packaging</li>
+                    <li>Share your communication experience with the supplier</li>
+                    <li>Be honest and constructive in your feedback</li>
+                  </ul>
+                </div>
+
+                {/* Actions */}
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleCloseReview}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleSubmitReview}
+                    disabled={!reviewData.comment.trim() || reviewData.comment.length < 10}
+                  >
+                    Submit Review
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>

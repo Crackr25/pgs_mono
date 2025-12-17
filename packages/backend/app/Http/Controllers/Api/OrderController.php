@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Quote;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -12,7 +13,7 @@ class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Order::with(['quote.product', 'company', 'payments', 'user']);
+        $query = Order::with(['quote.product', 'company', 'payments', 'user', 'reviews']);
         
         // Filter by company (for sellers/manufacturers)
         if ($request->has('company_id')) {
@@ -45,6 +46,25 @@ class OrderController extends Controller
                   ->orWhere('product_name', 'like', "%{$search}%")
                   ->orWhere('buyer_name', 'like', "%{$search}%");
             });
+        }
+        
+        // Filter by date range
+        if ($request->has('date_filter')) {
+            $dateFilter = $request->date_filter;
+            switch ($dateFilter) {
+                case 'today':
+                    $query->whereDate('created_at', today());
+                    break;
+                case 'week':
+                    $query->where('created_at', '>=', now()->subDays(7));
+                    break;
+                case 'month':
+                    $query->where('created_at', '>=', now()->subDays(30));
+                    break;
+                case 'year':
+                    $query->where('created_at', '>=', now()->subYear());
+                    break;
+            }
         }
         
         $orders = $query->orderBy('created_at', 'desc')->paginate(15);
@@ -225,5 +245,92 @@ class OrderController extends Controller
         $order->delete();
         
         return response()->json(['message' => 'Order deleted successfully']);
+    }
+
+    /**
+     * Confirm order receipt by buyer
+     */
+    public function confirmReceipt(Request $request, $orderNumber): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+        
+        // Only the buyer can confirm receipt
+        if ($order->buyer_email !== auth()->user()->email && $order->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Only allow confirmation if order is shipped or delivered
+        if (!in_array($order->status, ['shipped', 'delivered'])) {
+            return response()->json(['message' => 'Order must be shipped or delivered to confirm receipt'], 400);
+        }
+
+        // Update order
+        $order->is_confirmed = true;
+        $order->confirmed_at = now();
+        if ($order->status === 'shipped') {
+            $order->status = 'delivered';
+        }
+        $order->save();
+
+        return response()->json([
+            'message' => 'Order receipt confirmed successfully',
+            'order' => $order->load(['company', 'quote.product'])
+        ]);
+    }
+
+    /**
+     * Submit review for order
+     */
+    public function submitReview(Request $request, $orderNumber): JsonResponse
+    {
+        $order = Order::where('order_number', $orderNumber)->firstOrFail();
+        
+        // Only the buyer can submit review
+        if ($order->buyer_email !== auth()->user()->email && $order->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Only allow review if order is confirmed
+        if (!$order->is_confirmed) {
+            return response()->json(['message' => 'Order must be confirmed before reviewing'], 400);
+        }
+
+        // Check if already reviewed
+        if ($order->reviews()->exists()) {
+            return response()->json(['message' => 'Order has already been reviewed'], 400);
+        }
+
+        // Validate review data
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|min:10',
+            'productQuality' => 'required|integer|min:1|max:5',
+            'deliverySpeed' => 'required|integer|min:1|max:5',
+            'communication' => 'required|integer|min:1|max:5',
+        ]);
+
+        // Calculate average rating from all categories
+        $averageRating = ($validated['rating'] + $validated['productQuality'] + 
+                         $validated['deliverySpeed'] + $validated['communication']) / 4;
+
+        // Create review in reviews table
+        $review = Review::create([
+            'company_id' => $order->company_id,
+            'product_id' => $order->product_id,
+            'order_id' => $order->id,
+            'reviewer_name' => $order->buyer_name,
+            'reviewer_email' => $order->buyer_email,
+            'reviewer_company' => $order->buyer_company,
+            'rating' => round($averageRating, 1),
+            'title' => 'Order Review',
+            'comment' => $validated['comment'],
+            'verified' => true // Since it's from a confirmed order
+        ]);
+
+        return response()->json([
+            'message' => 'Review submitted successfully',
+            'order' => $order->load(['company', 'quote.product', 'reviews']),
+            'review' => $review
+        ]);
     }
 }
