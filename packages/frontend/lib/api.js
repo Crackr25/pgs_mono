@@ -2249,6 +2249,114 @@ class ApiService {
       method: 'DELETE'
     });
   }
+
+  // ==================== Product Analytics API ====================
+  
+  // Track product search (public)
+  async trackProductSearch(searchTerm, resultsCount = 0, filters = null) {
+    return this.request('/analytics/track-search', {
+      method: 'POST',
+      data: {
+        search_term: searchTerm,
+        results_count: resultsCount,
+        filters: filters
+      }
+    });
+  }
+
+  // Track product view (public)
+  async trackProductView(productId, durationSeconds = null, referrer = null) {
+    return this.request('/analytics/track-view', {
+      method: 'POST',
+      data: {
+        product_id: productId,
+        duration_seconds: durationSeconds,
+        referrer: referrer
+      }
+    });
+  }
+
+  // Get analytics dashboard stats (Admin only)
+  async getAnalyticsDashboard(days = 30) {
+    return this.request(`/admin/analytics/dashboard?days=${days}`);
+  }
+
+  // Get most searched terms (Admin only)
+  async getMostSearchedTerms(limit = 20, days = 30) {
+    return this.request(`/admin/analytics/most-searched?limit=${limit}&days=${days}`);
+  }
+
+  // Get most viewed products (Admin only)
+  async getMostViewedProducts(limit = 20, days = 30) {
+    return this.request(`/admin/analytics/most-viewed?limit=${limit}&days=${days}`);
+  }
+
+  // Get category statistics (Admin only)
+  async getCategoryAnalytics(days = 30) {
+    return this.request(`/admin/analytics/category-stats?days=${days}`);
+  }
+
+  // Get trending searches (Admin only)
+  async getTrendingSearches(limit = 20) {
+    return this.request(`/admin/analytics/trending-searches?limit=${limit}`);
+  }
+
+  // Get trending products (Admin only)
+  async getTrendingProducts(limit = 20) {
+    return this.request(`/admin/analytics/trending-products?limit=${limit}`);
+  }
+
+  // Get search history (Admin only)
+  async getSearchHistory(params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    return this.request(`/admin/analytics/search-history?${queryParams}`);
+  }
+
+  // Get view history (Admin only)
+  async getViewHistory(params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    return this.request(`/admin/analytics/view-history?${queryParams}`);
+  }
+
+  // Export analytics data (Admin only)
+  async exportAnalytics(type = 'searches', days = 30) {
+    return this.request(`/admin/analytics/export?type=${type}&days=${days}`);
+  }
+
+  // ==================== Payment Link API ====================
+  
+  // Send payment link (agents only)
+  async sendPaymentLink(conversationId, amount, currency, description, expiresInHours = 24) {
+    return this.request('/chat/payment-link', {
+      method: 'POST',
+      data: {
+        conversation_id: conversationId,
+        amount: amount,
+        currency: currency,
+        description: description,
+        expires_in_hours: expiresInHours
+      }
+    });
+  }
+
+  // Get payment link details
+  async getPaymentLink(paymentLinkId) {
+    return this.request(`/chat/payment-link/${paymentLinkId}`);
+  }
+
+  // Create Stripe Checkout Session (buyers)
+  async createPaymentCheckout(paymentLinkId) {
+    return this.request(`/chat/payment-link/${paymentLinkId}/checkout`, {
+      method: 'POST'
+    });
+  }
+
+  // Confirm payment success
+  async confirmPaymentSuccess(paymentLinkId) {
+    return this.request(`/chat/payment-link/${paymentLinkId}/success`, {
+      method: 'POST'
+    });
+  }
 }
 
 const apiService = new ApiService();

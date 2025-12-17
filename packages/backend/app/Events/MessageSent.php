@@ -50,24 +50,37 @@ class MessageSent implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        return [
-            'message' => [
-                'id' => $this->chatMessage->id,
-                'conversation_id' => $this->chatMessage->conversation_id,
-                'sender_id' => $this->chatMessage->sender_id,
-                'receiver_id' => $this->chatMessage->receiver_id,
-                'message' => $this->chatMessage->message,
-                'message_type' => $this->chatMessage->message_type,
-                'product_id' => $this->chatMessage->product_id,
-                'product_context' => $this->chatMessage->product_context,
-                'created_at' => $this->chatMessage->created_at->toISOString(),
-                'read' => $this->chatMessage->read,
-                'sender' => [
-                    'id' => $this->chatMessage->sender->id,
-                    'name' => $this->chatMessage->sender->name,
-                    'email' => $this->chatMessage->sender->email
-                ]
+        $messageData = [
+            'id' => $this->chatMessage->id,
+            'conversation_id' => $this->chatMessage->conversation_id,
+            'sender_id' => $this->chatMessage->sender_id,
+            'receiver_id' => $this->chatMessage->receiver_id,
+            'message' => $this->chatMessage->message,
+            'message_type' => $this->chatMessage->message_type,
+            'product_id' => $this->chatMessage->product_id,
+            'product_context' => $this->chatMessage->product_context,
+            'created_at' => $this->chatMessage->created_at->toISOString(),
+            'read' => $this->chatMessage->read,
+            'sender' => [
+                'id' => $this->chatMessage->sender->id,
+                'name' => $this->chatMessage->sender->name,
+                'email' => $this->chatMessage->sender->email
             ]
+        ];
+
+        // Include payment link fields if this is a payment link message
+        if ($this->chatMessage->message_type === 'payment_link') {
+            $messageData['payment_link_id'] = $this->chatMessage->payment_link_id;
+            $messageData['payment_amount'] = $this->chatMessage->payment_amount;
+            $messageData['payment_currency'] = $this->chatMessage->payment_currency;
+            $messageData['payment_description'] = $this->chatMessage->payment_description;
+            $messageData['payment_status'] = $this->chatMessage->payment_status;
+            $messageData['payment_expires_at'] = $this->chatMessage->payment_expires_at ? $this->chatMessage->payment_expires_at->toISOString() : null;
+            $messageData['payment_paid_at'] = $this->chatMessage->payment_paid_at ? $this->chatMessage->payment_paid_at->toISOString() : null;
+        }
+
+        return [
+            'message' => $messageData
         ];
     }
 

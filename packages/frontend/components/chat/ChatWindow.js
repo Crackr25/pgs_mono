@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info, Users } from 'lucide-react';
+import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info, Users, DollarSign } from 'lucide-react';
 import ProductMessageHeader from './ProductMessageHeader';
 import Button from '../common/Button';
 import ConfirmationModal from '../common/ConfirmationModal';
+import PaymentLinkModal from './PaymentLinkModal';
+import PaymentLinkMessage from './PaymentLinkMessage';
+import PaymentModal from './PaymentModal';
 import { getImageUrl, getAttachmentUrl } from '../../lib/imageUtils';
 
 const ChatWindow = forwardRef(function ChatWindow({ 
@@ -18,10 +21,16 @@ const ChatWindow = forwardRef(function ChatWindow({
   const [showDropdown, setShowDropdown] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', data: null });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentLink, setSelectedPaymentLink] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Check if current user is an agent
+  const isAgent = currentUser?.usertype === 'agent';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -503,7 +512,7 @@ const ChatWindow = forwardRef(function ChatWindow({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-secondary-50">
-        {messages.length === 0 ? (
+        {!Array.isArray(messages) || messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -545,19 +554,30 @@ const ChatWindow = forwardRef(function ChatWindow({
                   />
                 )}
                 
-                <div className={`flex ${isSameCompany ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    isSameCompany 
-                      ? message.status === 'failed' 
-                        ? 'bg-red-100 text-red-900 border border-red-200' 
-                        : message.status === 'sending'
-                        ? 'bg-primary-300 text-white opacity-70'
-                        : 'bg-primary-600 text-white'
-                      : 'bg-white text-secondary-900 border border-secondary-200'
-                  }`}>
-                    {message.message && (
-                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                    )}
+                {/* Payment Link Message */}
+                {message.message_type === 'payment_link' ? (
+                  <PaymentLinkMessage
+                    message={message}
+                    isReceiver={message.receiver_id === currentUser?.id}
+                    onPayClick={(msg) => {
+                      setSelectedPaymentLink(msg);
+                      setShowPaymentModal(true);
+                    }}
+                  />
+                ) : (
+                  <div className={`flex ${isSameCompany ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      isSameCompany 
+                        ? message.status === 'failed' 
+                          ? 'bg-red-100 text-red-900 border border-red-200' 
+                          : message.status === 'sending'
+                          ? 'bg-primary-300 text-white opacity-70'
+                          : 'bg-primary-600 text-white'
+                        : 'bg-white text-secondary-900 border border-secondary-200'
+                    }`}>
+                      {message.message && (
+                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                      )}
                     
                     {/* Attachment Display */}
                     {(message.attachment || message.attachments) && (
@@ -671,7 +691,8 @@ const ChatWindow = forwardRef(function ChatWindow({
                       )}
                     </div>
                   </div>
-                </div>
+                  </div>
+                )}
               </div>
             );
           })
@@ -717,6 +738,19 @@ const ChatWindow = forwardRef(function ChatWindow({
           >
             <Paperclip className="w-4 h-4" />
           </Button>
+
+          {/* Payment Link Button (Agents Only) */}
+          {isAgent && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mb-2"
+              onClick={() => setShowPaymentLinkModal(true)}
+              title="Send Payment Link"
+            >
+              <DollarSign className="w-4 h-4" />
+            </Button>
+          )}
           
           <input
             ref={fileInputRef}
@@ -756,6 +790,30 @@ const ChatWindow = forwardRef(function ChatWindow({
         onClose={handleCloseModal}
         onConfirm={handleConfirmAction}
         {...getModalConfig()}
+      />
+
+      {/* Payment Link Modal */}
+      {isAgent && (
+        <PaymentLinkModal
+          isOpen={showPaymentLinkModal}
+          onClose={() => setShowPaymentLinkModal(false)}
+          conversationId={conversation?.id}
+          onPaymentLinkSent={(paymentMessage) => {
+            // The payment message will be received via WebSocket
+            // Just close the modal and let the real-time update handle it
+            console.log('Payment link sent:', paymentMessage);
+          }}
+        />
+      )}
+
+      {/* Payment Modal (for buyers) */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedPaymentLink(null);
+        }}
+        paymentLink={selectedPaymentLink}
       />
     </div>
   );

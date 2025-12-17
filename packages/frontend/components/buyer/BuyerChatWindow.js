@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import Button from '../common/Button';
 import ProductMessageHeader from '../chat/ProductMessageHeader';
+import PaymentLinkMessage from '../chat/PaymentLinkMessage';
+import PaymentModal from '../chat/PaymentModal';
 import { getImageUrl } from '../../lib/imageUtils';
 
 // Helper function to get profile picture with fallback logic
@@ -58,6 +60,8 @@ export default function BuyerChatWindow({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentLink, setSelectedPaymentLink] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -366,19 +370,30 @@ export default function BuyerChatWindow({
                   />
                 )}
                 
-                <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    isCurrentUser 
-                      ? message.status === 'failed' 
-                        ? 'bg-red-100 text-red-900 border border-red-200' 
-                        : message.status === 'sending'
-                        ? 'bg-primary-300 text-white opacity-70'
-                        : 'bg-primary-600 text-white'
-                      : 'bg-white text-secondary-900 border border-secondary-200'
-                  }`}>
-                    {message.message && (
-                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                    )}
+                {/* Payment Link Message */}
+                {message.message_type === 'payment_link' ? (
+                  <PaymentLinkMessage
+                    message={message}
+                    isReceiver={message.receiver_id === currentUser?.id}
+                    onPayClick={(msg) => {
+                      setSelectedPaymentLink(msg);
+                      setShowPaymentModal(true);
+                    }}
+                  />
+                ) : (
+                  <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      isCurrentUser 
+                        ? message.status === 'failed' 
+                          ? 'bg-red-100 text-red-900 border border-red-200' 
+                          : message.status === 'sending'
+                          ? 'bg-primary-300 text-white opacity-70'
+                          : 'bg-primary-600 text-white'
+                        : 'bg-white text-secondary-900 border border-secondary-200'
+                    }`}>
+                      {message.message && (
+                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                      )}
                     
                     {/* Attachment Display */}
                     {(message.attachment || message.attachments) && (
@@ -490,7 +505,8 @@ export default function BuyerChatWindow({
                       )}
                     </div>
                   </div>
-                </div>
+                  </div>
+                )}
               </div>
             );
           })
@@ -568,6 +584,16 @@ export default function BuyerChatWindow({
           </Button>
         </div>
       </div>
+
+      {/* Payment Modal (for buyers) */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedPaymentLink(null);
+        }}
+        paymentLink={selectedPaymentLink}
+      />
     </div>
   );
 }

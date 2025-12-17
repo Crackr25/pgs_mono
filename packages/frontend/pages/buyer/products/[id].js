@@ -151,8 +151,33 @@ export default function ProductDetail() {
       fetchProductDetails();
       checkIfProductSaved();
       fetchRelatedProducts();
+      
+      // Track product view
+      trackProductView();
+      
+      // Track time spent on page
+      const startTime = Date.now();
+      return () => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        if (duration > 3) { // Only track if spent more than 3 seconds
+          trackProductView(duration);
+        }
+      };
     }
   }, [id]);
+
+  const trackProductView = async (duration = null) => {
+    try {
+      await apiService.trackProductView(
+        id,
+        duration,
+        document.referrer || null
+      );
+    } catch (error) {
+      // Silently fail - don't disrupt user experience
+      console.debug('Analytics tracking failed:', error);
+    }
+  };
 
   useEffect(() => {
     if (product) {

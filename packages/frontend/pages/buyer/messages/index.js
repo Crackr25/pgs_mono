@@ -8,6 +8,7 @@ import BuyerChatWindow from '../../../components/buyer/BuyerChatWindow';
 import apiService from '../../../lib/api';
 import websocketService from '../../../lib/websocket';
 import { useAuth } from '../../../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 export default function BuyerMessages() {
   const router = useRouter();
@@ -26,11 +27,31 @@ export default function BuyerMessages() {
   useEffect(() => {
     fetchConversations();
     initializeWebSocket();
+    handlePaymentCallback();
     
     return () => {
       websocketService.disconnect();
     };
   }, []);
+
+  // Handle payment success/cancel callback
+  const handlePaymentCallback = async () => {
+    const { payment, payment_link_id } = router.query;
+    
+    if (payment === 'success' && payment_link_id) {
+      try {
+        await apiService.confirmPaymentSuccess(payment_link_id);
+        toast.success('Payment successful! Thank you for your payment.');
+        // Remove query params
+        router.replace('/buyer/messages', undefined, { shallow: true });
+      } catch (error) {
+        console.error('Error confirming payment:', error);
+      }
+    } else if (payment === 'cancelled') {
+      toast.error('Payment was cancelled');
+      router.replace('/buyer/messages', undefined, { shallow: true });
+    }
+  };
 
   useEffect(() => {
     if (conversation_id && conversations.length > 0) {

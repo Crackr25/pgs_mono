@@ -16,7 +16,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminSideBar({ isOpen, onClose }) {
   const router = useRouter();
@@ -27,6 +27,26 @@ export default function AdminSideBar({ isOpen, onClose }) {
     communication: false,
     system: false
   });
+
+  // Auto-expand section based on current route
+  useEffect(() => {
+    const pathname = router.pathname;
+    
+    // Check which section should be expanded based on current route
+    if (pathname.startsWith('/admin/users') || pathname.startsWith('/admin/companies') || 
+        pathname.startsWith('/admin/agents') || pathname.startsWith('/admin/verifications')) {
+      setExpandedSections(prev => ({ ...prev, users: true }));
+    } else if (pathname.startsWith('/admin/products') || pathname.startsWith('/admin/orders')) {
+      setExpandedSections(prev => ({ ...prev, commerce: true }));
+    } else if (pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/stripe')) {
+      setExpandedSections(prev => ({ ...prev, financial: true }));
+    } else if (pathname.startsWith('/admin/chat') || pathname.startsWith('/admin/inquiries')) {
+      setExpandedSections(prev => ({ ...prev, communication: true }));
+    } else if (pathname.startsWith('/admin/config') || pathname.startsWith('/admin/api') || 
+               pathname.startsWith('/admin/security') || pathname.startsWith('/admin/performance')) {
+      setExpandedSections(prev => ({ ...prev, system: true }));
+    }
+  }, [router.pathname]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -86,9 +106,9 @@ export default function AdminSideBar({ isOpen, onClose }) {
       icon: BarChart3 
     },
     { 
-      name: 'Content Management', 
-      href: '/admin/content', 
-      icon: FileText 
+      name: 'Product Analytics', 
+      href: '/admin/product-analytics', 
+      icon: BarChart3 
     },
     { 
       name: 'System',

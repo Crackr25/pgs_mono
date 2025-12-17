@@ -342,7 +342,7 @@ export default function ProminentSearchBar({ className = "" }) {
     setShowSuggestions(false);
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     setShowSuggestions(false);
     if (searchQuery.trim()) {
@@ -369,6 +369,15 @@ export default function ProminentSearchBar({ className = "" }) {
       
       // Use the corrected query for search
       const finalQuery = correctedQuery;
+      
+      // Track the search
+      try {
+        const filters = selectedCategory && selectedCategory !== 'all' ? { category: selectedCategory } : null;
+        await apiService.trackProductSearch(finalQuery, 0, filters);
+      } catch (error) {
+        // Silently fail - don't disrupt user experience
+        console.debug('Search tracking failed:', error);
+      }
       
       // Construct search URL with category filter if not "All Categories"
       const params = new URLSearchParams();

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\RealAnalyticsController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\StripeConnectController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\SellerPayoutController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\WallNotificationController;
 use App\Http\Controllers\AgentMessagingController;
 use App\Http\Controllers\BroadcastingAuthController;
 use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\ProductAnalyticsController;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -49,6 +51,9 @@ use Illuminate\Support\Facades\Broadcast;
 // Broadcasting authorization routes (custom implementation)
 Route::post('/broadcasting/auth', [BroadcastingAuthController::class, 'authenticate'])
     ->middleware('auth:sanctum');
+
+// Stripe Webhook (must be public, no auth)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 // Authentication routes (public)
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -88,6 +93,10 @@ Route::get('/search/suggestions', [SearchController::class, 'getSuggestions']);
 Route::get('/search/products', [SearchController::class, 'searchProducts']);
 Route::get('/search/popular', [SearchController::class, 'getPopularSearches']);
 Route::post('/search/track', [SearchController::class, 'trackSearch']);
+
+// Product Analytics Tracking (public - track searches and views)
+Route::post('/analytics/track-search', [ProductAnalyticsController::class, 'trackSearch']);
+Route::post('/analytics/track-view', [ProductAnalyticsController::class, 'trackView']);
 
 // Supplier routes (public - for supplier profile browsing like Alibaba)
 Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
@@ -180,6 +189,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chat/send', [ChatMessageController::class, 'store']);
     Route::post('/chat/mark-read', [ChatMessageController::class, 'markAsRead']);
     Route::get('/chat/unread-count', [ChatMessageController::class, 'getUnreadCount']);
+    
+    // Payment Link routes (agents can send, buyers can pay)
+    Route::post('/chat/payment-link', [ChatMessageController::class, 'sendPaymentLink']);
+    Route::get('/chat/payment-link/{paymentLinkId}', [ChatMessageController::class, 'getPaymentLink']);
+    Route::post('/chat/payment-link/{paymentLinkId}/checkout', [ChatMessageController::class, 'createCheckoutSession']);
+    Route::post('/chat/payment-link/{paymentLinkId}/success', [ChatMessageController::class, 'handlePaymentSuccess']);
 
     // Buyer-specific message routes
     Route::get('/buyer/conversations', [BuyerMessageController::class, 'getConversations']);
@@ -497,4 +512,15 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('/inquiries/{id}', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'update']);
     Route::delete('/inquiries/{id}', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'destroy']);
     Route::post('/inquiries/bulk-update', [\App\Http\Controllers\Admin\AdminInquiryController::class, 'bulkUpdate']);
+
+    // Product Analytics (Admin only)
+    Route::get('/analytics/dashboard', [ProductAnalyticsController::class, 'getDashboardStats']);
+    Route::get('/analytics/most-searched', [ProductAnalyticsController::class, 'getMostSearched']);
+    Route::get('/analytics/most-viewed', [ProductAnalyticsController::class, 'getMostViewed']);
+    Route::get('/analytics/category-stats', [ProductAnalyticsController::class, 'getCategoryStats']);
+    Route::get('/analytics/trending-searches', [ProductAnalyticsController::class, 'getTrendingSearches']);
+    Route::get('/analytics/trending-products', [ProductAnalyticsController::class, 'getTrendingProducts']);
+    Route::get('/analytics/search-history', [ProductAnalyticsController::class, 'getSearchHistory']);
+    Route::get('/analytics/view-history', [ProductAnalyticsController::class, 'getViewHistory']);
+    Route::get('/analytics/export', [ProductAnalyticsController::class, 'exportAnalytics']);
 });

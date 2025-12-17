@@ -265,8 +265,13 @@ function ReplyCard({ reply, postId, currentUser, onReplyDeleted }) {
   const [isLiked, setIsLiked] = useState(reply.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(reply.likes_count);
   const [showMenu, setShowMenu] = useState(false);
+  const [showFloatingChat, setShowFloatingChat] = useState(false);
 
   const isMyReply = reply.user.id === currentUser.id;
+
+  const handleDirectMessage = () => {
+    setShowFloatingChat(true);
+  };
 
   const handleLike = async () => {
     try {
@@ -293,6 +298,7 @@ function ReplyCard({ reply, postId, currentUser, onReplyDeleted }) {
   };
 
   return (
+    <>
     <div className="flex items-start space-x-2">
       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
         <span className="text-xs font-medium text-blue-600">
@@ -339,11 +345,31 @@ function ReplyCard({ reply, postId, currentUser, onReplyDeleted }) {
           >
             {isLiked ? 'Liked' : 'Like'} {likesCount > 0 && `(${likesCount})`}
           </button>
+          {!isMyReply && (
+            <button
+              onClick={handleDirectMessage}
+              className="flex items-center space-x-1 text-xs font-medium text-secondary-600 hover:text-blue-600 transition-colors"
+              title="Send direct message"
+            >
+              <Mail className="w-3 h-3" />
+              <span>Message</span>
+            </button>
+          )}
           <span className="text-xs text-secondary-500">
             {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
           </span>
         </div>
       </div>
     </div>
+
+    {/* Floating Chat Modal for Reply */}
+    {showFloatingChat && (
+      <AgentFloatingChat
+        isOpen={showFloatingChat}
+        onClose={() => setShowFloatingChat(false)}
+        recipientAgent={reply.user}
+      />
+    )}
+    </>
   );
 }

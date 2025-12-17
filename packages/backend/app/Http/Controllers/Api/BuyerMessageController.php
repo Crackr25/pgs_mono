@@ -86,7 +86,7 @@ class BuyerMessageController extends Controller
             ->update(['read' => true]);
 
         $messages = $conversation->chatMessages->map(function ($message) {
-            return [
+            $messageData = [
                 'id' => $message->id,
                 'conversation_id' => $message->conversation_id,
                 'sender_id' => $message->sender_id,
@@ -104,6 +104,19 @@ class BuyerMessageController extends Controller
                     'email' => $message->sender->email
                 ]
             ];
+
+            // Include payment link fields if this is a payment link message
+            if ($message->message_type === 'payment_link') {
+                $messageData['payment_link_id'] = $message->payment_link_id;
+                $messageData['payment_amount'] = $message->payment_amount;
+                $messageData['payment_currency'] = $message->payment_currency;
+                $messageData['payment_description'] = $message->payment_description;
+                $messageData['payment_status'] = $message->payment_status;
+                $messageData['payment_expires_at'] = $message->payment_expires_at ? $message->payment_expires_at->toISOString() : null;
+                $messageData['payment_paid_at'] = $message->payment_paid_at ? $message->payment_paid_at->toISOString() : null;
+            }
+
+            return $messageData;
         });
 
         return response()->json([

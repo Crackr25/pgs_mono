@@ -18,13 +18,23 @@ class ChatMessage extends Model
         'message_type',
         'attachments',
         'product_id',
-        'product_context'
+        'product_context',
+        'payment_link_id',
+        'payment_amount',
+        'payment_currency',
+        'payment_description',
+        'payment_status',
+        'payment_expires_at',
+        'payment_paid_at'
     ];
 
     protected $casts = [
         'read' => 'boolean',
         'attachments' => 'array',
         'product_context' => 'array',
+        'payment_amount' => 'decimal:2',
+        'payment_expires_at' => 'datetime',
+        'payment_paid_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
