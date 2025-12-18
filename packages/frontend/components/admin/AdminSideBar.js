@@ -109,27 +109,6 @@ export default function AdminSideBar({ isOpen, onClose }) {
       name: 'Product Analytics', 
       href: '/admin/product-analytics', 
       icon: BarChart3 
-    },
-    { 
-      name: 'System',
-      icon: Settings,
-      section: 'system',
-      children: [
-        { name: 'Configuration', href: '/admin/config' },
-        { name: 'API Management', href: '/admin/api' },
-        { name: 'Security Center', href: '/admin/security' },
-        { name: 'Performance', href: '/admin/performance' }
-      ]
-    },
-    { 
-      name: 'Compliance', 
-      href: '/admin/compliance', 
-      icon: Shield 
-    },
-    { 
-      name: 'Support', 
-      href: '/admin/support', 
-      icon: HelpCircle 
     }
   ];
 

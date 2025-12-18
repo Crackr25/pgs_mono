@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Building2, Search, Filter, CheckCircle, XCircle, Clock, Eye, Trash2 } from 'lucide-react';
+import { Building2, Search, Filter, CheckCircle, XCircle, Clock, Eye, Trash2, User, Users } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import ConfirmModal from '../../../components/common/ConfirmModal';
@@ -244,6 +244,9 @@ export default function CompanyManagement() {
                     Company
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Owner & Agents
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Location
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -260,7 +263,7 @@ export default function CompanyManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center">
+                    <td colSpan="6" className="px-6 py-12 text-center">
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                       </div>
@@ -268,7 +271,7 @@ export default function CompanyManagement() {
                   </tr>
                 ) : companies.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                       No companies found
                     </td>
                   </tr>
@@ -287,6 +290,50 @@ export default function CompanyManagement() {
                               <div className="text-sm font-medium text-gray-900">{company.name}</div>
                               <div className="text-sm text-gray-500">ID: #{company.id}</div>
                             </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="space-y-2">
+                            {/* Owner */}
+                            {company.user && (
+                              <div className="flex items-center text-sm">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 mr-2">
+                                  <User className="h-3 w-3 text-blue-600" />
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-900">{company.user.name}</span>
+                                  <span className="text-xs text-gray-500 ml-1">(Owner)</span>
+                                </div>
+                              </div>
+                            )}
+                            {/* Agents */}
+                            {company.agents && company.agents.length > 0 && (
+                              <div className="flex items-start text-sm">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 mr-2 flex-shrink-0">
+                                  <Users className="h-3 w-3 text-green-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-xs text-gray-500 mb-1">
+                                    {company.agents.length} {company.agents.length === 1 ? 'Agent' : 'Agents'}
+                                  </div>
+                                  <div className="space-y-1">
+                                    {company.agents.slice(0, 2).map((agent, idx) => (
+                                      <div key={agent.id} className="text-xs text-gray-700">
+                                        • {agent.name}
+                                      </div>
+                                    ))}
+                                    {company.agents.length > 2 && (
+                                      <div className="text-xs text-gray-500 italic">
+                                        +{company.agents.length - 2} more
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            {(!company.agents || company.agents.length === 0) && company.user && (
+                              <div className="text-xs text-gray-400 italic">No agents</div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Filter, TrendingUp, Eye, Edit, Package } from 'lucide-react';
+import { ShoppingCart, Search, Filter, TrendingUp, Eye, Edit, Package, X, MapPin, Phone, Mail, Calendar, CreditCard } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
 import apiService from '../../../lib/api';
@@ -19,6 +19,8 @@ export default function OrderManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [perPage] = useState(15);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -121,6 +123,16 @@ export default function OrderManagement() {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  };
+
+  const handleViewOrder = (order) => {
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+  };
+
+  const closeOrderModal = () => {
+    setShowOrderModal(false);
+    setSelectedOrder(null);
   };
 
   return (
@@ -317,7 +329,7 @@ export default function OrderManagement() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => router.push(`/admin/orders/${order.id}`)}
+                            onClick={() => handleViewOrder(order)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
@@ -384,6 +396,185 @@ export default function OrderManagement() {
             )}
           </div>
         </Card>
+
+        {/* Order Detail Modal */}
+        {showOrderModal && selectedOrder && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+              {/* Background overlay */}
+              <div 
+                className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+                onClick={closeOrderModal}
+              />
+
+              {/* Modal panel */}
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                        <ShoppingCart className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">
+                          Order #{selectedOrder.order_number || selectedOrder.id}
+                        </h3>
+                        <p className="text-sm text-primary-100">
+                          {formatDate(selectedOrder.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={closeOrderModal}
+                      className="text-white hover:text-gray-200 transition-colors"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="px-6 py-6 space-y-6">
+                  {/* Status Badges */}
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Order Status</p>
+                      {getStatusBadge(selectedOrder.status)}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Payment Status</p>
+                      {getPaymentStatusBadge(selectedOrder.payment_status)}
+                    </div>
+                  </div>
+
+                  {/* Customer & Company Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-900 flex items-center">
+                        <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                        Customer Information
+                      </h4>
+                      <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                        <p className="text-sm">
+                          <span className="font-medium text-gray-700">Name:</span>{' '}
+                          <span className="text-gray-900">{selectedOrder.buyer_name || 'N/A'}</span>
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-medium text-gray-700">Email:</span>{' '}
+                          <span className="text-gray-900">{selectedOrder.buyer_email || 'N/A'}</span>
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-medium text-gray-700">Phone:</span>{' '}
+                          <span className="text-gray-900">{selectedOrder.buyer_phone || 'N/A'}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-900 flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                        Shipping Address
+                      </h4>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-sm text-gray-900">
+                          {selectedOrder.shipping_address || 'No shipping address provided'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Company Info */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-900">Seller Company</h4>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-900 font-medium">
+                        {selectedOrder.company?.name || selectedOrder.buyer_company || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Order Items */}
+                  {selectedOrder.items && selectedOrder.items.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-900">Order Items</h4>
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {selectedOrder.items.map((item, idx) => (
+                              <tr key={idx}>
+                                <td className="px-4 py-3 text-sm text-gray-900">{item.product_name || 'N/A'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(item.price)}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                                  {formatCurrency(item.quantity * item.price)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Order Summary */}
+                  <div className="border-t pt-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="text-gray-900">{formatCurrency(selectedOrder.subtotal || selectedOrder.total_amount)}</span>
+                      </div>
+                      {selectedOrder.shipping_cost > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Shipping:</span>
+                          <span className="text-gray-900">{formatCurrency(selectedOrder.shipping_cost)}</span>
+                        </div>
+                      )}
+                      {selectedOrder.tax > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Tax:</span>
+                          <span className="text-gray-900">{formatCurrency(selectedOrder.tax)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-base font-bold border-t pt-2">
+                        <span className="text-gray-900">Total:</span>
+                        <span className="text-primary-600">{formatCurrency(selectedOrder.total_amount)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Info */}
+                  {selectedOrder.payment_method && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <CreditCard className="h-5 w-5 text-blue-600 mr-2" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Payment Method</p>
+                          <p className="text-sm text-blue-700">{selectedOrder.payment_method}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="bg-gray-50 px-6 py-4 flex justify-end">
+                  <Button onClick={closeOrderModal}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

@@ -799,9 +799,11 @@ const ChatWindow = forwardRef(function ChatWindow({
           onClose={() => setShowPaymentLinkModal(false)}
           conversationId={conversation?.id}
           onPaymentLinkSent={(paymentMessage) => {
-            // The payment message will be received via WebSocket
-            // Just close the modal and let the real-time update handle it
-            console.log('Payment link sent:', paymentMessage);
+            // Immediately add the payment link message to UI
+            if (paymentMessage && onMessagesUpdate) {
+              const updatedMessages = [...messages, paymentMessage];
+              onMessagesUpdate(updatedMessages);
+            }
           }}
         />
       )}

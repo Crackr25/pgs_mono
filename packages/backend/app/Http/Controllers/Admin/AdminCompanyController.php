@@ -15,7 +15,10 @@ class AdminCompanyController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Company::query()->with(['user']);
+        $query = Company::query()->with(['user', 'agents' => function($query) {
+            $query->where('company_agents.is_active', true)
+                  ->select('users.id', 'users.name', 'users.email');
+        }]);
 
         // Search functionality
         if ($request->has('search')) {

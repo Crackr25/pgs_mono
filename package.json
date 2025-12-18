@@ -4,9 +4,10 @@
   "private": true,
   "description": "Monorepo for Laravel backend and Next.js frontend",
   "scripts": {
-    "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
+    "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\" \"pnpm run dev:websocket\"",
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend dev",
+    "dev:websocket": "pnpm --filter backend websocket",
     "build": "pnpm run build:frontend && pnpm run build:backend",
     "build:backend": "pnpm --filter backend build",
     "build:frontend": "pnpm --filter frontend build",

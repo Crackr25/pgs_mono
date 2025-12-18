@@ -18,7 +18,9 @@ export default function ProductManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('all');
   const [categories, setCategories] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [perPage] = useState(15);
@@ -34,12 +36,13 @@ export default function ProductManagement() {
   useEffect(() => {
     fetchStatistics();
     fetchCategories();
+    fetchCompanies();
   }, []);
 
   // Fetch products when filters change
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchTerm, statusFilter, categoryFilter, stockFilter]);
+  }, [currentPage, searchTerm, statusFilter, categoryFilter, stockFilter, companyFilter]);
 
   const fetchStatistics = async () => {
     try {
@@ -63,6 +66,17 @@ export default function ProductManagement() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await apiService.getAdminCompanies({ per_page: 1000 });
+      if (response.data) {
+        setCompanies(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -73,6 +87,7 @@ export default function ProductManagement() {
         status: statusFilter !== 'all' ? statusFilter : undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
         stock_status: stockFilter !== 'all' ? stockFilter : undefined,
+        company_id: companyFilter !== 'all' ? companyFilter : undefined,
       };
 
       // Remove undefined values
@@ -241,6 +256,17 @@ export default function ProductManagement() {
             </div>
             
             <div className="flex flex-wrap gap-3">
+              <select
+                value={companyFilter}
+                onChange={(e) => { setCompanyFilter(e.target.value); setCurrentPage(1); }}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Companies</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
+
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
