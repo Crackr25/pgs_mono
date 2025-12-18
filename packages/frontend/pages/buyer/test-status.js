@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import Card from '../../../components/common/Card';
-import Button from '../../../components/common/Button';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../components/common/Toast';
-import apiService from '../../../lib/api';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/common/Toast';
+import apiService from '../../lib/api';
 
 export default function TestOrderStatus() {
   const { user, isAuthenticated } = useAuth();
