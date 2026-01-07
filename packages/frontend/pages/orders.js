@@ -228,25 +228,27 @@ export default function Orders() {
       header: 'Actions',
       key: 'actions',
       render: (_, row) => (
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-1 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setSelectedOrder(row)}
+            className="text-xs sm:text-sm"
           >
-            <Eye className="w-4 h-4 mr-1" />
-            Track
+            <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Track</span>
           </Button>
           <Button 
             variant="primary" 
             size="sm"
             onClick={() => handleUpdateOrder(row)}
+            className="text-xs sm:text-sm"
           >
             Update
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-1" />
-            Invoice
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+            <Download className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Invoice</span>
           </Button>
         </div>
       )
@@ -259,91 +261,91 @@ export default function Orders() {
         <title>Orders - SupplierHub</title>
       </Head>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 w-full">
           <div>
-            <h1 className="text-2xl font-bold text-secondary-900">Orders</h1>
-            <p className="mt-1 text-sm text-secondary-600">
+            <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Orders</h1>
+            <p className="mt-1 text-xs sm:text-sm text-secondary-600">
               Track and manage your customer orders
             </p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" className="w-full sm:w-auto">
             <Download className="w-4 h-4 mr-2" />
-            Export Orders
+            <span className="text-sm sm:text-base">Export Orders</span>
           </Button>
         </div>
 
         {/* Error Display */}
         {error && (
-          <Card className="p-4 bg-red-50 border-red-200">
+          <Card className="p-3 sm:p-4 bg-red-50 border-red-200">
             <div className="flex items-center space-x-2">
-              <div className="text-red-600">⚠️</div>
-              <p className="text-red-800">{error}</p>
+              <div className="text-red-600 text-lg sm:text-xl">⚠️</div>
+              <p className="text-sm sm:text-base text-red-800">{error}</p>
             </div>
           </Card>
         )}
 
         {/* Loading State */}
         {loading && (
-          <Card className="p-8">
+          <Card className="p-6 sm:p-8">
             <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-              <span className="ml-3 text-secondary-600">Loading orders...</span>
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary-600"></div>
+              <span className="ml-2 sm:ml-3 text-sm sm:text-base text-secondary-600">Loading orders...</span>
             </div>
           </Card>
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+          <Card className="p-4 sm:p-5 md:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Package className="w-6 h-6 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-100 rounded-lg">
+                <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Total Orders</p>
-                <p className="text-2xl font-semibold text-secondary-900">{orders.length}</p>
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-secondary-600">Total Orders</p>
+                <p className="text-xl sm:text-2xl font-semibold text-secondary-900">{orders.length}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-5 md:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <Clock className="w-6 h-6 text-yellow-600" />
+              <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">In Production</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-secondary-600">In Production</p>
+                <p className="text-xl sm:text-2xl font-semibold text-secondary-900">
                   {orders.filter(o => o.status === 'in_production').length}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-5 md:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Truck className="w-6 h-6 text-purple-600" />
+              <div className="p-2 sm:p-3 bg-purple-100 rounded-lg">
+                <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Shipped</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-secondary-600">Shipped</p>
+                <p className="text-xl sm:text-2xl font-semibold text-secondary-900">
                   {orders.filter(o => o.status === 'shipped').length}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-5 md:p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-green-600" />
+              <div className="p-2 sm:p-3 bg-green-100 rounded-lg">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-secondary-600">Revenue</p>
-                <p className="text-2xl font-semibold text-secondary-900">
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-secondary-600">Revenue</p>
+                <p className="text-xl sm:text-2xl font-semibold text-secondary-900">
                   ${orders.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </p>
               </div>
@@ -352,24 +354,24 @@ export default function Orders() {
         </div>
 
         {/* Filters */}
-        <Card className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="relative">
+        <Card className="p-3 sm:p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 sm:space-y-4 lg:space-y-0 gap-3">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 sm:space-x-4 flex-1">
+              <div className="relative flex-1 sm:flex-initial sm:min-w-[200px] md:min-w-[250px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
@@ -379,21 +381,25 @@ export default function Orders() {
               </select>
             </div>
             
-            <Button variant="outline">
+            <Button variant="outline" className="w-full lg:w-auto">
               <Filter className="w-4 h-4 mr-2" />
-              More Filters
+              <span className="text-sm sm:text-base">More Filters</span>
             </Button>
           </div>
         </Card>
 
         {/* Orders Table */}
-        <Card>
-          <Table columns={columns} data={filteredOrders} />
+        <Card className="p-0 sm:p-4 md:p-6">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <Table columns={columns} data={filteredOrders} />
+            </div>
+          </div>
         </Card>
 
         {/* Recent Activity */}
-        <Card>
-          <h3 className="text-lg font-medium text-secondary-900 mb-4">Recent Activity</h3>
+        <Card className="p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Recent Activity</h3>
           <div className="space-y-3">
             <div className="flex items-center space-x-3 p-3 bg-secondary-50 rounded-lg">
               <div className="flex-shrink-0">
@@ -495,17 +501,19 @@ export default function Orders() {
               />
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
               <Button 
                 variant="outline" 
                 onClick={() => setShowUpdateModal(false)}
                 disabled={updating}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={submitOrderUpdate}
                 disabled={updating}
+                className="w-full sm:w-auto"
               >
                 {updating ? 'Updating...' : 'Update Order'}
               </Button>
@@ -524,12 +532,12 @@ export default function Orders() {
         >
           <div className="space-y-6">
             {/* Order Summary */}
-            <div className="bg-secondary-50 p-4 rounded-lg">
-              <h4 className="font-medium text-secondary-900 mb-3">Order Summary</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-secondary-50 p-3 sm:p-4 rounded-lg">
+              <h4 className="text-sm sm:text-base font-medium text-secondary-900 mb-2 sm:mb-3">Order Summary</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                 <div>
                   <span className="text-secondary-500">Product:</span>
-                  <span className="ml-2 font-medium">{selectedOrder.product_name}</span>
+                  <span className="ml-2 font-medium break-words">{selectedOrder.product_name}</span>
                 </div>
                 <div>
                   <span className="text-secondary-500">Quantity:</span>
@@ -548,25 +556,25 @@ export default function Orders() {
 
             {/* Progress Tracker */}
             <div>
-              <h4 className="font-medium text-secondary-900 mb-4">Order Progress</h4>
-              <div className="space-y-4">
+              <h4 className="text-sm sm:text-base font-medium text-secondary-900 mb-3 sm:mb-4">Order Progress</h4>
+              <div className="space-y-3 sm:space-y-4">
                 {orderSteps.map((step, index) => (
                   <div key={index} className="flex items-center">
                     <div className={`
-                      flex items-center justify-center w-8 h-8 rounded-full border-2
+                      flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex-shrink-0
                       ${step.completed 
                         ? 'border-green-500 bg-green-500 text-white' 
                         : 'border-secondary-300 bg-white text-secondary-500'
                       }
                     `}>
                       {step.completed ? (
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                       ) : (
-                        <span className="text-sm font-medium">{index + 1}</span>
+                        <span className="text-xs sm:text-sm font-medium">{index + 1}</span>
                       )}
                     </div>
-                    <div className="ml-4">
-                      <p className={`text-sm font-medium ${
+                    <div className="ml-3 sm:ml-4">
+                      <p className={`text-xs sm:text-sm font-medium ${
                         step.completed ? 'text-green-600' : 'text-secondary-500'
                       }`}>
                         {step.name}
@@ -578,12 +586,12 @@ export default function Orders() {
             </div>
 
             {/* Payment Status */}
-            <div className="bg-white border border-secondary-200 p-4 rounded-lg">
-              <h4 className="font-medium text-secondary-900 mb-3">Payment Status</h4>
-              <div className="flex items-center justify-between">
+            <div className="bg-white border border-secondary-200 p-3 sm:p-4 rounded-lg">
+              <h4 className="text-sm sm:text-base font-medium text-secondary-900 mb-2 sm:mb-3">Payment Status</h4>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                 <div>
-                  <p className="text-sm text-secondary-600">Payment Method: Bank Transfer</p>
-                  <p className="text-sm text-secondary-600">Amount: {selectedOrder.totalAmount}</p>
+                  <p className="text-xs sm:text-sm text-secondary-600">Payment Method: Bank Transfer</p>
+                  <p className="text-xs sm:text-sm text-secondary-600">Amount: {selectedOrder.totalAmount}</p>
                 </div>
                 <Badge variant={getPaymentStatusColor(selectedOrder.paymentStatus)}>
                   {selectedOrder.payment_status.charAt(0).toUpperCase() + selectedOrder.payment_status.slice(1)}
@@ -592,12 +600,12 @@ export default function Orders() {
             </div>
 
             {/* Shipping Information */}
-            <div className="bg-white border border-secondary-200 p-4 rounded-lg">
-              <h4 className="font-medium text-secondary-900 mb-3">Shipping Information</h4>
-              <div className="space-y-2 text-sm">
-                <div>
+            <div className="bg-white border border-secondary-200 p-3 sm:p-4 rounded-lg">
+              <h4 className="text-sm sm:text-base font-medium text-secondary-900 mb-2 sm:mb-3">Shipping Information</h4>
+              <div className="space-y-2 text-xs sm:text-sm">
+                <div className="flex flex-wrap">
                   <span className="text-secondary-500">Tracking Number:</span>
-                  <span className="ml-2 font-medium">TRK123456789</span>
+                  <span className="ml-2 font-medium break-all">TRK123456789</span>
                 </div>
                 <div>
                   <span className="text-secondary-500">Carrier:</span>
@@ -610,11 +618,11 @@ export default function Orders() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setSelectedOrder(null)} className="w-full sm:w-auto">
                 Close
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" className="w-full sm:w-auto">
                 <Download className="w-4 h-4 mr-2" />
                 Download Invoice
               </Button>
@@ -625,7 +633,7 @@ export default function Orders() {
                   progress: selectedOrder.progress || 0,
                   notes: selectedOrder.notes || ''
                 });
-              }}>
+              }} className="w-full sm:w-auto">
                 Update Status
               </Button>
             </div>

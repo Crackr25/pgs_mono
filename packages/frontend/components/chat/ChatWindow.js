@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info, Users, DollarSign } from 'lucide-react';
+import { Send, Paperclip, X, MoreVertical, Check, CheckCheck, Clock, AlertCircle, RotateCcw, Archive, Trash2, Flag, UserX, FileText, Image, Download, MessageSquare, Info, Users, DollarSign, ArrowLeft } from 'lucide-react';
 import ProductMessageHeader from './ProductMessageHeader';
 import Button from '../common/Button';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -14,7 +14,8 @@ const ChatWindow = forwardRef(function ChatWindow({
   onSendMessage, 
   currentUser,
   loading = false,
-  onMessagesUpdate
+  onMessagesUpdate,
+  onBack
 }, ref) {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -410,17 +411,26 @@ const ChatWindow = forwardRef(function ChatWindow({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-secondary-200 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+      <div className="flex-shrink-0 p-3 sm:p-4 border-b border-secondary-200 bg-white">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            {/* Back button for mobile */}
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="md:hidden flex-shrink-0 p-2 -ml-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100 rounded-lg"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
               conversation.conversation_type === 'agent' 
                 ? 'bg-blue-100' 
                 : 'bg-primary-100'
             }`}>
-              <span className={`text-sm font-medium ${
+              <span className={`text-xs sm:text-sm font-medium ${
                 conversation.conversation_type === 'agent' 
                   ? 'text-blue-600' 
                   : 'text-primary-600'
@@ -428,25 +438,25 @@ const ChatWindow = forwardRef(function ChatWindow({
                 {getInitials(conversation.buyer.name)}
               </span>
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="text-lg font-semibold text-secondary-900">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-secondary-900 truncate">
                   {conversation.buyer.name}
                 </h3>
                 {conversation.conversation_type === 'agent' && (
-                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="hidden sm:inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
                     <Users className="w-3 h-3 mr-1" />
                     Agent
                   </span>
                 )}
               </div>
-              <p className="text-sm text-secondary-500">{conversation.buyer.email}</p>
+              <p className="text-xs sm:text-sm text-secondary-500 truncate">{conversation.buyer.email}</p>
               {conversation.order_id && (
                 <p className="text-xs text-blue-600">Order #{conversation.order_id}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <div className="relative" ref={dropdownRef}>
               <Button 
                 variant="ghost" 

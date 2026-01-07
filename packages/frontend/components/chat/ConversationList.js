@@ -76,13 +76,13 @@ export default function ConversationList({
 
   if (loading) {
     return (
-      <div className="w-80 flex-shrink-0 bg-white border-r border-secondary-200 flex flex-col">
-        <div className="p-4 border-b border-secondary-200">
+      <div className="w-full h-full bg-white border-r border-secondary-200 flex flex-col">
+        <div className="p-3 sm:p-4 border-b border-secondary-200">
           <div className="animate-pulse">
             <div className="h-10 bg-secondary-200 rounded-lg"></div>
           </div>
         </div>
-        <div className="flex-1 p-4 space-y-4">
+        <div className="flex-1 p-3 sm:p-4 space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="animate-pulse flex items-start space-x-3">
               <div className="w-10 h-10 bg-secondary-200 rounded-full"></div>
@@ -98,9 +98,9 @@ export default function ConversationList({
   }
 
   return (
-    <div className="w-80 flex-shrink-0 bg-white border-r border-secondary-200 flex flex-col">
+    <div className="w-full h-full bg-white border-r border-secondary-200 flex flex-col">
       {/* Search */}
-      <div className="p-4 border-b border-secondary-200">
+      <div className="p-3 sm:p-4 border-b border-secondary-200">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
           <input
@@ -108,7 +108,7 @@ export default function ConversationList({
             placeholder="Search conversations..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function ConversationList({
       <div className="flex border-b border-secondary-200">
         <button 
           onClick={() => handleFilterChange('all')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
             activeFilter === 'all' 
               ? 'text-primary-600 border-b-2 border-primary-600' 
               : 'text-secondary-500 hover:text-secondary-700 border-b-2 border-transparent hover:border-secondary-300'
@@ -127,7 +127,7 @@ export default function ConversationList({
         </button>
         <button 
           onClick={() => handleFilterChange('unread')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
             activeFilter === 'unread' 
               ? 'text-primary-600 border-b-2 border-primary-600' 
               : 'text-secondary-500 hover:text-secondary-700 border-b-2 border-transparent hover:border-secondary-300'

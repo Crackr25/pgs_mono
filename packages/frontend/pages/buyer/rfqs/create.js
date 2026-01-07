@@ -541,32 +541,32 @@ export default function CreateRFQ() {
         <title>Create RFQ - Buyer Portal</title>
       </Head>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-secondary-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-secondary-100 rounded-lg transition-colors flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5 text-secondary-600" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-secondary-900">Create New RFQ</h1>
-            <p className="mt-1 text-sm text-secondary-600">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Create New RFQ</h1>
+            <p className="mt-1 text-xs sm:text-sm text-secondary-600">
               Request quotes from suppliers for your requirements
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Basic Information */}
           <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-medium text-secondary-900 mb-4">Basic Information</h2>
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Basic Information</h2>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                 <div className="lg:col-span-2">
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     RFQ Title *
                   </label>
                   <input
@@ -579,12 +579,12 @@ export default function CreateRFQ() {
                     required
                   />
                   {getFieldError('title') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('title')}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('title')}</p>
                   )}
                 </div>
 
                 <div className="lg:col-span-2">
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Description *
                   </label>
                   <textarea
@@ -597,12 +597,12 @@ export default function CreateRFQ() {
                     required
                   />
                   {getFieldError('description') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('description')}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('description')}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Category *
                   </label>
                   <select
@@ -621,13 +621,13 @@ export default function CreateRFQ() {
                     ))}
                   </select>
                   {getFieldError('category') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('category')}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('category')}</p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                       Quantity *
                     </label>
                     <input
@@ -640,11 +640,11 @@ export default function CreateRFQ() {
                       required
                     />
                     {getFieldError('quantity') && (
-                      <p className="mt-1 text-sm text-red-600">{getFieldError('quantity')}</p>
+                      <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('quantity')}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                       Unit *
                     </label>
                     <select
@@ -666,13 +666,13 @@ export default function CreateRFQ() {
 
           {/* Budget & Delivery */}
           <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-medium text-secondary-900 mb-4">Budget & Delivery</h2>
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Budget & Delivery</h2>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                       Min Budget (USD) *
                     </label>
                     <input
@@ -686,11 +686,11 @@ export default function CreateRFQ() {
                       required
                     />
                     {getFieldError('budget_min') && (
-                      <p className="mt-1 text-sm text-red-600">{getFieldError('budget_min')}</p>
+                      <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('budget_min')}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                       Max Budget (USD) *
                     </label>
                     <input
@@ -704,13 +704,13 @@ export default function CreateRFQ() {
                       required
                     />
                     {getFieldError('budget_max') && (
-                      <p className="mt-1 text-sm text-red-600">{getFieldError('budget_max')}</p>
+                      <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('budget_max')}</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Delivery Location *
                   </label>
                   <input
@@ -723,12 +723,12 @@ export default function CreateRFQ() {
                     required
                   />
                   {getFieldError('delivery_location') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('delivery_location')}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('delivery_location')}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Required Delivery Date *
                   </label>
                   <div className="relative">
@@ -742,14 +742,14 @@ export default function CreateRFQ() {
                       required
                     />
                     {getFieldError('delivery_date') && (
-                      <p className="mt-1 text-sm text-red-600">{getFieldError('delivery_date')}</p>
+                      <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('delivery_date')}</p>
                     )}
                     <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4 pointer-events-none" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     RFQ Validity (Days)
                   </label>
                   <select
@@ -765,7 +765,7 @@ export default function CreateRFQ() {
                     <option value={90}>90 days</option>
                   </select>
                   {getFieldError('validity_days') && (
-                    <p className="mt-1 text-sm text-red-600">{getFieldError('validity_days')}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('validity_days')}</p>
                   )}
                 </div>
               </div>
@@ -774,54 +774,63 @@ export default function CreateRFQ() {
 
           {/* Specifications */}
           <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-medium text-secondary-900">Technical Specifications</h2>
-                  <p className="text-sm text-secondary-600 mt-1">
-                    {formData.category ? `Specifications for ${formData.category}` : 'Add detailed product specifications'}
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  {formData.category && categoryTemplates[formData.category] && (
+            <div className="p-4 sm:p-6">
+              <div className="mb-3 sm:mb-4">
+                <div className="flex flex-col gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-medium text-secondary-900">Technical Specifications</h2>
+                    <p className="text-xs sm:text-sm text-secondary-600 mt-1">
+                      {formData.category ? `Specifications for ${formData.category}` : 'Add detailed product specifications'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.category && categoryTemplates[formData.category] && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => applyCategoryTemplate(formData.category)}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        Use Template
+                      </Button>
+                    )}
                     <Button 
                       type="button" 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => applyCategoryTemplate(formData.category)}
+                      onClick={addSpecification}
+                      className="flex-1 sm:flex-initial"
                     >
-                      Use Template
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Specification
                     </Button>
-                  )}
-                  <Button type="button" variant="outline" size="sm" onClick={addSpecification}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Specification
-                  </Button>
+                  </div>
                 </div>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-3 sm:space-y-4">
                 {formData.specifications.map((spec, index) => (
-                  <div key={index} className="flex space-x-3">
+                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <input
                       type="text"
                       placeholder="Specification name"
                       value={spec.key}
                       onChange={(e) => handleSpecificationChange(index, 'key', e.target.value)}
-                      className={getFieldClasses(`specifications.${index}.key`, "flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent")}
+                      className={getFieldClasses(`specifications.${index}.key`, "w-full sm:flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-sm")}
                     />
                     <input
                       type="text"
                       placeholder="Value/Requirement"
                       value={spec.value}
                       onChange={(e) => handleSpecificationChange(index, 'value', e.target.value)}
-                      className={getFieldClasses(`specifications.${index}.value`, "flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent")}
+                      className={getFieldClasses(`specifications.${index}.value`, "w-full sm:flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-sm")}
                     />
                     {formData.specifications.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeSpecification(index)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="self-start sm:self-center p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -829,7 +838,7 @@ export default function CreateRFQ() {
                   </div>
                 ))}
                 {(getFieldError('specifications.0.key') || getFieldError('specifications.0.value')) && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1 text-xs sm:text-sm text-red-600">
                     {getFieldError('specifications.0.key') || getFieldError('specifications.0.value')}
                   </p>
                 )}
@@ -839,26 +848,26 @@ export default function CreateRFQ() {
 
           {/* Attachments */}
           <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-secondary-900">Attachments</h2>
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+                <h2 className="text-base sm:text-lg font-medium text-secondary-900">Attachments</h2>
                 {formData.attachments.length > 0 && (
-                  <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs sm:text-sm font-medium self-start">
                     {formData.attachments.length} file{formData.attachments.length > 1 ? 's' : ''} selected
                   </span>
                 )}
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div 
-                  className="border-2 border-dashed border-secondary-300 rounded-lg p-6 text-center hover:border-secondary-400 transition-colors"
+                  className="border-2 border-dashed border-secondary-300 rounded-lg p-4 sm:p-6 text-center hover:border-secondary-400 transition-colors"
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragEnter}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <Upload className="w-8 h-8 text-secondary-400 mx-auto mb-2" />
-                  <p className="text-sm text-secondary-600 mb-2">
+                  <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-secondary-400 mx-auto mb-2" />
+                  <p className="text-xs sm:text-sm text-secondary-600 mb-2">
                     <strong>Click to upload</strong> or drag and drop files here
                   </p>
                   <p className="text-xs text-secondary-500 mb-3">
@@ -917,15 +926,15 @@ export default function CreateRFQ() {
                 </div>
 
                 {getFieldError('attachments') && (
-                  <p className="mt-1 text-sm text-red-600">{getFieldError('attachments')}</p>
+                  <p className="mt-1 text-xs sm:text-sm text-red-600">{getFieldError('attachments')}</p>
                 )}
 
                 {formData.attachments.length > 0 && (
                   <div className="space-y-2">
                     {formData.attachments.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg border">
+                      <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-secondary-50 rounded-lg border gap-2">
                         <div 
-                          className={`flex items-center space-x-3 flex-1 ${(isImageFile(file) || isVideoFile(file)) ? 'cursor-pointer hover:bg-secondary-100 rounded-lg p-2 -m-2 transition-colors' : ''}`}
+                          className={`flex items-center gap-2 sm:gap-3 flex-1 min-w-0 ${(isImageFile(file) || isVideoFile(file)) ? 'cursor-pointer hover:bg-secondary-100 rounded-lg p-1 sm:p-2 -m-1 sm:-m-2 transition-colors' : ''}`}
                           onClick={() => {
                             if (isImageFile(file)) {
                               setPreviewModal({ isOpen: true, file, type: 'image' });
@@ -935,7 +944,7 @@ export default function CreateRFQ() {
                           }}
                         >
                           {isImageFile(file) ? (
-                            <div className="relative w-12 h-12">
+                            <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                               <img 
                                 src={file.preview || URL.createObjectURL(file)} 
                                 alt={file.name}
@@ -955,7 +964,7 @@ export default function CreateRFQ() {
                               </div>
                             </div>
                           ) : isVideoFile(file) ? (
-                            <div className="relative w-12 h-12">
+                            <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                               <video 
                                 src={file.preview || URL.createObjectURL(file)}
                                 className="w-full h-full object-cover rounded border hover:opacity-80 transition-opacity"
@@ -982,15 +991,15 @@ export default function CreateRFQ() {
                               </div>
                             </div>
                           ) : (
-                            <div className="w-12 h-12 flex items-center justify-center">
-                              <span className="text-2xl">{getFileIcon(file.name || file)}</span>
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xl sm:text-2xl">{getFileIcon(file.name || file)}</span>
                             </div>
                           )}
-                          <div>
-                            <p className="text-sm font-medium text-secondary-700">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-medium text-secondary-700 truncate">
                               {file.name || 'Unknown filename'}
                             </p>
-                            <p className="text-xs text-secondary-500">
+                            <p className="text-xs text-secondary-500 truncate">
                               {formatFileSize(file.size)}
                               {isImageFile(file) && <span className="ml-2 text-green-600">• Image Preview - Click to view</span>}
                               {isVideoFile(file) && <span className="ml-2 text-blue-600">• Video Preview - Click to play</span>}
@@ -1014,17 +1023,17 @@ export default function CreateRFQ() {
 
           {/* Terms & Conditions */}
           <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-medium text-secondary-900 mb-4">Quality & Supplier Requirements</h2>
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Quality & Supplier Requirements</h2>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-2 sm:mb-3">
                     Required Certifications
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                     {availableCertifications.map(cert => (
-                      <label key={cert} className="flex items-center space-x-2">
+                      <label key={cert} className="flex items-center gap-1.5 sm:gap-2">
                         <input
                           type="checkbox"
                           checked={formData.certifications_required.includes(cert)}
@@ -1041,16 +1050,16 @@ export default function CreateRFQ() {
                               }));
                             }
                           }}
-                          className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                          className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
                         />
-                        <span className="text-sm text-secondary-700">{cert}</span>
+                        <span className="text-xs sm:text-sm text-secondary-700">{cert}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Quality Standards
                   </label>
                   <textarea
@@ -1059,12 +1068,12 @@ export default function CreateRFQ() {
                     onChange={handleInputChange}
                     rows={2}
                     placeholder="e.g., Zero defect requirement, specific testing standards, quality control processes..."
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Sample Requirements
                   </label>
                   <textarea
@@ -1073,19 +1082,19 @@ export default function CreateRFQ() {
                     onChange={handleInputChange}
                     rows={2}
                     placeholder="e.g., Free samples required, sample quantity needed, sample shipping terms..."
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Supplier Location Preference
                   </label>
                   <select
                     name="supplier_location_preference"
                     value={formData.supplier_location_preference}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                   >
                     {supplierLocationOptions.map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -1098,12 +1107,12 @@ export default function CreateRFQ() {
 
           {/* Additional Information */}
           <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-medium text-secondary-900 mb-4">Additional Information</h2>
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Additional Information</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Payment Terms
                   </label>
                   <textarea
@@ -1117,7 +1126,7 @@ export default function CreateRFQ() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-secondary-700 mb-1.5 sm:mb-2">
                     Terms & Conditions
                   </label>
                   <textarea
@@ -1135,13 +1144,13 @@ export default function CreateRFQ() {
 
           {/* Error Display */}
           {error && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <p className="text-red-800 text-sm">{error}</p>
+            <Card className="p-3 sm:p-4 bg-red-50 border-red-200">
+              <p className="text-red-800 text-xs sm:text-sm">{error}</p>
             </Card>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <Button
               type="button"
               variant="outline"
@@ -1169,10 +1178,10 @@ export default function CreateRFQ() {
 
       {/* Preview Modal */}
       {previewModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-4xl max-h-full bg-white rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="relative w-full max-w-4xl max-h-full bg-white rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2">
+              <h3 className="text-sm sm:text-lg font-medium text-gray-900 truncate">
                 {previewModal.file?.name}
               </h3>
               <button
@@ -1182,26 +1191,26 @@ export default function CreateRFQ() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               {previewModal.type === 'image' ? (
                 <img
                   src={previewModal.file?.preview || URL.createObjectURL(previewModal.file)}
                   alt={previewModal.file?.name}
-                  className="max-w-full max-h-[70vh] object-contain mx-auto"
+                  className="max-w-full max-h-[60vh] sm:max-h-[70vh] object-contain mx-auto"
                 />
               ) : previewModal.type === 'video' ? (
                 <video
                   src={previewModal.file?.preview || URL.createObjectURL(previewModal.file)}
                   controls
                   autoPlay
-                  className="max-w-full max-h-[70vh] mx-auto"
+                  className="max-w-full max-h-[60vh] sm:max-h-[70vh] mx-auto"
                 >
                   Your browser does not support the video tag.
                 </video>
               ) : null}
             </div>
-            <div className="px-4 pb-4">
-              <p className="text-sm text-gray-600">
+            <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <p className="text-xs sm:text-sm text-gray-600">
                 File size: {formatFileSize(previewModal.file?.size)}
               </p>
             </div>
