@@ -7,7 +7,7 @@ export default function Table({ columns, data, className = '' }) {
             {columns.map((column, index) => (
               <th
                 key={index}
-                className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider"
+                className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider"
               >
                 {column.header}
               </th>
@@ -18,7 +18,7 @@ export default function Table({ columns, data, className = '' }) {
           {data.map((row, rowIndex) => (
             <tr key={rowIndex} className="hover:bg-secondary-50">
               {columns.map((column, colIndex) => (
-                <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                <td key={colIndex} className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-secondary-900">
                   {column.render ? column.render(row[column.key], row) : row[column.key]}
                 </td>
               ))}

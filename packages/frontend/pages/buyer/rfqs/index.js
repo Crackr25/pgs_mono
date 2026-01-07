@@ -242,17 +242,17 @@ export default function RFQs() {
         <title>My RFQs - Buyer Portal</title>
       </Head>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
           <div>
-            <h1 className="text-2xl font-bold text-secondary-900">My RFQs</h1>
-            <p className="mt-1 text-sm text-secondary-600">
+            <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">My RFQs</h1>
+            <p className="mt-1 text-xs sm:text-sm text-secondary-600">
               Manage your requests for quotations
             </p>
           </div>
-          <Link href="/buyer/rfqs/create">
-            <Button>
+          <Link href="/buyer/rfqs/create" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Create RFQ
             </Button>
@@ -260,24 +260,24 @@ export default function RFQs() {
         </div>
 
         {/* Filters */}
-        <Card className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="relative">
+        <Card className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3 lg:gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+              <div className="relative flex-1 sm:flex-initial">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search RFQs..."
                   value={searchTerm}
                   onChange={handleSearch}
-                  className="pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-full text-sm border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               
-              <div className="flex space-x-2">
+              <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1">
                 <button
                   onClick={() => handleStatusFilter('all')}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                  className={`px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap ${
                     statusFilter === 'all'
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-secondary-600 hover:bg-secondary-100'
@@ -287,7 +287,7 @@ export default function RFQs() {
                 </button>
                 <button
                   onClick={() => handleStatusFilter('published')}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                  className={`px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap ${
                     statusFilter === 'published'
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-secondary-600 hover:bg-secondary-100'
@@ -297,7 +297,7 @@ export default function RFQs() {
                 </button>
                 <button
                   onClick={() => handleStatusFilter('draft')}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                  className={`px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap ${
                     statusFilter === 'draft'
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-secondary-600 hover:bg-secondary-100'
@@ -307,7 +307,7 @@ export default function RFQs() {
                 </button>
                 <button
                   onClick={() => handleStatusFilter('closed')}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                  className={`px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap ${
                     statusFilter === 'closed'
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-secondary-600 hover:bg-secondary-100'
@@ -320,11 +320,11 @@ export default function RFQs() {
 
             {/* View Mode Toggle */}
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-secondary-600">View:</span>
+              <span className="text-xs sm:text-sm text-secondary-600">View:</span>
               <div className="flex border border-secondary-300 rounded-lg">
                 <button
                   onClick={() => handleViewModeChange('card')}
-                  className={`px-3 py-2 text-sm font-medium rounded-l-lg ${
+                  className={`px-2 sm:px-3 py-2 text-sm font-medium rounded-l-lg ${
                     viewMode === 'card'
                       ? 'bg-primary-600 text-white'
                       : 'text-secondary-600 hover:bg-secondary-100'
@@ -334,7 +334,7 @@ export default function RFQs() {
                 </button>
                 <button
                   onClick={() => handleViewModeChange('list')}
-                  className={`px-3 py-2 text-sm font-medium rounded-r-lg ${
+                  className={`px-2 sm:px-3 py-2 text-sm font-medium rounded-r-lg ${
                     viewMode === 'list'
                       ? 'bg-primary-600 text-white'
                       : 'text-secondary-600 hover:bg-secondary-100'
@@ -373,8 +373,8 @@ export default function RFQs() {
 
         {/* Empty State */}
         {!loading && !error && rfqs.length === 0 && (
-          <Card className="p-8 text-center">
-            <p className="text-secondary-600">
+          <Card className="p-6 sm:p-8 text-center">
+            <p className="text-sm sm:text-base text-secondary-600">
               {searchTerm || statusFilter !== 'all' 
                 ? 'No RFQs found matching your criteria.' 
                 : 'No RFQs found. Create your first RFQ to get started.'}
@@ -395,68 +395,68 @@ export default function RFQs() {
           <>
             {viewMode === 'card' ? (
               /* Card View */
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                 {rfqs.map((rfq) => (
-                  <Card key={rfq.id} className="p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-medium text-secondary-900">
+                  <Card key={rfq.id} className="p-4 sm:p-5 lg:p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="text-base sm:text-lg font-medium text-secondary-900 break-words">
                             {rfq.title}
                           </h3>
                           {rfq.certifications_required?.length > 0 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap">
                               Certified
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-secondary-600 mb-3 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-secondary-600 mb-2 sm:mb-3 line-clamp-2">
                           {rfq.description}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end space-y-2">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(rfq.status)}`}>
+                      <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:space-y-2">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${getStatusColor(rfq.status)}`}>
                           {rfq.status}
                         </span>
                         {rfq.status === 'published' && (
-                          <div className="flex items-center text-xs text-orange-600">
-                            <Clock className="w-3 h-3 mr-1" />
+                          <div className="flex items-center text-xs text-orange-600 whitespace-nowrap">
+                            <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
                             {getDaysRemaining(rfq.expires_at)} days left
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="bg-secondary-50 p-3 rounded-lg">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="bg-secondary-50 p-2 sm:p-3 rounded-lg">
                         <p className="text-xs text-secondary-500 mb-1">Quantity</p>
-                        <p className="text-sm font-medium text-secondary-900">
+                        <p className="text-xs sm:text-sm font-medium text-secondary-900 truncate">
                           {rfq.quantity.toLocaleString()} {rfq.unit}
                         </p>
                       </div>
-                      <div className="bg-secondary-50 p-3 rounded-lg">
+                      <div className="bg-secondary-50 p-2 sm:p-3 rounded-lg">
                         <p className="text-xs text-secondary-500 mb-1">Budget Range</p>
-                        <p className="text-sm font-medium text-secondary-900">
+                        <p className="text-xs sm:text-sm font-medium text-secondary-900 truncate">
                           {formatCurrency(rfq.budget_min)} - {formatCurrency(rfq.budget_max)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
                       <div>
                         <p className="text-xs text-secondary-500">Category</p>
-                        <p className="text-sm font-medium text-secondary-900">{rfq.category}</p>
+                        <p className="text-xs sm:text-sm font-medium text-secondary-900 truncate">{rfq.category}</p>
                       </div>
                       <div>
                         <p className="text-xs text-secondary-500">Location</p>
-                        <p className="text-sm font-medium text-secondary-900">{rfq.location}</p>
+                        <p className="text-xs sm:text-sm font-medium text-secondary-900 truncate">{rfq.location}</p>
                       </div>
                     </div>
 
                     {/* Attachments preview */}
                     {rfq.attachments && rfq.attachments.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex items-center space-x-2 mb-3">
+                      <div className="mb-3 sm:mb-4">
+                        <div className="flex items-center space-x-2 mb-2 sm:mb-3">
                           <span className="text-xs text-secondary-500 font-medium">
                             📎 {rfq.attachments.length} file{rfq.attachments.length > 1 ? 's' : ''} attached
                           </span>
@@ -566,7 +566,7 @@ export default function RFQs() {
 
                     {/* Certifications indicator */}
                     {rfq.certifications_required && rfq.certifications_required.length > 0 && (
-                      <div className="mb-4">
+                      <div className="mb-3 sm:mb-4">
                         <div className="flex items-center space-x-2 text-xs text-blue-600">
                           <span>🏆</span>
                           <span>{rfq.certifications_required.length} certification{rfq.certifications_required.length > 1 ? 's' : ''} required</span>
@@ -574,28 +574,28 @@ export default function RFQs() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between mb-4 pt-3 border-t border-secondary-200">
-                      <div className="flex items-center space-x-4 text-sm text-secondary-600">
-                        <span className="flex items-center">
-                          <Eye className="w-4 h-4 mr-1" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4 pt-2 sm:pt-3 border-t border-secondary-200">
+                      <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm text-secondary-600">
+                        <span className="flex items-center whitespace-nowrap">
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                           {rfq.responses_count} responses
                         </span>
                         <span>Created {formatDate(rfq.created_at)}</span>
                       </div>
                     </div>
 
-                    <div className="flex space-x-2">
-                      <Link href={`/buyer/rfqs/${rfq.id}`}>
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
+                    <div className="flex flex-wrap gap-2">
+                      <Link href={`/buyer/rfqs/${rfq.id}`} className="flex-1 sm:flex-initial">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">View</span>
                         </Button>
                       </Link>
                       {(rfq.status === 'draft' || rfq.status === 'published') && (
-                        <Link href={`/buyer/rfqs/${rfq.id}/edit`}>
-                          <Button variant="outline" size="sm">
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
+                        <Link href={`/buyer/rfqs/${rfq.id}/edit`} className="flex-1 sm:flex-initial">
+                          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                            <Edit className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Edit</span>
                           </Button>
                         </Link>
                       )}
@@ -603,9 +603,10 @@ export default function RFQs() {
                         variant="danger"
                         size="sm"
                         onClick={() => handleDeleteRFQ(rfq)}
+                        className="flex-1 sm:flex-initial text-xs sm:text-sm"
                       >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Delete</span>
                       </Button>
                     </div>
                   </Card>

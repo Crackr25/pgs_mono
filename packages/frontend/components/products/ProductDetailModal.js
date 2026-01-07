@@ -206,32 +206,45 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
     >
       <div className="flex flex-col h-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center space-x-2">
             <button
               onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">Product Details</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Product Details</h2>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={copyProductLink}>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="outline" size="sm" onClick={copyProductLink} className="hidden sm:flex">
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
+            <Button variant="outline" size="sm" onClick={copyProductLink} className="sm:hidden p-2">
+              <Share2 className="w-4 h-4" />
+            </Button>
             {onEdit && (
-              <Button variant="outline" size="sm" onClick={() => onEdit(productId)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={() => onEdit(productId)} className="hidden sm:flex">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onEdit(productId)} className="sm:hidden p-2">
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </>
             )}
             {onDelete && (
-              <Button variant="danger" size="sm" onClick={() => onDelete(productId)}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
+              <>
+                <Button variant="danger" size="sm" onClick={() => onDelete(productId)} className="hidden sm:flex">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => onDelete(productId)} className="sm:hidden p-2">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -252,7 +265,7 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
               </div>
             </div>
           ) : product ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 p-3 sm:p-4 md:p-6">
               {/* Left Column - Images */}
               <div className="space-y-4">
                 {/* Main Image */}
@@ -278,17 +291,17 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
                         <>
                           <button
                             onClick={prevImage}
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-opacity"
+                            className="absolute left-1 sm:left-2 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-opacity"
                           >
-                            <ChevronLeft className="w-5 h-5" />
+                            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                           </button>
                           <button
                             onClick={nextImage}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-opacity"
+                            className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-2 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-opacity"
                           >
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                           </button>
-                          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                          <div className="absolute bottom-1 sm:bottom-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm">
                             {currentImageIndex + 1} / {images.length}
                           </div>
                         </>
@@ -303,7 +316,7 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
 
                 {/* Thumbnail Images */}
                 {images.length > 1 && (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {images.slice(0, 8).map((image, index) => (
                       <button
                         key={index}
@@ -421,32 +434,32 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
 
                 {/* Company Info Card */}
                 {companyInfo && (
-                  <Card className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3">Supplier Information</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Factory className="w-6 h-6 text-primary-600" />
+                  <Card className="p-3 sm:p-4">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Supplier Information</h3>
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Factory className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{companyInfo.name}</p>
-                          <p className="text-sm text-gray-600">{companyInfo.business_type}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{companyInfo.name}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">{companyInfo.business_type}</p>
                         </div>
                       </div>
                       {companyInfo.address && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          <span>{companyInfo.address}</span>
+                        <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600">
+                          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="truncate">{companyInfo.city}, {companyInfo.country}</span>
                         </div>
                       )}
                       {companyInfo.established_year && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4" />
+                        <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-600">
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                           <span>Established: {companyInfo.established_year}</span>
                         </div>
                       )}
-                      <div className="flex items-center space-x-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
                         <span className="text-green-600">Verified Supplier</span>
                       </div>
                     </div>
@@ -465,55 +478,55 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
                   <p className="text-lg font-semibold text-primary-600 mb-2">
                     {formatPrice(product.price)}
                   </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
-                      <Eye className="w-4 h-4" />
-                      <span>245 views</span>
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span>{product.views || 0} views</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Package className="w-4 h-4" />
+                      <Package className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span>MOQ: {product.moq}</span>
                     </div>
                     {product.lead_time && (
                       <div className="flex items-center space-x-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{product.lead_time}</span>
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>Updated {new Date(product.updated_at).toLocaleDateString()}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Key Features */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">Minimum Order</div>
-                    <div className="font-semibold">{product.moq} pieces</div>
+                {/* Product Info Grid */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                    <div className="text-xs sm:text-sm text-gray-600">Minimum Order</div>
+                    <div className="text-sm sm:text-base font-semibold">{product.moq} pieces</div>
                   </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600">Lead Time</div>
-                    <div className="font-semibold">{product.lead_time || '7-14 days'}</div>
+                  <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                    <div className="text-xs sm:text-sm text-gray-600">Lead Time</div>
+                    <div className="text-sm sm:text-base font-semibold">{product.lead_time || '7-14 days'}</div>
                   </div>
                   {product.hs_code && (
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-600">HS Code</div>
-                      <div className="font-semibold">{product.hs_code}</div>
+                    <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                      <div className="text-xs sm:text-sm text-gray-600">HS Code</div>
+                      <div className="text-sm sm:text-base font-semibold">{product.hs_code}</div>
                     </div>
                   )}
                   {product.origin_country && (
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-600">Origin</div>
-                      <div className="font-semibold">{product.origin_country}</div>
+                    <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                      <div className="text-xs sm:text-sm text-gray-600">Origin</div>
+                      <div className="text-sm sm:text-base font-semibold">{product.origin_country}</div>
                     </div>
                   )}
                 </div>
 
                 {/* Variants */}
-                {parseVariants(product.variants).length > 0 && (
+                {product.variants && parseVariants(product.variants).length > 0 && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Available Variants</h3>
-                    <div className="grid grid-cols-2 gap-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Available Variants</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {parseVariants(product.variants).map((variant, index) => (
-                        <div key={index} className="p-2 border border-gray-200 rounded text-sm">
+                        <div key={index} className="p-2 border border-gray-200 rounded text-xs sm:text-sm">
                           {typeof variant === 'object' ? 
                             Object.entries(variant).map(([key, value]) => (
                               <div key={key}>
@@ -531,16 +544,16 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
                 {/* Tabs */}
                 <div>
                   <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8">
+                    <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto">
                       {[
                         { id: 'overview', label: 'Overview' },
-                        { id: 'specifications', label: 'Specifications' },
-                        { id: 'company', label: 'Company Profile' }
+                        { id: 'specifications', label: 'Specs' },
+                        { id: 'company', label: 'Company' },
                       ].map((tab) => (
                         <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id)}
-                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                          className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                             activeTab === tab.id
                               ? 'border-primary-500 text-primary-600'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -552,31 +565,31 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
                     </nav>
                   </div>
 
-                  <div className="py-4">
+                  <div className="py-3 sm:py-4">
                     {activeTab === 'overview' && (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-                          <p className="text-gray-600 leading-relaxed">
+                          <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-2">Description</h4>
+                          <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                             {product.description || 'No description available.'}
                           </p>
                         </div>
                         {product.specs && (
                           <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Key Features</h4>
-                            <p className="text-gray-600">{product.specs}</p>
+                            <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-2">Key Features</h4>
+                            <p className="text-sm sm:text-base text-gray-600">{product.specs}</p>
                           </div>
                         )}
                       </div>
                     )}
 
                     {activeTab === 'specifications' && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-3">
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="grid grid-cols-1 gap-2 sm:gap-3">
                           {product.category && (
                             <div className="flex justify-between py-2 border-b border-gray-100">
-                              <span className="text-gray-600">Category</span>
-                              <span className="font-medium">{product.category}</span>
+                              <span className="text-xs sm:text-sm text-gray-600">Category</span>
+                              <span className="text-xs sm:text-sm font-medium text-right">{product.category}</span>
                             </div>
                           )}
                           {product.hs_code && (
@@ -606,14 +619,14 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
                     )}
 
                     {activeTab === 'company' && (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {companyInfo ? (
-                          <div className="space-y-4">
+                          <div className="space-y-3 sm:space-y-4">
                             <div>
-                              <h4 className="font-medium text-gray-900 mb-2">{companyInfo.name}</h4>
-                              <p className="text-gray-600">{companyInfo.description || 'Professional manufacturer and supplier.'}</p>
+                              <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-2">{companyInfo.name}</h4>
+                              <p className="text-sm sm:text-base text-gray-600">{companyInfo.description || 'Professional manufacturer and supplier.'}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                               {companyInfo.business_type && (
                                 <div>
                                   <span className="text-gray-600">Business Type:</span>
@@ -649,14 +662,14 @@ export default function ProductDetailModal({ isOpen, onClose, productId, onEdit,
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
                   <Link href={`/products/edit/${product.id}`} className="flex-1">
                     <Button className="w-full">
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Product
                     </Button>
                   </Link>
-                  <Button variant="outline" onClick={copyProductLink}>
+                  <Button variant="outline" onClick={copyProductLink} className="w-full sm:w-auto">
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Link
                   </Button>

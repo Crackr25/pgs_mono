@@ -157,100 +157,100 @@ const AgentManagement = () => {
             <Head>
                 <title>Agent Management - Seller Portal</title>
             </Head>
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 w-full max-w-full overflow-x-hidden">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Agent Management</h1>
-                        <p className="text-gray-600 mt-2">Manage your customer service and sales agents</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Agent Management</h1>
+                        <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1 sm:mt-2">Manage your customer service and sales agents</p>
                     </div>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="w-full sm:w-auto bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base flex-shrink-0"
                     >
                         Add New Agent
                     </button>
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
+                    <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-sm border">
                         <div className="flex items-center">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="p-2 sm:p-2.5 md:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                                <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Total Agents</p>
-                                <p className="text-2xl font-bold text-gray-900">{statistics.total_agents || 0}</p>
+                            <div className="ml-3 sm:ml-4 min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-gray-600">Total Agents</p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900">{statistics.total_agents || 0}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
+                    <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-sm border">
                         <div className="flex items-center">
-                            <div className="p-2 bg-green-100 rounded-lg">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="p-2 sm:p-2.5 md:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                                <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Active Agents</p>
-                                <p className="text-2xl font-bold text-gray-900">{statistics.active_agents || 0}</p>
+                            <div className="ml-3 sm:ml-4 min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-gray-600">Active Agents</p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900">{statistics.active_agents || 0}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
+                    <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-sm border">
                         <div className="flex items-center">
-                            <div className="p-2 bg-yellow-100 rounded-lg">
-                                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="p-2 sm:p-2.5 md:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
+                                <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Pending Invitations</p>
-                                <p className="text-2xl font-bold text-gray-900">{statistics.pending_invitations || 0}</p>
+                            <div className="ml-3 sm:ml-4 min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-gray-600">Pending Invitations</p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900">{statistics.pending_invitations || 0}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
+                    <div className="bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-sm border">
                         <div className="flex items-center">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="p-2 sm:p-2.5 md:p-3 bg-purple-100 rounded-lg flex-shrink-0">
+                                <svg className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                             </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Response Rate</p>
-                                <p className="text-2xl font-bold text-gray-900">98%</p>
+                            <div className="ml-3 sm:ml-4 min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-gray-600">Response Rate</p>
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900">98%</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border mb-4 sm:mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Search</label>
                             <input
                                 type="text"
                                 placeholder="Search by name or email..."
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Status</label>
                             <select
                                 value={filters.status}
                                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">All Status</option>
                                 <option value="active">Active</option>
@@ -260,11 +260,11 @@ const AgentManagement = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Role</label>
                             <select
                                 value={filters.role}
                                 onChange={(e) => handleFilterChange('role', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">All Roles</option>
                                 {Object.entries(roles).map(([key, label]) => (
@@ -279,7 +279,7 @@ const AgentManagement = () => {
                                     setFilters({ status: 'all', role: 'all', search: '' });
                                     setPagination(prev => ({ ...prev, currentPage: 1 }));
                                 }}
-                                className="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                             >
                                 Clear Filters
                             </button>
@@ -289,14 +289,14 @@ const AgentManagement = () => {
 
                 {/* Agents Table */}
                 <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto -mx-3 sm:mx-0">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Agent
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="hidden sm:table-cell px-3 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Role
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -362,53 +362,68 @@ export default function Chat() {
         <title>Chat - Seller Portal</title>
       </Head>
 
-      <div className="h-screen flex flex-col">
+      <div className="h-screen flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex-shrink-0 p-6 border-b border-secondary-200 bg-white">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-secondary-900 flex items-center">
-                <MessageSquare className="w-6 h-6 mr-2" />
+        <div className="flex-shrink-0 p-3 sm:p-4 md:p-6 border-b border-secondary-200 bg-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-secondary-900 flex items-center">
+                <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                 Chat
               </h1>
-              <p className="mt-1 text-sm text-secondary-600">
+              <p className="mt-1 text-xs sm:text-sm text-secondary-600">
                 Communicate with buyers in real-time
               </p>
             </div>
-            <div className="flex space-x-3 mt-4 sm:mt-0">
-              <Button variant="outline" size="sm">
-                <Users className="w-4 h-4 mr-2" />
-                New Chat
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">New Chat</span>
+                <span className="sm:hidden">New</span>
               </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Settings</span>
+                <span className="sm:hidden">Settings</span>
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
           {/* Conversations List */}
-          <ConversationList
-            conversations={conversations}
-            selectedConversation={selectedConversation}
-            onSelectConversation={handleSelectConversation}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            loading={loading}
-          />
+          <div className={`${
+            selectedConversation 
+              ? 'hidden md:block' 
+              : 'block'
+          } w-full md:w-80 lg:w-96 flex-shrink-0`}>
+            <ConversationList
+              conversations={conversations}
+              selectedConversation={selectedConversation}
+              onSelectConversation={handleSelectConversation}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              loading={loading}
+            />
+          </div>
 
           {/* Chat Window */}
-          <ChatWindow
-            ref={chatWindowRef}
-            conversation={selectedConversation}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            currentUser={user}
-            loading={messagesLoading}
-            onMessagesUpdate={setMessages}
-          />
+          <div className={`${
+            selectedConversation 
+              ? 'block' 
+              : 'hidden md:block'
+          } flex-1 min-w-0`}>
+            <ChatWindow
+              ref={chatWindowRef}
+              conversation={selectedConversation}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              currentUser={user}
+              loading={messagesLoading}
+              onMessagesUpdate={setMessages}
+              onBack={() => setSelectedConversation(null)}
+            />
+          </div>
         </div>
       </div>
     </>

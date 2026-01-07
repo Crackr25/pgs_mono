@@ -502,20 +502,20 @@ export default function Analytics() {
         <title>Analytics - SupplierHub</title>
       </Head>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-secondary-900">Analytics & Performance</h1>
-            <p className="mt-1 text-sm text-secondary-600">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Analytics & Performance</h1>
+            <p className="mt-1 text-xs sm:text-sm text-secondary-600">
               Track your business performance and buyer engagement
             </p>
           </div>
-          <div className="flex space-x-3 mt-4 sm:mt-0">
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
@@ -528,39 +528,42 @@ export default function Analytics() {
               variant="outline" 
               onClick={handleExportData}
               disabled={loading}
+              className="flex-1 sm:flex-initial text-xs sm:text-sm"
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin" />
               ) : (
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               )}
-              {loading ? 'Exporting...' : 'Export CSV'}
+              <span className="hidden sm:inline">{loading ? 'Exporting...' : 'Export CSV'}</span>
+              <span className="sm:hidden">CSV</span>
             </Button>
             <Button 
               variant="outline" 
               onClick={handleExportExcel}
               disabled={loading}
-              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+              className="flex-1 sm:flex-initial bg-green-50 hover:bg-green-100 text-green-700 border-green-300 text-xs sm:text-sm"
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin" />
               ) : (
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               )}
-              {loading ? 'Exporting...' : 'Export Excel'}
+              <span className="hidden sm:inline">{loading ? 'Exporting...' : 'Export Excel'}</span>
+              <span className="sm:hidden">Excel</span>
             </Button>
           </div>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           {performanceMetrics.map((metric, index) => (
             <DashboardCard key={index} {...metric} />
           ))}
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <PerformanceChart
             title="Monthly Orders"
             data={monthlyData}
@@ -575,9 +578,9 @@ export default function Analytics() {
 
         {/* Most Viewed Products */}
         <Card>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-secondary-900">Most Viewed Products</h3>
-            <Button variant="outline" size="sm" onClick={handleViewAllProducts}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-medium text-secondary-900">Most Viewed Products</h3>
+            <Button variant="outline" size="sm" onClick={handleViewAllProducts} className="w-full sm:w-auto text-xs sm:text-sm">
               <Eye className="w-4 h-4 mr-2" />
               View All
             </Button>
@@ -590,17 +593,17 @@ export default function Analytics() {
           
           {/* Show all products modal/section */}
           {showAllProducts && allProducts.length > 0 && (
-            <div className="mt-6 p-4 bg-secondary-50 rounded-lg">
-              <h4 className="font-medium mb-3">All Products ({allProducts.length})</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-secondary-50 rounded-lg">
+              <h4 className="text-sm sm:text-base font-medium mb-2 sm:mb-3">All Products ({allProducts.length})</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 max-h-60 overflow-y-auto">
                 {allProducts.map((product, index) => (
-                  <div key={index} className="p-3 bg-white rounded border text-sm">
-                    <div className="font-medium text-secondary-900">{product.name}</div>
-                    <div className="text-secondary-600">{product.category || 'Uncategorized'}</div>
-                    <div className="text-xs text-secondary-500 mt-1 flex justify-between">
+                  <div key={index} className="p-2 sm:p-3 bg-white rounded border text-xs sm:text-sm">
+                    <div className="font-medium text-secondary-900 truncate">{product.name}</div>
+                    <div className="text-secondary-600 text-xs truncate">{product.category || 'Uncategorized'}</div>
+                    <div className="text-xs text-secondary-500 mt-1 flex justify-between gap-2">
                       <span>{product.orders_count || 0} orders</span>
                       {product.last_order_date !== 'No orders yet' && (
-                        <span className="text-green-600">Last: {product.last_order_date}</span>
+                        <span className="text-green-600 truncate">Last: {product.last_order_date}</span>
                       )}
                     </div>
                   </div>
@@ -609,7 +612,7 @@ export default function Analytics() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="mt-3"
+                className="mt-2 sm:mt-3 w-full sm:w-auto"
                 onClick={() => setShowAllProducts(false)}
               >
                 Hide Details
@@ -620,23 +623,25 @@ export default function Analytics() {
 
         {/* Buyer Engagement Tracker */}
         <Card>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-secondary-900">Buyer Engagement Tracker</h3>
-            <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-medium text-secondary-900">Buyer Engagement</h3>
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
+                className="text-xs sm:text-sm"
               >
-                <Filter className="w-4 h-4 mr-2" />
+                <Filter className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Filter
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={handleExportBuyerEngagement}
+                className="text-xs sm:text-sm"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Export
               </Button>
             </div>
@@ -644,8 +649,8 @@ export default function Analytics() {
           
           {/* Filter section */}
           {showFilters && (
-            <div className="mb-4 p-4 bg-secondary-50 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-secondary-50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary-700 mb-1">
                     Date Range
@@ -690,28 +695,29 @@ export default function Analytics() {
           
           {/* Top Buyers Section */}
           {topBuyers.length > 0 && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium mb-3 text-blue-900">Top Buyers to Contact</h4>
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg">
+              <h4 className="text-sm sm:text-base font-medium mb-2 sm:mb-3 text-blue-900">Top Buyers to Contact</h4>
               <div className="space-y-2">
                 {topBuyers.slice(0, 5).map((buyer, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
-                    <div>
-                      <div className="font-medium text-secondary-900">{buyer.company}</div>
-                      <div className="text-sm text-secondary-600">
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-3 bg-white rounded border gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-secondary-900 text-sm truncate">{buyer.company}</div>
+                      <div className="text-xs sm:text-sm text-secondary-600">
                         {buyer.inquiries} inquiries • {buyer.pending_responses} pending
                       </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {buyer.email && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(`mailto:${buyer.email}`, '_blank')}
+                          className="flex-shrink-0"
                         >
-                          <Mail className="w-4 h-4" />
+                          <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
                       )}
-                      <span className={`px-2 py-1 text-xs rounded-full ${
+                      <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                         buyer.priority === 'high' 
                           ? 'bg-red-100 text-red-800' 
                           : 'bg-yellow-100 text-yellow-800'
@@ -727,15 +733,15 @@ export default function Analytics() {
         </Card>
 
         {/* Performance Insights */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card>
-            <h3 className="text-lg font-medium text-secondary-900 mb-4">Performance Insights</h3>
+            <h3 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Performance Insights</h3>
             <div className="space-y-4">
               {analyticsData.performanceInsights && analyticsData.performanceInsights.length > 0 ? (
                 analyticsData.performanceInsights.map((insight, index) => (
                   <div 
                     key={index}
-                    className={`flex items-start space-x-3 p-3 border rounded-lg ${
+                    className={`flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 border rounded-lg ${
                       insight.type === 'success' 
                         ? 'bg-green-50 border-green-200' 
                         : insight.type === 'info'
@@ -743,15 +749,15 @@ export default function Analytics() {
                         : 'bg-yellow-50 border-yellow-200'
                     }`}
                   >
-                    <TrendingUp className={`w-5 h-5 mt-0.5 ${
+                    <TrendingUp className={`w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0 ${
                       insight.type === 'success' 
                         ? 'text-green-600' 
                         : insight.type === 'info'
                         ? 'text-blue-600'
                         : 'text-yellow-600'
                     }`} />
-                    <div>
-                      <p className={`text-sm font-medium ${
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs sm:text-sm font-medium ${
                         insight.type === 'success' 
                           ? 'text-green-800' 
                           : insight.type === 'info'
@@ -760,7 +766,7 @@ export default function Analytics() {
                       }`}>
                         {insight.title}
                       </p>
-                      <p className={`text-sm ${
+                      <p className={`text-xs sm:text-sm ${
                         insight.type === 'success' 
                           ? 'text-green-700' 
                           : insight.type === 'info'
@@ -774,24 +780,24 @@ export default function Analytics() {
                 ))
               ) : (
                 <div className="text-center py-8 text-secondary-500">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>No insights available yet. More data needed to generate insights.</p>
+                  <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs sm:text-sm">No insights available yet. More data needed to generate insights.</p>
                 </div>
               )}
               
               {/* Product Optimization Suggestions */}
               {optimizations.length > 0 && (
-                <div className="mt-6 p-4 bg-orange-50 rounded-lg">
-                  <h4 className="font-medium mb-3 text-orange-900">Product Optimization Suggestions</h4>
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-orange-50 rounded-lg">
+                  <h4 className="text-sm sm:text-base font-medium mb-2 sm:mb-3 text-orange-900">Product Optimization Suggestions</h4>
                   <div className="space-y-2">
                     {optimizations.map((opt, index) => (
-                      <div key={index} className="p-3 bg-white rounded border">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-medium text-secondary-900">{opt.product_name}</div>
-                            <div className="text-sm text-secondary-600">{opt.suggestion}</div>
+                      <div key={index} className="p-2 sm:p-3 bg-white rounded border">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-secondary-900 text-xs sm:text-sm truncate">{opt.product_name}</div>
+                            <div className="text-xs sm:text-sm text-secondary-600">{opt.suggestion}</div>
                           </div>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
+                          <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap flex-shrink-0 ${
                             opt.priority === 'high' 
                               ? 'bg-red-100 text-red-800' 
                               : 'bg-yellow-100 text-yellow-800'
@@ -807,21 +813,21 @@ export default function Analytics() {
 
               {/* Market Trends */}
               {trends && (
-                <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                  <h4 className="font-medium mb-3 text-purple-900">Market Trends</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-purple-50 rounded-lg">
+                  <h4 className="text-sm sm:text-base font-medium mb-2 sm:mb-3 text-purple-900">Market Trends</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                     <div>
-                      <h5 className="text-sm font-medium text-purple-800 mb-2">Trending Categories</h5>
+                      <h5 className="text-xs sm:text-sm font-medium text-purple-800 mb-1 sm:mb-2">Trending Categories</h5>
                       {trends.trending_categories?.map((cat, index) => (
-                        <div key={index} className="text-sm text-purple-700">
+                        <div key={index} className="text-xs sm:text-sm text-purple-700 truncate">
                           {cat.category}: {cat.total_orders} orders
                         </div>
                       ))}
                     </div>
                     <div>
-                      <h5 className="text-sm font-medium text-purple-800 mb-2">Key Insights</h5>
+                      <h5 className="text-xs sm:text-sm font-medium text-purple-800 mb-1 sm:mb-2">Key Insights</h5>
                       {Object.entries(trends.insights || {}).map(([key, value], index) => (
-                        <div key={index} className="text-sm text-purple-700">
+                        <div key={index} className="text-xs sm:text-sm text-purple-700">
                           {value}
                         </div>
                       ))}
@@ -833,42 +839,42 @@ export default function Analytics() {
           </Card>
 
           <Card>
-            <h3 className="text-lg font-medium text-secondary-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <h3 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <Button 
                 variant="outline" 
-                className="h-16 flex-col"
+                className="h-14 sm:h-16 flex flex-col justify-center"
                 onClick={handleOptimizeProducts}
                 disabled={loading}
               >
-                <Settings className="w-5 h-5 mb-1" />
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5 mb-1" />
                 <span className="text-xs">Optimize Products</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="h-16 flex-col"
+                className="h-14 sm:h-16 flex flex-col justify-center"
                 onClick={handleContactTopBuyers}
                 disabled={loading}
               >
-                <Users className="w-5 h-5 mb-1" />
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 mb-1" />
                 <span className="text-xs">Contact Top Buyers</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="h-16 flex-col"
+                className="h-14 sm:h-16 flex flex-col justify-center"
                 onClick={handleViewTrends}
                 disabled={loading}
               >
-                <BarChart3 className="w-5 h-5 mb-1" />
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 mb-1" />
                 <span className="text-xs">View Trends</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="h-16 flex-col"
+                className="h-14 sm:h-16 flex flex-col justify-center"
                 onClick={handleExportData}
                 disabled={loading}
               >
-                <Download className="w-5 h-5 mb-1" />
+                <Download className="w-4 h-4 sm:w-5 sm:h-5 mb-1" />
                 <span className="text-xs">Export Data</span>
               </Button>
             </div>
@@ -877,25 +883,25 @@ export default function Analytics() {
 
         {/* Traffic Sources */}
         <Card>
-          <h3 className="text-lg font-medium text-secondary-900 mb-4">Traffic Sources</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-secondary-50 rounded-lg">
-              <div className="text-2xl font-bold text-secondary-900">
+          <h3 className="text-base sm:text-lg font-medium text-secondary-900 mb-3 sm:mb-4">Traffic Sources</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="text-center p-3 sm:p-4 bg-secondary-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-secondary-900">
                 {analyticsData.trafficSources?.directSearch || 0}%
               </div>
-              <div className="text-sm text-secondary-600">Direct Search</div>
+              <div className="text-xs sm:text-sm text-secondary-600">Direct Search</div>
             </div>
-            <div className="text-center p-4 bg-secondary-50 rounded-lg">
-              <div className="text-2xl font-bold text-secondary-900">
+            <div className="text-center p-3 sm:p-4 bg-secondary-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-secondary-900">
                 {analyticsData.trafficSources?.rfqMatching || 0}%
               </div>
-              <div className="text-sm text-secondary-600">RFQ Matching</div>
+              <div className="text-xs sm:text-sm text-secondary-600">RFQ Matching</div>
             </div>
-            <div className="text-center p-4 bg-secondary-50 rounded-lg">
-              <div className="text-2xl font-bold text-secondary-900">
+            <div className="text-center p-3 sm:p-4 bg-secondary-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-secondary-900">
                 {analyticsData.trafficSources?.referrals || 0}%
               </div>
-              <div className="text-sm text-secondary-600">Referrals</div>
+              <div className="text-xs sm:text-sm text-secondary-600">Referrals</div>
             </div>
           </div>
         </Card>

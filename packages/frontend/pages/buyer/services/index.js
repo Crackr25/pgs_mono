@@ -130,35 +130,35 @@ export default function BuyerServices() {
         <title>Trade Services - Pinoy Global Supply</title>
       </Head>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div>
-            <h1 className="text-2xl font-bold text-secondary-900">Trade Services</h1>
-            <p className="mt-1 text-sm text-secondary-600">
+            <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Trade Services</h1>
+            <p className="mt-1 text-xs sm:text-sm text-secondary-600">
               Professional services to support your trading activities
             </p>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <Card className="p-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
-              <div className="relative flex-1 max-w-md">
+        <Card className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:justify-between sm:items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:space-x-4 flex-1">
+              <div className="relative flex-1 sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search services..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="pl-10 pr-4 py-2 w-full text-sm border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="px-3 py-2 text-sm border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="all">All Services</option>
                 <option value="logistics">Logistics</option>
@@ -168,42 +168,42 @@ export default function BuyerServices() {
               </select>
             </div>
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-secondary-500" />
-              <span className="text-sm text-secondary-600">{filteredServices.length} services</span>
+              <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-secondary-500 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-secondary-600">{filteredServices.length} services</span>
             </div>
           </div>
         </Card>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
           {filteredServices.map((service) => (
-            <Card key={service.id} className="p-6">
-              <div className="flex items-start space-x-4 mb-4">
-                <div className="w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center">
+            <Card key={service.id} className="p-4 sm:p-5 lg:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary-100 rounded-lg flex items-center justify-center flex-shrink-0">
                   {getServiceIcon(service.category)}
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-secondary-900 mb-1">{service.name}</h3>
-                  <p className="text-sm text-secondary-600 mb-2">{service.provider}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm sm:text-base font-medium text-secondary-900 mb-1 truncate">{service.name}</h3>
+                  <p className="text-xs sm:text-sm text-secondary-600 mb-2 truncate">{service.provider}</p>
                   <div className="flex items-center space-x-1 mb-2">
                     {renderStars(service.rating)}
-                    <span className="text-sm text-secondary-600">({service.reviews})</span>
+                    <span className="text-xs sm:text-sm text-secondary-600">({service.reviews})</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-primary-600">{service.price}</p>
-                  <div className="flex items-center space-x-1 text-xs text-secondary-500">
-                    <Clock className="w-3 h-3" />
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1 sm:text-right">
+                  <p className="text-base sm:text-lg font-bold text-primary-600 whitespace-nowrap">{service.price}</p>
+                  <div className="flex items-center space-x-1 text-xs text-secondary-500 whitespace-nowrap">
+                    <Clock className="w-3 h-3 flex-shrink-0" />
                     <span>{service.responseTime}</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-sm text-secondary-600 mb-4">{service.description}</p>
+              <p className="text-xs sm:text-sm text-secondary-600 mb-3 sm:mb-4 line-clamp-2">{service.description}</p>
 
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-secondary-900 mb-2">Features:</h4>
-                <div className="flex flex-wrap gap-2">
+              <div className="mb-3 sm:mb-4">
+                <h4 className="text-xs sm:text-sm font-medium text-secondary-900 mb-2">Features:</h4>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {service.features.map((feature, index) => (
                     <span
                       key={index}
@@ -215,11 +215,11 @@ export default function BuyerServices() {
                 </div>
               </div>
 
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex-1">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1 text-xs sm:text-sm">
                   Learn More
                 </Button>
-                <Button size="sm" className="flex-1">
+                <Button size="sm" className="flex-1 text-xs sm:text-sm">
                   Get Quote
                 </Button>
               </div>
@@ -228,10 +228,10 @@ export default function BuyerServices() {
         </div>
 
         {filteredServices.length === 0 && (
-          <Card className="p-12 text-center">
-            <CheckCircle className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-secondary-900 mb-2">No services found</h3>
-            <p className="text-secondary-600">
+          <Card className="p-8 sm:p-12 text-center">
+            <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-secondary-400 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-secondary-900 mb-2">No services found</h3>
+            <p className="text-sm sm:text-base text-secondary-600">
               {searchQuery ? 'Try adjusting your search criteria.' : 'Services will be available soon.'}
             </p>
           </Card>
